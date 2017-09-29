@@ -1,14 +1,35 @@
 # coast
 
-A Clojure library designed to ... well, that part is up to you.
+An easy to use clojure web framework
 
 ## Usage
 
-FIXME
+Add this to your `project.clj`
 
-## License
+```clojure
+[coast "1.0.0"]
+```
 
-Copyright © 2017 FIXME
+Now you can get started!
+Create a new lein project with
+a default lein template:
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+```bash
+lein new blog
+```
+
+```clojure
+(ns blog.core
+  (:require [coast.core :as coast]))
+
+(defn index [request]
+  {:status 200
+   :body "<html><body>Hello world!</body></html>"})
+
+(coast/defroutes routes
+  (coast/get "/" index))
+
+(coast/run-server routes {:port 1337})
+```
+
+Copyright © 2017 Sean Walker
