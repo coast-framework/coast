@@ -1,6 +1,17 @@
-(ns coast.core)
+(ns coast.core
+  (:require [potemkin]
+            [org.httpkit.server]
+            [trail.core])
+  (:refer-clojure :exclude [get]))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(potemkin/import-vars
+  [org.httpkit.server
+   run-server]
+  [trail.core
+   defroutes
+   get
+   post
+   put
+   patch
+   delete
+   resource])

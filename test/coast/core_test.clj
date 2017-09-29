@@ -1,7 +1,4 @@
 (ns coast.core-test
   (:require [clojure.test :refer :all]
-            [coast.core :refer :all]))
+            [coast.core :as coast]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
