@@ -10,36 +10,33 @@
      [:a {:href (str "/{{table}}/" (:id m))} "Show"]]])
 
 (defn index [{{table}}]
- (c/layout
-   [:table
-    (map {{singular}} {{table}})]
-   [:div
-    [:a {:href "/{{table}}/new"} "New Post"]]))
+  [:table
+   (map {{singular}} {{table}})]
+  [:div
+   [:a {:href "/{{table}}/new"} "New {{singular}}"]])
 
 (defn show [{{singular}}]
- (c/layout{% for col in columns %}
-   [:div (:{{col}} {{singular}}{% endfor %})]
-   [:div
-    [:a {:href "/{{table}}"} "Back"]]))
+ {% for col in columns %}
+ [:div (:{{col}} {{singular}}{% endfor %})]
+ [:div
+  [:a {:href "/{{table}}"} "Back"]])
 
 (defn new-form [{:keys [{{singular}} error]}]
-  (c/layout
-    error
-    (c/form {:action "/{{table}}" :method "post"}{% for col in form_columns %}
-      [:div
-        [:input {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}]{% endfor %}]
-      [:div
-        [:input {:type "submit" :value "Create"}]]
-      [:div
-        [:a {:href "/{{table}}"} "Back"]])))
+  error
+  (c/form {:action "/{{table}}" :method "post"}{% for col in form_columns %}
+    [:div
+      [:input {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}]{% endfor %}]
+    [:div
+      [:input {:type "submit" :value "Create"}]]
+    [:div
+      [:a {:href "/{{table}}"} "Back"]]))
 
 (defn edit-form [{:keys [{{singular}} error]}]
-  (c/layout
-    error
-    (c/form {:action (str "/{{table}}/" (:id {{singular}})) :method "put"}{% for col in form_columns %}
-      [:div
-       [:input {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}]{% endfor %}]
-      [:div
-       [:input {:type "submit" :value "Update"}]]
-      [:div
-       [:a {:href "/{{table}}"} "Back"]])))
+  error
+  (c/form {:action (str "/{{table}}/" (:id {{singular}})) :method "put"}{% for col in form_columns %}
+    [:div
+     [:input {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}]{% endfor %}]
+    [:div
+     [:input {:type "submit" :value "Update"}]]
+    [:div
+     [:a {:href "/{{table}}"} "Back"]]))

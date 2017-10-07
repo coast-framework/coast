@@ -6,19 +6,16 @@
 
 (defn index [request]
   (let [{{table}} ({{table}}/all)]
-    (coast/ok
-      (views.{{table}}/index {{table}}))))
+    (views.{{table}}/index {{table}})))
 
 (defn show [request]
   (let [id (-> request :params :id)
         {{singular}} ({{table}}/find-by-id id)]
-    (coast/ok
-      (views.{{table}}/show {{singular}}))))
+    (views.{{table}}/show {{singular}})))
 
 (defn new-form [request]
   (let [{:keys [params error]} request]
-    (coast/ok
-      (views.{{table}}/new-form {:{{singular}} params :error error}))))
+    (views.{{table}}/new-form {:{{singular}} params :error error})))
 
 (defn create [request]
   (let [params (get request :params)
@@ -29,8 +26,7 @@
 
 (defn edit-form [request]
   (let [{:keys [params error]} request]
-    (coast/ok
-      (views.{{table}}/edit-form {:{{singular}} params :error error}))))
+    (views.{{table}}/edit-form {:{{singular}} params :error error})))
 
 (defn update [request]
   (let [params (get request :params)
