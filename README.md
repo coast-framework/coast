@@ -1,24 +1,19 @@
-# coast
+# coast on clojure
 
 An easy to use clojure web framework
 
-## Usage
+## How do I use this?
 
-Add this to your `project.clj`
-
-```clojure
-[coast "1.0.0"]
-```
-
-Now you can get started!
-Create a new lein project with
-a default lein template:
-
+Create a new coast project like this
 ```bash
-lein new blog
+lein new coast-app blog
+cd blog
 ```
 
+Let's code the world's most useless web app
 ```clojure
+; blog/src/core.clj
+
 (ns blog.core
   (:require [coast.core :as coast]))
 
@@ -29,7 +24,30 @@ lein new blog
 (coast/defroutes routes
   (coast/get "/" index))
 
-(coast/run-server routes {:port 1337})
+(def app
+  (-> routes
+      coast/wrap-with-logger))
+
+(defn -main [& args]
+  (coast/run-server app {:port 1337}))
 ```
+
+Now you can start your server
+
+```bash
+lein run
+```
+
+## Why did I do this?
+
+In my short web programming career, I've found two things
+that I really like, clojure and rails. This is my attempt
+to put the two together and make the web great again.
+
+## Credits
+This framework is only possible because of the hard work of
+a ton of great clojure devs who graciously open sourced their
+projects that took a metric ton hard work that coast is using
+under one namespace.
 
 Copyright © 2017 Sean Walker

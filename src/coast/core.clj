@@ -1,12 +1,25 @@
 (ns coast.core
   (:require [potemkin]
-            [org.httpkit.server]
-            [trail.core])
+            [trail.core]
+            [bunyan.core]
+            [environ.core]
+            [hiccup.page]
+            [hiccup.form]
+            [ring.middleware.resource]
+            [coast.responses]
+            [inflections.core]
+            [coast.utils]
+            [coast.db]
+            [ring.middleware.defaults]
+            [coast.components]
+            [ring.middleware.session.cookie]
+            [ring.middleware.flash]
+            [prone.middleware]
+            [coast.middleware]
+            [coast.server])
   (:refer-clojure :exclude [get]))
 
 (potemkin/import-vars
-  [org.httpkit.server
-   run-server]
   [trail.core
    defroutes
    get
@@ -14,4 +27,53 @@
    put
    patch
    delete
-   resource])
+   resource
+   route-not-found
+   wrap-routes
+   match-routes]
+  [bunyan.core
+   wrap-with-logger]
+  [environ.core
+   env]
+  [hiccup.page
+   html5
+   include-js
+   include-css]
+  [ring.middleware.resource
+   wrap-resource]
+  [coast.responses
+   ok
+   redirect
+   bad-request
+   unauthorized
+   not-found
+   forbidden
+   internal-server-error]
+  [coast.db
+   query]
+  [inflections.core
+   plural
+   pluralize
+   singular]
+  [coast.utils
+   try!
+   now
+   uuid
+   parse-int]
+  [ring.middleware.defaults
+   wrap-defaults
+   site-defaults]
+  [coast.components
+   csrf]
+  [ring.middleware.session.cookie
+   cookie-store]
+  [ring.middleware.flash
+   wrap-flash]
+  [prone.middleware
+   wrap-exceptions]
+  [coast.middleware
+   wrap-coast-defaults]
+  [coast.server
+   start-server
+   stop
+   restart])
