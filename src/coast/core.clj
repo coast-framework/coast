@@ -64,7 +64,11 @@
    wrap-defaults
    site-defaults]
   [coast.components
-   csrf]
+   csrf
+   form
+   form-for
+   field
+   link-to]
   [ring.middleware.session.cookie
    cookie-store]
   [ring.middleware.flash
