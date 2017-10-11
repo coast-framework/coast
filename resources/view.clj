@@ -21,7 +21,7 @@
  [:div
   [:a {:href "/{{table}}"} "Back"]])
 
-(defn new-form [{:keys [{{singular}} error]}]
+(defn new- [{:keys [{{singular}} error]}]
   error
   (c/form {:action "/{{table}}" :method "post"}{% for col in form_columns %}
     [:div
@@ -31,7 +31,7 @@
     [:div
       [:a {:href "/{{table}}"} "Back"]]))
 
-(defn edit-form [{:keys [{{singular}} error]}]
+(defn edit [{:keys [{{singular}} error]}]
   error
   (c/form {:action (str "/{{table}}/" (:id {{singular}})) :method "put"}{% for col in form_columns %}
     [:div
