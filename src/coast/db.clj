@@ -7,7 +7,7 @@
   (:import (java.io File)))
 
 (defn fmt-db [s]
-  {:connection-uri (string/replace s #"postgres://" "jdbc:postgresql://")})
+  {:connection-uri (string/replace (or s "") #"postgres://" "jdbc:postgresql://")})
 
 (def template1 (fmt-db "postgres://localhost:5432/postgres"))
 (def conn (fmt-db (environ/env :database-url)))

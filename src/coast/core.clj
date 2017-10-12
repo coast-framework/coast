@@ -21,7 +21,6 @@
 
 (potemkin/import-vars
   [trail.core
-   defroutes
    get
    post
    put

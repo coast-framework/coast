@@ -10,7 +10,7 @@
 (defn start
   ([app opts]
    (let [{:keys [port]} opts
-         port (-> (or port (environ/env :port)) (utils/parse-int))]
+         port (-> (or port (environ/env :port) "1337") (utils/parse-int))]
      (println (str "Server is listening on port " port))
      (httpkit/run-server app {:port port})))
   ([app]
@@ -36,8 +36,8 @@
 
 (defn start-server
   ([app opts]
-   (if utils/dev?
+   (if (or utils/dev? (contains? opts :dev))
      (dev app opts)
      (prod app opts)))
   ([app]
-   (start-server app {})))
+   (start-server k app {})))
