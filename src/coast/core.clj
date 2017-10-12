@@ -59,7 +59,8 @@
    try!
    now
    uuid
-   parse-int]
+   parse-int
+   coerce-string]
   [ring.middleware.defaults
    wrap-defaults
    site-defaults]
@@ -68,7 +69,8 @@
    form
    form-for
    field
-   link-to]
+   link-to
+   uri]
   [ring.middleware.session.cookie
    cookie-store]
   [ring.middleware.flash
@@ -76,7 +78,9 @@
   [prone.middleware
    wrap-exceptions]
   [coast.middleware
-   wrap-coast-defaults]
+   wrap-coast-defaults
+   wrap-coerce-params
+   wrap-layout]
   [coast.server
    start-server
    stop

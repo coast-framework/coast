@@ -30,7 +30,6 @@
 (defn wrap-coast-defaults [handler config]
   (let [{:keys [layout public]} config]
     (-> handler
-        (wrap-coerce-params)
         (wrap-layout layout)
         (bunyan/wrap-with-logger)
         (resource/wrap-resource (or public "public"))
