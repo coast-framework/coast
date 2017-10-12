@@ -21,6 +21,27 @@
   (when (string? s)
     (Integer. (re-find  #"\d+" s))))
 
+(defn map-vals [f m]
+  (->> m
+       (map (fn [[k v]] [k (f v)]))
+       (into {})))
+
+(defn coerce-int? [s]
+  (and
+    (string? s)
+    (not (nil? (re-find #"^\d+$" s)))))
+
+(defn coerce-uuid? [s]
+  (and
+    (string? s)
+    (not (nil? (re-find #"(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" s)))))
+
+(defn coerce-string [s]
+  (cond
+    (coerce-int? s) (parse-int s)
+    (coerce-uuid? s) (uuid s)
+    :else s))
+
 (def dev? (= "dev" (environ/env :coast-env)))
 (def test? (= "test" (environ/env :coast-env)))
 (def prod? (= "prod" (environ/env :coast-env)))
