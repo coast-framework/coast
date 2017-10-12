@@ -11,7 +11,8 @@
    (csrf {})))
 
 (defn uri [ks & maps]
-  (let [space (namespace (last ks))
+  (let [ks (if (keyword? ks) [ks] ks)
+        space (namespace (last ks))
         names (mapv #(or (namespace %) (name %)) ks)
         ids (mapv #(or nil (:id %)) (or maps [{}]))
         parts (->> (interleave names ids)
