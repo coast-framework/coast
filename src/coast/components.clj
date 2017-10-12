@@ -10,19 +10,21 @@
   ([]
    (csrf {})))
 
-(defn uri [coll]
-  (str "/" (string/join "/" coll)))
+(defn uri [ks & maps]
+  (let [space (namespace (last ks))
+        names (mapv #(or (namespace %) (name %)) ks)
+        ids (mapv #(or nil (:id %)) (or maps [{}]))
+        parts (->> (interleave names ids)
+                   (filter #(not (nil? %))))
+        parts (if (not (nil? (namespace (last ks))))
+                (concat parts [(name (last ks))])
+                parts)]
+    (str "/" (string/join "/" parts))))
 
 (defn method [m]
   (if (nil? (:id m))
     :post
     :put))
-
-(defn action [k m]
-  (let [n (name k)]
-    (if (nil? (:id m))
-      (uri [n])
-      (uri [n (:id m)]))))
 
 (defn form [attrs & content]
   (let [hidden-method (when (or (not= :get (:method attrs))
@@ -33,9 +35,9 @@
      (csrf)
      content]))
 
-(defn form-for [k m & content]
-  (let [action (action k m)
-        method (method m)]
+(defn form-for [ks maps & content]
+  (let [action (apply (partial uri ks) maps)
+        method (method (last maps))]
     (form {:method method
            :action action}
       content)))
@@ -48,19 +50,8 @@
    (field attrs k "")))
 
 (defn link-to
-  ([s k & m]
-   (let [n (name k)
-         spaces (-> (namespace k)
-                  (or n)
-                  (string/split #"\."))
-         ids (mapv :id m)
-         parts (vec (interleave spaces ids))
-         parts (if (and (not= n (first spaces)))
-                 (conj parts n)
-                 parts)
-         href (str "/" (string/join "/" (filter #(not (nil? %)) parts)))]
-     (if (= (count ids) (count spaces))
-       [:a {:href href} s]
-       (throw (Exception. "Mismatched number of maps in arguments and namespaces in keyword.")))))
+  ([s ks & maps]
+   (let [url (apply (partial uri ks) maps)]
+     [:a {:href url} s]))
   ([s k]
    (link-to s k {})))
