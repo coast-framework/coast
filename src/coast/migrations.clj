@@ -42,8 +42,35 @@
           (string? name))
     (str migrations-dir "/" (-> (new Date) fmt-date) "_" (string/replace name #"\s+|-+|_+" "_") ".edn")))
 
-(defn create [name]
+(defn column [arg]
+  (let [[name type] (string/split arg #":")]
+    (str name " " type)))
+
+(defn create-table-contents [name args]
+  (let [table (-> (string/split name #"-")
+                  (last))
+        sql (str "create table " table " (")
+        columns (map column args)
+        columns (-> columns
+                    (conj "id serial primary key")
+                    vec
+                    (conj "created_at timestamp without time zone default (now() at time zone 'utc')"))
+        column-string (string/join ", " columns)]
+    (str sql column-string ")")))
+
+(defn drop-table-contents [name]
+  (str "drop table " (-> (string/split name #"-")
+                         (last))))
+
+(defn contents [name args]
+  (cond
+    (string/starts-with? name "create-") {:up (create-table-contents name args)
+                                          :down (drop-table-contents name)}
+    :else {:up "" :down ""}))
+
+(defn create [name & args]
   (let [migration-file (migration-file-path name)
         _ (.mkdirs (File. migrations-dir))]
-    (spit migration-file ragtime-format-edn)
+    (spit migration-file (-> (contents name args)
+                             (pr-str)))
     (println (str "resources/sql/" migration-file " created"))))
