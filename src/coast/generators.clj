@@ -1,12 +1,14 @@
 (ns coast.generators
   (:require [selmer.parser :as selmer]
             [inflections.core :as inflections]
-            [coast.db :as db])
+            [coast.db :as db]
+            [clojure.string :as string])
   (:import (java.io File)))
 
 (defn model [project table]
   (let [params {:project project
-                :table table}
+                :ns (string/replace project #"_" "-")
+                :table (string/replace table #"_" "-")}
         dir (str "src/" project "/models")
         filename (str dir "/" table ".clj")
         _ (.mkdirs (File. dir))]
@@ -15,7 +17,8 @@
 
 (defn controller [project table]
   (let [params {:project project
-                :table table
+                :ns (string/replace project #"_" "-")
+                :table (string/replace table #"_" "-")
                 :singular (inflections/singular table)}
         dir (str "src/" project "/controllers")
         filename (str dir "/" table "_controller.clj")
@@ -32,7 +35,8 @@
   (let [cols (->> (db/get-cols table)
                   (map :column_name))
         params {:project project
-                :table table
+                :ns (string/replace project #"_" "-")
+                :table (string/replace table #"_" "-")
                 :singular (inflections/singular table)
                 :columns cols
                 :form_columns (filter form-col? cols)}

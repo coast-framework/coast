@@ -1,7 +1,7 @@
-(ns {{project}}.controllers.{{table}}-controller
+(ns {{ns}}.controllers.{{table}}-controller
   (:require [coast.core :as coast]
-            [{{project}}.models.{{table}} :as {{table}}]
-            [{{project}}.views.{{table}} :as views.{{table}}]))
+            [{{ns}}.models.{{table}} :as {{table}}]
+            [{{ns}}.views.{{table}} :as views.{{table}}]))
 
 (defn index [request]
   (let [{{table}} ({{table}}/all)]
@@ -21,7 +21,7 @@
         [{{singular}} error] (coast/try! ({{table}}/insert params))]
     (if (nil? error)
       (coast/redirect "/{{table}}")
-      (new-form (assoc request :error error)))))
+      (new- (assoc request :error error)))))
 
 (defn edit [request]
   (let [{:keys [params error]} request]
@@ -33,7 +33,7 @@
         [{{singular}} error] (coast/try! ({{table}}/update- id params))]
     (if (nil? error)
       (coast/redirect "/{{table}}")
-      (edit-form (assoc request :error error)))))
+      (edit (assoc request :error error)))))
 
 (defn delete [request]
   (let [id (-> request :params :id)
