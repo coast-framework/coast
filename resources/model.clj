@@ -11,7 +11,7 @@
   (coast/query :{{table}}/insert m))
 
 (defn update- [id m]
-  (coast/query :{{table}}/update- (merge {:id id} m)))
+  (coast/query :{{table}}/update (merge {:id id} m)))
 
 (defn delete [id]
   (coast/query :{{table}}/delete {:id id}))
