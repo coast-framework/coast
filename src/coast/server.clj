@@ -42,4 +42,4 @@
      (dev app opts)
      (prod app opts)))
   ([app]
-   (start-server k app {})))
+   (start-server app {})))
