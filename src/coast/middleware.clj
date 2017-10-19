@@ -7,8 +7,7 @@
             [environ.core :as environ]
             [bunyan.core :as bunyan]
             [prone.middleware :as prone]
-            [com.jakemccrary.middleware.reload :as reload]
-            [trail.core :as trail]))
+            [com.jakemccrary.middleware.reload :as reload]))
 
 (defn layout? [response layout]
   (and (not (map? response))
@@ -31,7 +30,6 @@
 (defn wrap-coast-defaults [handler config]
   (let [{:keys [layout public]} config]
     (-> handler
-        (trail/match-routes)
         (wrap-layout layout)
         (bunyan/wrap-with-logger)
         (resource/wrap-resource (or public "public"))
@@ -41,7 +39,6 @@
 
 (defn dev [handler]
   (-> handler
-      trail/match-routes
       reload/wrap-reload
       prone/wrap-exceptions))
 

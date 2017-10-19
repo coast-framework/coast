@@ -3,16 +3,14 @@
             [org.httpkit.server :as httpkit]
             [environ.core :as environ]
             [coast.utils :as utils]
-            [coast.middleware :as middleware]
-            [trail.core :as trail]))
+            [coast.middleware :as middleware]))
 
 (defonce server-atom (atom nil))
 
 (defn start
   ([app opts]
    (let [{:keys [port]} opts
-         port (-> (or port (environ/env :port) "1337") (utils/parse-int))
-         app (trail/match-routes app)]
+         port (-> (or port (environ/env :port) "1337") (utils/parse-int))]
      (println (str "Server is listening on port " port))
      (httpkit/run-server app {:port port})))
   ([app]
