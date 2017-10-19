@@ -64,9 +64,9 @@
 
 (defn contents [name args]
   (cond
-    (string/starts-with? name "create-") {:up (create-table-contents name args)
-                                          :down (drop-table-contents name)}
-    :else {:up "" :down ""}))
+    (string/starts-with? name "create-") {:up [(create-table-contents name args)]
+                                          :down [(drop-table-contents name)]}
+    :else {:up [""] :down [""]}))
 
 (defn create [name & args]
   (let [migration-file (migration-file-path name)
