@@ -17,7 +17,7 @@
                  [org.clojure/java.jdbc "0.7.1"]
                  [org.clojure/tools.namespace "0.2.11"]
                  [ragtime "0.7.2"]
-                 [oksql "1.0.0"]
+                 [oksql "1.1.1"]
                  [selmer "1.11.1"]
                  [inflections "0.13.0"]
                  [prone "1.1.4"]
