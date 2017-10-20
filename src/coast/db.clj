@@ -3,7 +3,7 @@
             [clojure.java.jdbc :as sql]
             [clojure.string :as string]
             [oksql.core :as oksql])
-  (:refer-clojure :exclude [drop])
+  (:refer-clojure :exclude [drop update])
   (:import (java.io File)))
 
 (defn fmt-db [s]
