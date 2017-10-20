@@ -1,17 +1,17 @@
 (ns {{project}}.models.{{table}}
-  (:require [coast.core :as coast]))
+  (:require [coast.db :as db]))
 
 (defn all []
-  (coast/query :{{table}}/all))
+  (db/query :{{table}}/all))
 
 (defn find-by-id [id]
-  (coast/query :{{table}}/find-by-id {:id id}))
+  (db/query :{{table}}/find-by-id {:id id}))
 
 (defn insert [m]
-  (coast/query :{{table}}/insert m))
+  (db/insert :{{table}}/insert m))
 
 (defn update- [id m]
-  (coast/query :{{table}}/update (merge {:id id} m)))
+  (db/update :{{table}} m :{{table}}/where {:id id}))
 
 (defn delete [id]
-  (coast/query :{{table}}/delete {:id id}))
+  (db/delete :{{table}} :{{table}}/where {:id id}))

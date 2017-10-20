@@ -18,6 +18,10 @@
   ([k]
    (query k {})))
 
+(def insert (partial oksql/insert conn))
+(def update (partial oksql/update conn))
+(def delete (partial oksql/delete conn))
+
 (defn exec [db sql]
   (sql/with-db-connection [conn db]
     (with-open [s (.createStatement (sql/db-connection conn))]
@@ -87,7 +91,11 @@
               "\nselect *"
               "\nfrom " table
               "\norder by created_at desc")
-        contents (string/join "\n\n" [all find insert update delete])
+        where (str
+                "-- name: where"
+                "\nwhere id = :id"
+                "\nreturning *")
+        contents (string/join "\n\n" [all find insert update delete where])
         _ (.mkdirs (File. sql-dir))
         _ (spit sql-file contents)])
   (println (str "Created resources/sql/" table ".sql")))
