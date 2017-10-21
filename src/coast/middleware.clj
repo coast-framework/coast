@@ -10,8 +10,9 @@
             [com.jakemccrary.middleware.reload :as reload]))
 
 (defn layout? [response layout]
-  (and (not (map? response))
-       (not (nil? layout))))
+  (and (not (nil? layout))
+       (or (vector? response)
+           (string? response))))
 
 (defn wrap-layout [handler layout]
   (fn [request]

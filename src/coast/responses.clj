@@ -1,12 +1,32 @@
 (ns coast.responses
-  (:require [hiccup.core :as h]))
+  (:require [hiccup.core :as h]
+            [cheshire.core :as cheshire]))
 
-(defonce default-headers {"Content-Type" "text/html"})
+(defn content-type [k]
+  (condp = k
+   :json {"Content-Type" "application/json"}
+   :xml {"Content-Type" "text/xml"}
+   {"Content-Type" "text/html"}))
 
-(defn response [status body & {:as headers}]
-  {:status status
-   :body (h/html body)
-   :headers (merge default-headers headers)})
+(defn json? [response]
+  (= "application/json" (get-in response [:headers "Content-Type"])))
+
+(defn body [content-type bd]
+  (condp = (get content-type "Content-Type")
+    "text/html" (h/html bd)
+    "application/json" (cheshire/generate-string bd)))
+
+(defn response
+  ([status val ct headers]
+   (let [cont-type (content-type ct)
+         b (body cont-type val)]
+     {:status status
+      :body b
+      :headers (merge cont-type headers)}))
+  ([status body ct]
+   (response status body ct {}))
+  ([status body]
+   (response status body :html {})))
 
 (defn redirect
   ([url flash]
