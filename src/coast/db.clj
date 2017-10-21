@@ -6,7 +6,6 @@
   (:refer-clojure :exclude [drop update])
   (:import (java.io File)))
 
-(def template1 {:connection (sql/get-connection "postgres://localhost:5432/postgres")})
 (def conn {:connection (sql/get-connection (environ/env :database-url))})
 
 (defn query
@@ -26,10 +25,12 @@
       (seq (.executeBatch s)))))
 
 (defn create [name]
-  (exec template1 (str "create database " name)))
+  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}]
+    (exec db (str "create database " name))))
 
 (defn drop [name]
-  (exec template1 (str "drop database " name)))
+  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}]
+    (exec db (str "drop database " name))))
 
 (defn get-cols [table]
   (let [sql ["select column_name from information_schema.columns where table_name = ?" table]]
