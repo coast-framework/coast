@@ -1,5 +1,5 @@
 (defproject coast "0.1.0-SNAPSHOT"
-  :description "An easy to use clojure web framework"
+  :description "An easy full stack framework for clojure"
   :url "https://coastonclojure.com"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
