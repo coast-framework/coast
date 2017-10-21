@@ -6,11 +6,8 @@
   (:refer-clojure :exclude [drop update])
   (:import (java.io File)))
 
-(defn fmt-db [s]
-  {:connection-uri (string/replace (or s "") #"postgres://" "jdbc:postgresql://")})
-
-(def template1 (fmt-db "postgres://localhost:5432/postgres"))
-(def conn (fmt-db (environ/env :database-url)))
+(def template1 {:connection (sql/get-connection "postgres://localhost:5432/postgres")})
+(def conn {:connection (sql/get-connection (environ/env :database-url))})
 
 (defn query
   ([k m]
