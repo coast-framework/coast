@@ -6,17 +6,23 @@
   (:refer-clojure :exclude [drop update])
   (:import (java.io File)))
 
-(def conn {:connection (sql/get-connection (environ/env :database-url))})
+(defn connection []
+  {:connection (sql/get-connection (environ/env :database-url))})
 
 (defn query
   ([k m]
-   (oksql/query conn k m))
+   (oksql/query (connection) k m))
   ([k]
    (query k {})))
 
-(def insert (partial oksql/insert conn))
-(def update (partial oksql/update conn))
-(def delete (partial oksql/delete conn))
+(defn insert [k m]
+  (oksql/insert (connection) k m))
+
+(defn update [k m where where-map]
+  (oksql/update (connection) k m where where-map))
+
+(defn delete [k where where-map]
+  (oksql/delete (connection) k where where-map))
 
 (defn exec [db sql]
   (sql/with-db-connection [conn db]
@@ -34,7 +40,7 @@
 
 (defn get-cols [table]
   (let [sql ["select column_name from information_schema.columns where table_name = ?" table]]
-    (sql/query conn sql)))
+    (sql/query (connection) sql)))
 
 (defn in? [coll elm]
   (some #(= elm %) coll))

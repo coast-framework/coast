@@ -18,7 +18,7 @@
 (def ragtime-format-edn "{:up [\"\"]\n :down [\"\"]}")
 
 (defn ragtime-conn []
-  {:datastore  (jdbc/sql-database db/conn)
+  {:datastore  (jdbc/sql-database (db/connection))
    :migrations (jdbc/load-resources "migrations")})
 
 (defn migrate []
