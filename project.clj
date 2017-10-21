@@ -1,4 +1,4 @@
-(defproject coast "0.1.2"
+(defproject coast "0.1.3"
   :description "An easy full stack framework for clojure"
   :url "https://coastonclojure.com"
   :license {:name "MIT License"
@@ -17,7 +17,7 @@
                  [org.clojure/java.jdbc "0.7.1"]
                  [org.clojure/tools.namespace "0.2.11"]
                  [ragtime "0.7.2"]
-                 [oksql "1.1.1"]
+                 [oksql "1.1.2"]
                  [selmer "1.11.1"]
                  [inflections "0.13.0"]
                  [prone "1.1.4"]
