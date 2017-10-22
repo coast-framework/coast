@@ -29,6 +29,7 @@
    resource
    route-not-found
    wrap-routes
+   wrap-routes-with
    match-routes]
   [bunyan.core
    wrap-with-logger]
