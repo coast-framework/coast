@@ -4,6 +4,7 @@
             [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.resource :as resource]
+            [ring.middleware.flash :as flash]
             [environ.core :as environ]
             [bunyan.core :as bunyan]
             [prone.middleware :as prone]
@@ -33,6 +34,7 @@
     (-> handler
         (wrap-layout layout)
         (bunyan/wrap-with-logger)
+        (flash/wrap-flash)
         (resource/wrap-resource (or public "public"))
         (defaults/wrap-defaults (-> defaults/site-defaults
                                     (assoc-in [:session :cookie-attrs :max-age] 86400)

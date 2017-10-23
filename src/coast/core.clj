@@ -4,7 +4,7 @@
             [bunyan.core]
             [environ.core]
             [hiccup.page]
-            [hiccup.form]
+            [hiccup.core]
             [ring.middleware.resource]
             [coast.responses]
             [inflections.core]
@@ -39,6 +39,8 @@
    html5
    include-js
    include-css]
+  [hiccup.core
+   html]
   [ring.middleware.resource
    wrap-resource]
   [coast.responses
