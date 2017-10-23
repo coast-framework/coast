@@ -34,11 +34,11 @@
     (-> handler
         (wrap-layout layout)
         (bunyan/wrap-with-logger)
-        (flash/wrap-flash)
         (resource/wrap-resource (or public "public"))
         (defaults/wrap-defaults (-> defaults/site-defaults
                                     (assoc-in [:session :cookie-attrs :max-age] 86400)
-                                    (assoc-in [:session :store] (cookie/cookie-store {:key (environ/env :secret)})))))))
+                                    (assoc-in [:session :store] (cookie/cookie-store {:key (environ/env :secret)}))))
+        (flash/wrap-flash))))
 
 (defn dev [handler]
   (-> handler
