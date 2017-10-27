@@ -1,6 +1,7 @@
 (ns coast.components
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [trail.core :as trail]))
 
 (defn csrf
   ([attrs]
@@ -9,18 +10,6 @@
                         :value *anti-forgery-token*)])
   ([]
    (csrf {})))
-
-(defn uri [ks & maps]
-  (let [ks (if (keyword? ks) [ks] ks)
-        space (namespace (last ks))
-        names (mapv #(or (namespace %) (name %)) ks)
-        ids (mapv #(or nil (:id %)) (or maps [{}]))
-        parts (->> (interleave names ids)
-                   (filter #(not (nil? %))))
-        parts (if (not (nil? (namespace (last ks))))
-                (concat parts [(name (last ks))])
-                parts)]
-    (str "/" (string/join "/" parts))))
 
 (defn method [m]
   (if (nil? (:id m))
@@ -36,9 +25,9 @@
      (csrf)
      content]))
 
-(defn form-for [ks maps & content]
-  (let [action (apply (partial uri ks) maps)
-        method (method (last maps))]
+(defn form-for [routes route-name attrs & content]
+  (let [action (trail/url-for routes route-name attrs)
+        method (method attrs)]
     (form {:method method
            :action action}
       content)))
@@ -50,9 +39,9 @@
   ([attrs k]
    (field attrs k "")))
 
-(defn link-to
-  ([s ks & maps]
-   (let [url (apply (partial uri ks) maps)]
-     [:a {:href url} s]))
-  ([s k]
-   (link-to s k {})))
+(defn link-to [routes route-name attrs & content]
+  (let [href (or (:href attrs)
+                 (trail/url-for routes route-name attrs))]
+    [:a {:href (:href attrs)}
+     content]))
+

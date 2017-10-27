@@ -10,11 +10,13 @@
    [:td
     (coast/link-to "Show" :{{table}} {{singular}})]])
 
-(defn index [{{table}}]
-  [:table
-   (map {{singular}} {{table}})]
-  [:div
-   (coast/link-to "New {{singular}}" :{{table}}/new)])
+(defn index [request]
+  (let [{:keys [{{table}}]} request]
+    [:table
+     (map {{singular}} {{table}})]
+    [:div
+     (coast/link-to routes :{{table}}/new {}
+       "New {{singular}}")]))
 
 (defn show [{{singular}}]
  {% for col in columns %}

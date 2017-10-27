@@ -1,4 +1,4 @@
-(defproject coast "0.2.5"
+(defproject coast "0.3.0"
   :description "An easy full stack framework for clojure"
   :url "https://coastonclojure.com"
   :license {:name "MIT License"
@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [potemkin "0.4.4"]
                  [http-kit "2.2.0"]
-                 [trail "1.11.0"]
+                 [trail "1.13.0"]
                  [bunyan "0.1.1"]
                  [environ "1.1.0"]
                  [hiccup "1.0.5"]
@@ -17,7 +17,7 @@
                  [org.clojure/java.jdbc "0.7.1"]
                  [org.clojure/tools.namespace "0.2.11"]
                  [ragtime "0.7.2"]
-                 [oksql "1.1.2"]
+                 [oksql "1.2.0"]
                  [selmer "1.11.1"]
                  [inflections "0.13.0"]
                  [prone "1.1.4"]

@@ -8,7 +8,7 @@
   (db/query :{{table}}/find-by-id {:id id}))
 
 (defn insert [m]
-  (db/insert :{{table}}/insert m))
+  (db/insert :{{table}} m))
 
 (defn update- [id m]
   (db/update :{{table}} m :{{table}}/where {:id id}))

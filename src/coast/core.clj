@@ -28,9 +28,9 @@
    delete
    resource
    route-not-found
-   wrap-routes
    wrap-routes-with
-   match-routes]
+   match-routes
+   url-for]
   [bunyan.core
    wrap-with-logger]
   [environ.core
@@ -71,8 +71,7 @@
    form
    form-for
    field
-   link-to
-   uri]
+   link-to]
   [ring.middleware.session.cookie
    cookie-store]
   [ring.middleware.flash
