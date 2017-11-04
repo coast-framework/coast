@@ -2,7 +2,8 @@
   (:require [environ.core :as environ]
             [clojure.java.jdbc :as sql]
             [clojure.string :as string]
-            [oksql.core :as oksql])
+            [oksql.core :as oksql]
+            [coast.utils :as utils])
   (:refer-clojure :exclude [drop update])
   (:import (java.io File)))
 
@@ -31,12 +32,22 @@
       (seq (.executeBatch s)))))
 
 (defn create [name]
-  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}]
-    (exec db (str "create database " name))))
+  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
+        [_ error] (-> (exec db (str "create database " name))
+                      (utils/try!))]
+    (if (nil? error)
+      (println "Database" name "created successfully")
+      (utils/printerr "Database could not be created"
+                error))))
 
 (defn drop [name]
-  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}]
-    (exec db (str "drop database " name))))
+  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
+        [_ error] (-> (exec db (str "drop database " name))
+                      (utils/try!))]
+    (if (nil? error)
+      (println "Database" name "dropped successfully")
+      (utils/printerr "Database could not be dropped"
+                      error))))
 
 (defn get-cols [table]
   (let [sql ["select column_name from information_schema.columns where table_name = ?" table]]

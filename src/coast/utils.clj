@@ -18,8 +18,9 @@
        [nil (.getMessage e#)])))
 
 (defn parse-int [s]
-  (when (string? s)
-    (Integer. (re-find  #"\d+" s))))
+  (if (string? s)
+    (Integer. (re-find  #"^\d+$" s))
+    s))
 
 (defn map-vals [f m]
   (->> m
@@ -41,6 +42,11 @@
     (coerce-int? s) (parse-int s)
     (coerce-uuid? s) (uuid s)
     :else s))
+
+(defn printerr [header body]
+  (println "--" header "--------------------")
+  (println "")
+  (println body))
 
 (def dev? (= "dev" (environ/env :coast-env)))
 (def test? (= "test" (environ/env :coast-env)))
