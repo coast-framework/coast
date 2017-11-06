@@ -8,7 +8,8 @@
             [environ.core :as environ]
             [bunyan.core :as bunyan]
             [prone.middleware :as prone]
-            [com.jakemccrary.middleware.reload :as reload]))
+            [com.jakemccrary.middleware.reload :as reload]
+            [trail.core :as trail]))
 
 (defn layout? [response layout]
   (and (not (nil? layout))
@@ -30,14 +31,18 @@
       (handler request))))
 
 (defn wrap-coast-defaults [handler config]
-  (let [{:keys [layout public]} config]
+  (let [{:keys [layout public session cookie-store]} config
+        secret (environ/env :secret)
+        max-age (get-in session [:cookie-attrs :max-age] 86400)
+        session-store (or cookie-store (cookie/cookie-store {:key secret}))]
     (-> handler
+        (trail/match-routes)
         (wrap-layout layout)
         (bunyan/wrap-with-logger)
         (resource/wrap-resource (or public "public"))
         (defaults/wrap-defaults (-> defaults/site-defaults
-                                    (assoc-in [:session :cookie-attrs :max-age] 86400)
-                                    (assoc-in [:session :store] (cookie/cookie-store {:key (environ/env :secret)}))))
+                                    (assoc-in [:session :cookie-attrs :max-age] max-age)
+                                    (assoc-in [:session :store] session-store)))
         (flash/wrap-flash))))
 
 (defn dev [handler]

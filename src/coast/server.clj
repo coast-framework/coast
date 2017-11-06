@@ -11,8 +11,7 @@
 (defn start
   ([app opts]
    (let [{:keys [port]} opts
-         port (-> (or port (environ/env :port) "1337") (utils/parse-int))
-         app (trail/match-routes app)]
+         port (-> (or port (environ/env :port) "1337") (utils/parse-int))]
      (println (str "Server is listening on port " port))
      (httpkit/run-server app {:port port})))
   ([app]
