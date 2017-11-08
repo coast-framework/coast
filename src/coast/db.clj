@@ -32,7 +32,8 @@
       (seq (.executeBatch s)))))
 
 (defn create [name]
-  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
+  (let [name (if utils/prod? (str name "_prod") (str name "_dev"))
+        db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
         [_ error] (-> (exec db (str "create database " name))
                       (utils/try!))]
     (if (nil? error)
@@ -41,7 +42,8 @@
                 error))))
 
 (defn drop [name]
-  (let [db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
+  (let [name (if utils/prod? (str name "_prod") (str name "_dev"))
+        db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
         [_ error] (-> (exec db (str "drop database " name))
                       (utils/try!))]
     (if (nil? error)
