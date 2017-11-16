@@ -1,5 +1,6 @@
 (ns coast.utils
-  (:require [environ.core :as environ])
+  (:require [environ.core :as environ]
+            [clojure.string :as string])
   (:import (java.util UUID Date)))
 
 (defn uuid
@@ -26,22 +27,6 @@
   (->> m
        (map (fn [[k v]] [k (f v)]))
        (into {})))
-
-(defn coerce-int? [s]
-  (and
-    (string? s)
-    (not (nil? (re-find #"^\d+$" s)))))
-
-(defn coerce-uuid? [s]
-  (and
-    (string? s)
-    (not (nil? (re-find #"(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" s)))))
-
-(defn coerce-string [s]
-  (cond
-    (coerce-int? s) (parse-int s)
-    (coerce-uuid? s) (uuid s)
-    :else s))
 
 (defn printerr [header body]
   (println "--" header "--------------------")
