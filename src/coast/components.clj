@@ -41,9 +41,3 @@
   ([attrs k]
    (field attrs k "")))
 
-(defn link-to [routes route-name attrs & content]
-  (let [href (or (:href attrs)
-                 (trail/url-for routes route-name attrs))]
-    [:a {:href (:href attrs)}
-     content]))
-
