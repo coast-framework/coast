@@ -25,8 +25,10 @@
      (csrf)
      content]))
 
-(defn form-for [routes route-name attrs & content]
-  (let [action (trail/url-for routes route-name attrs)
+(defn form-for [routes route-prefix attrs & content]
+  (let [route-name (if (nil? (:id attrs)) "create" "update")
+        route-name (keyword route-prefix route-name)
+        action (trail/url-for routes route-name attrs)
         method (method attrs)]
     (form {:method method
            :action action}
