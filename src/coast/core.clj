@@ -62,7 +62,13 @@
    now
    uuid
    parse-int
-   coerce-string]
+   coerce-params
+   current-user
+   printerr
+   dev?
+   test?
+   prod?
+   unique-index-error?]
   [ring.middleware.defaults
    wrap-defaults
    site-defaults]
@@ -70,8 +76,7 @@
    csrf
    form
    form-for
-   field
-   link-to]
+   field]
   [ring.middleware.session.cookie
    cookie-store]
   [ring.middleware.flash

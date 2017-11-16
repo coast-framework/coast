@@ -9,8 +9,7 @@
             [bunyan.core :as bunyan]
             [prone.middleware :as prone]
             [com.jakemccrary.middleware.reload :as reload]
-            [trail.core :as trail]
-            [clojure.edn :as edn]))
+            [trail.core :as trail]))
 
 (defn layout? [response layout]
   (and (not (nil? layout))
@@ -25,19 +24,10 @@
         (layout? response layout) (responses/ok (layout request response))
         :else (responses/ok response)))))
 
-(defn coerce-params [val]
-  (let [val (if (vector? val) (last val) val)]
-    (cond
-      (some? (re-find #"^\d+\.?\d*$" val)) (edn/read-string val)
-      (and (empty? val) (string? val)) (edn/read-string val)
-      (and (string? val) (= val "false")) false
-      (and (string? val) (= val "true")) true
-      :else val)))
-
 (defn wrap-coerce-params [handler]
   (fn [request]
     (let [{:keys [params]} request
-          request (assoc request :params (utils/map-vals coerce-params params))]
+          request (assoc request :params (utils/map-vals utils/coerce-params params))]
       (handler request))))
 
 (defn wrap-coast-defaults [handler config]

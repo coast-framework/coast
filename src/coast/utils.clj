@@ -1,6 +1,7 @@
 (ns coast.utils
   (:require [environ.core :as environ]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [clojure.edn :as edn])
   (:import (java.util UUID Date)))
 
 (defn uuid
@@ -27,6 +28,15 @@
   (->> m
        (map (fn [[k v]] [k (f v)]))
        (into {})))
+
+(defn coerce-params [val]
+  (let [val (if (vector? val) (last val) val)]
+    (cond
+      (some? (re-find #"^\d+\.?\d*$" val)) (edn/read-string val)
+      (and (empty? val) (string? val)) (edn/read-string val)
+      (and (string? val) (= val "false")) false
+      (and (string? val) (= val "true")) true
+      :else val)))
 
 (defn printerr [header body]
   (println "--" header "--------------------")
