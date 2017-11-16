@@ -36,3 +36,10 @@
 (def dev? (= "dev" (environ/env :coast-env)))
 (def test? (= "test" (environ/env :coast-env)))
 (def prod? (= "prod" (environ/env :coast-env)))
+
+(defn current-user [request]
+  (get-in request [:session :identity]))
+
+(defn unique-index-error? [error]
+  (when (not (nil? error))
+    (string/includes? error "duplicate key value violates unique constraint")))
