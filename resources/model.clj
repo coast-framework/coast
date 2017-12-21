@@ -1,5 +1,8 @@
 (ns {{project}}.models.{{table}}
-  (:require [coast.db :as db]))
+  (:require [coast.db :as db])
+  (:refer-clojure :exclude [update]))
+
+(def columns [{{columns}}])
 
 (defn all []
   (db/query :{{table}}/all))
@@ -8,10 +11,12 @@
   (db/query :{{table}}/find-by-id {:id id}))
 
 (defn insert [m]
-  (db/insert :{{table}} m))
+  (->> (select-keys m columns)
+       (db/insert :{{table}})))
 
-(defn update- [id m]
-  (db/update :{{table}} m :{{table}}/where {:id id}))
+(defn update [id m]
+  (as-> (select-keys m columns) %
+        (db/update :{{table}} % :{{table}}/where {:id id})))
 
 (defn delete [id]
   (db/delete :{{table}} :{{table}}/where {:id id}))

@@ -5,15 +5,28 @@
             [clojure.string :as string])
   (:import (java.io File)))
 
+(defn sql [project table]
+  (let [params {:project project
+                :table (string/replace table #"-" "_")}
+        dir "resources/sql/"
+        filename (str dir table ".sql")
+        _ (.mkdirs (File. dir))]
+    (spit filename (selmer/render-file "crud.sql" params))
+    (println (str table " sql generated"))))
+
 (defn model [project table]
   (let [params {:project project
                 :ns (string/replace project #"_" "-")
-                :table (string/replace table #"_" "-")}
+                :table (string/replace table #"_" "-")
+                :columns (->> (db/get-cols table)
+                              (map :column_name)
+                              (string/join " "))}
         dir (str "src/" project "/models")
         filename (str dir "/" table ".clj")
         _ (.mkdirs (File. dir))]
     (spit filename (selmer/render-file "model.clj" params))
-    (println (str table " model generated"))))
+    (println (str table " model generated"))
+    (sql project table)))
 
 (defn controller [project table]
   (let [params {:project project

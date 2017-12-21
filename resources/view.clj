@@ -2,46 +2,54 @@
   (:require [{{project}}.components :as c]
             [coast.core :as coast]))
 
-(defn row [{{singular}}]
+(defn {{singular}} [m]
+  (let [{:keys [{% for col in columns %}{{col}} {% endfor %}]} m])
   [:tr{% for col in columns %}
-   [:td (:{{col}} m)]{% endfor %}
+   [:td {{col}}{% endfor %}]
    [:td
-    (coast/link-to "Edit" :{{table}}/edit {{singular}})]
+    [:a {:href (coast/url-for ["/{{table}}/:id/edit" m])}
+     "Edit {{singular}}"]]
    [:td
-    (coast/link-to "Show" :{{table}} {{singular}})]])
+    [:a {:href (coast/url-for ["/{{table}}/:id" m])}
+     "Show {{singular}}"]]])
 
 (defn index [request]
   (let [{:keys [{{table}}]} request]
     [:table
      (map {{singular}} {{table}})]
     [:div
-     (coast/link-to routes :{{table}}/new {}
-       "New {{singular}}")]))
+     [:a {:href (coast/url-for ["/{{table}}/new"])}
+       "New {{singular}}"]]))
 
-(defn show [{{singular}}]
- {% for col in columns %}
- [:div (:{{col}} {{singular}}{% endfor %})]
- [:div
-  (coast/link-to "Back" :{{table}})])
+(defn show []
+ (let [{:keys [{{singular}}]} request]){% for col in columns %}
+   [:div (:{{col}} {{singular}}{% endfor %})]
+   [:div
+    [:a {:href (coast/url-for ["/{{table}}"])}
+     "Back"]])
 
-(defn new- [{:keys [{{singular}} error]}]
-  [:div
-    error
-    (coast/form-for [:{{table}}] [{{singular}}]{% for col in form_columns %}
-      [:div
-        (coast/field {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}){% endfor %}]
-      [:div
-        [:input {:type "submit" :value "Save"}]]
-      [:div
-        (coast/link-to "Back" [:{{table}}])])])
+(defn fresh [request]
+  (let [{:keys [{{singular}} error]} request]
+    [:div
+      error
+      (c/form {:method :post :action (coast/url-for [:post "/{{table}}"])}{% for col in form_columns %}
+        [:div
+         [:input {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}{% endfor %}]]
+        [:div
+          [:input {:type "submit" :value "Save"}]]
+        [:div
+         [:a {:href (coast/url-for ["/{{table}}"])}
+          "Back"]])]))
 
-(defn edit [{:keys [{{singular}} error]}]
-  [:div
-    error
-    (coast/form-for [:{{table}}] [{{singular}}]{% for col in form_columns %}
-      [:div
-       (coast/field {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}){% endfor %}]
-      [:div
-       [:input {:type "submit" :value "Save"}]]
-      [:div
-       (coast/link-to "Back" [:{{table}}])])])
+(defn edit [request]
+  (let [{:keys [{{singular}} error]} request]
+    [:div
+      error
+      (c/form {:method :post :action (coast/url-for [:put "/{{table}}" {{singular}}{% for col in form_columns %}])}
+        [:div
+         [:input {:type "text" :name "{{col}}" :value (:{{col}} {{singular}})}{% endfor %}]]
+        [:div
+         [:input {:type "submit" :value "Save"}]]
+        [:div
+         [:a {:href (coast/url-for ["/{{table}}"])}
+          "Back"]])]))
