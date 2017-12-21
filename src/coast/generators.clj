@@ -71,14 +71,15 @@
 (defn view [project table]
   (let [cols (->> (db/get-cols table)
                   (map :column_name))
+        form-cols (filter form-col? cols)
         params {:project project
                 :ns (string/replace project #"_" "-")
                 :table (string/replace table #"_" "-")
                 :singular (inflections/singular table)
                 :columns cols
-                :form_columns (filter form-col? cols)
+                :form_columns form-cols
                 :column_string (string/join " " cols)
-                :form_column_string (string/join " " form_columns)}
+                :form_column_string (string/join " " form-cols)}
         dir (str "src/" project "/views")
         filename (str dir "/" table ".clj")
         _ (.mkdirs (File. dir))]
