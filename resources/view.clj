@@ -3,7 +3,7 @@
             [coast.core :as coast]))
 
 (defn {{singular}} [m]
-  (let [{:keys [{{column_string}}] m}]
+  (let [{:keys [{{column_string}}]} m]
     [:tr{% for col in columns %}
      [:td {{col}}{% endfor %}]
      [:td
