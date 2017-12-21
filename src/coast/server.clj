@@ -3,8 +3,7 @@
             [org.httpkit.server :as httpkit]
             [environ.core :as environ]
             [coast.utils :as utils]
-            [coast.middleware :as middleware]
-            [trail.core :as trail]))
+            [coast.middleware :as middleware]))
 
 (defonce server-atom (atom nil))
 
