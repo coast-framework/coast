@@ -2,7 +2,8 @@
   (:require [selmer.parser :as selmer]
             [inflections.core :as inflections]
             [coast.db :as db]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [clojure.java.io :as io])
   (:import (java.io File)))
 
 (defn form-col? [s]
@@ -10,14 +11,29 @@
        (not= s "created_at")
        (not (clojure.string/ends-with? s "_id"))))
 
+(defn path [& parts]
+  (string/join "/" parts))
+
+(defn overwrite? [filename]
+  (if (.exists (io/file filename))
+    (do
+      (println filename "already exists. Overwrite? y/n")
+      (let [input (-> (read-line)
+                      (.toLowerCase))]
+        (= input "y")))
+    true))
+
 (defn sql [project table]
   (let [params {:project project
                 :table (string/replace table #"-" "_")}
-        dir "resources/sql/"
-        filename (str dir table ".sql")
+        dir (path "resources" "sql")
+        filename (path dir (str table ".sql"))
         _ (.mkdirs (File. dir))]
-    (spit filename (selmer/render-file "crud.sql" params))
-    (println (str table " sql generated"))))
+    (if (overwrite? filename)
+      (do
+        (spit filename (selmer/render-file "crud.sql" params))
+        (println table "sql generated"))
+      (println table "sql skipped"))))
 
 (defn model [project table]
   (let [params {:project project
@@ -28,23 +44,29 @@
                               (filter form-col?)
                               (map #(str ":" %))
                               (string/join " "))}
-        dir (str "src/" project "/models")
-        filename (str dir "/" table ".clj")
+        dir (path "src" project "models")
+        filename (path dir  (str table ".clj"))
         _ (.mkdirs (File. dir))]
-    (spit filename (selmer/render-file "model.clj" params))
-    (println (str table " model generated"))
-    (sql project table)))
+    (sql project table)
+    (if (overwrite? filename)
+      (do
+        (spit filename (selmer/render-file "model.clj" params))
+        (println table "model generated"))
+      (println table "model skipped"))))
 
 (defn controller [project table]
   (let [params {:project project
                 :ns (string/replace project #"_" "-")
                 :table (string/replace table #"_" "-")
                 :singular (inflections/singular table)}
-        dir (str "src/" project "/controllers")
-        filename (str dir "/" table "_controller.clj")
+        dir (path "src" project "controllers")
+        filename (path dir (str table "_controller.clj"))
         _ (.mkdirs (File. dir))]
-    (spit filename (selmer/render-file "controller.clj" params))
-    (println (str table " controller generated"))))
+    (if (overwrite? filename)
+      (do
+        (spit filename (selmer/render-file "controller.clj" params))
+        (println table "controller generated"))
+      (println table "controller skipped"))))
 
 (defn view [project table]
   (let [cols (->> (db/get-cols table)
@@ -58,8 +80,11 @@
         dir (str "src/" project "/views")
         filename (str dir "/" table ".clj")
         _ (.mkdirs (File. dir))]
-    (spit filename (selmer/render-file "view.clj" params))
-    (println (str table " view generated"))))
+    (if (overwrite? filename)
+      (do
+        (spit filename (selmer/render-file "view.clj" params))
+        (println table "view generated"))
+      (println table "view skipped"))))
 
 (defn mvc [project table]
   (do
