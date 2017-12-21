@@ -5,6 +5,11 @@
             [clojure.string :as string])
   (:import (java.io File)))
 
+(defn form-col? [s]
+  (and (not= s "id")
+       (not= s "created_at")
+       (not (clojure.string/ends-with? s "_id"))))
+
 (defn sql [project table]
   (let [params {:project project
                 :table (string/replace table #"-" "_")}
@@ -20,6 +25,8 @@
                 :table (string/replace table #"_" "-")
                 :columns (->> (db/get-cols table)
                               (map :column_name)
+                              (filter form-col?)
+                              (map #(str ":" %))
                               (string/join " "))}
         dir (str "src/" project "/models")
         filename (str dir "/" table ".clj")
@@ -38,11 +45,6 @@
         _ (.mkdirs (File. dir))]
     (spit filename (selmer/render-file "controller.clj" params))
     (println (str table " controller generated"))))
-
-(defn form-col? [s]
-  (and (not= s "id")
-       (not= s "created_at")
-       (not (clojure.string/ends-with? s "_id"))))
 
 (defn view [project table]
   (let [cols (->> (db/get-cols table)
