@@ -3,7 +3,6 @@
             [clojure.string :as string]
             [clojure.edn :as edn])
   (:import (java.time LocalDateTime)
-           (java.time.format DateTimeFormatter)
            (java.util UUID)))
 
 (defn uuid
@@ -14,26 +13,6 @@
 
 (defn now []
   (LocalDateTime/now))
-
-(defn add-days [days d]
-  (.plusDays d days))
-
-(defn date [d]
-  (.format (DateTimeFormatter/ofPattern "yyyy-MM-dd") d))
-
-(defn days-in-month [d]
-  (-> d
-      (.toLocalDate)
-      (.lengthOfMonth)))
-
-(defn month [d]
-  (-> d
-      (.getMonth)
-      (.toString)))
-
-(defn year [d]
-  (-> d
-      (.getYear)))
 
 (defmacro try! [fn]
   `(try
