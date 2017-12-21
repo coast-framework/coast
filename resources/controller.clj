@@ -23,7 +23,9 @@
       (fresh (assoc request :error error)))))
 
 (defn edit [request]
-  (views.{{table}}/edit request))
+  (let [id (get-in request [:params :id])
+        {{singular}} ({{table}}/find-by-id id)]
+    (views.{{table}}/edit (assoc request :{{singular}} {{singular}}))))
 
 (defn change [request]
   (let [params (get request :params)

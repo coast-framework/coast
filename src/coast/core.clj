@@ -30,7 +30,8 @@
    route-not-found
    wrap-routes-with
    match-routes
-   url-for]
+   url-for
+   action-for]
   [bunyan.core
    wrap-with-logger]
   [environ.core
@@ -73,7 +74,9 @@
    wrap-defaults
    site-defaults]
   [coast.components
-   csrf]
+   csrf
+   form-for
+   link-to]
   [ring.middleware.session.cookie
    cookie-store]
   [ring.middleware.flash

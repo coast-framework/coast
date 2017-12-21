@@ -18,7 +18,7 @@
     [:table
      (map {{singular}} {{table}})]
     [:div
-     [:a {:href (coast/url-for ["/{{table}}/new"])}
+     [:a {:href (coast/url-for ["/{{table}}/fresh"])}
        "New {{singular}}"]]))
 
 (defn show [request]
@@ -34,25 +34,27 @@
         {:keys [{{form_column_string}}]} {{singular}}]
     [:div
       error
-      (c/form {:method :post :action (coast/url-for [:post "/{{table}}"])}{% for col in form_columns %}
+      (coast/form-for [:post "/{{table}}"]){% for col in form_columns %}
         [:div
+         [:label "{{col}}"]
          [:input {:type "text" :name "{{col}}" :value {{col}}{% endfor %}}]]
         [:div
           [:input {:type "submit" :value "Save"}]]
         [:div
          [:a {:href (coast/url-for ["/{{table}}"])}
-          "Back"]])]))
+          "Back"]]]))
 
 (defn edit [request]
   (let [{:keys [{{singular}} error]} request
         {:keys [{{form_column_string}}]} {{singular}}]
     [:div
       error
-      (c/form {:method :post :action (coast/url-for [:put "/{{table}}" {{singular}}{% for col in form_columns %}])}
+      (coast/form-for [:put "/{{table}}/:id" {{singular}}]){% for col in form_columns %}
         [:div
+         [:label "{{col}}"]
          [:input {:type "text" :name "{{col}}" :value {{col}}{% endfor %}}]]
         [:div
          [:input {:type "submit" :value "Save"}]]
         [:div
          [:a {:href (coast/url-for ["/{{table}}"])}
-          "Back"]])]))
+          "Back"]]]))
