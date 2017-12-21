@@ -76,7 +76,9 @@
                 :table (string/replace table #"_" "-")
                 :singular (inflections/singular table)
                 :columns cols
-                :form_columns (filter form-col? cols)}
+                :form_columns (filter form-col? cols)
+                :column_string (string/join " " cols)
+                :form_column_string (string/join " " form_columns)}
         dir (str "src/" project "/views")
         filename (str dir "/" table ".clj")
         _ (.mkdirs (File. dir))]
