@@ -15,17 +15,15 @@
       (= :patch method)
       (= :delete method)))
 
-(defn form-for
-  ([v params]
-   (let [[method] v
-         action (trail/action-for v)
-         method-str (name (or method ""))]
-     [:form (merge {:method method-str :action action} params)
+(defn form-for [v & content]
+  (let [[method] v
+        action (trail/action-for v)
+        method-str (name (or method ""))]
+    [:form {:method method-str :action action}
       (csrf)
       (when (hidden-method? method)
-        [:input {:type "hidden" :name "_method" :value method-str}])]))
-  ([v]
-   (form-for v {})))
+        [:input {:type "hidden" :name "_method" :value method-str}])
+      content]))
 
 (defn link-to
   ([s v params]

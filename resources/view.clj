@@ -7,54 +7,50 @@
     [:tr{% for col in columns %}
      [:td {{col}}{% endfor %}]
      [:td
-      [:a {:href (coast/url-for ["/{{table}}/:id/edit" m])}
-       "Edit {{singular}}"]]
+      (coast/link-to "Edit {{singular}}" ["/{{table}}/:id/edit" m])]
      [:td
-      [:a {:href (coast/url-for ["/{{table}}/:id" m])}
-       "Show {{singular}}"]]]))
+      (coast/link-to "Show {{singular}}" ["/{{table}}/:id" m])]]))
 
 (defn index [request]
   (let [{:keys [{{table}}]} request]
     [:table
      (map {{singular}} {{table}})]
     [:div
-     [:a {:href (coast/url-for ["/{{table}}/fresh"])}
-       "New {{singular}}"]]))
+     (coast/link-to "New {{singular}}" ["/{{table}}/fresh"])]
+    [:div
+     (coast/link-to "Back" ["/{{table}}"])]))
 
 (defn show [request]
  (let [{:keys [{{singular}}]} request
        {:keys [{{column_string}}]} {{singular}}]{% for col in columns %}
    [:div {{col}}{% endfor %}]
    [:div
-    [:a {:href (coast/url-for ["/{{table}}"])}
-     "Back"]]))
+    (coast/link-to "Back" ["/{{table}}"])]))
 
 (defn fresh [request]
   (let [{:keys [{{singular}} error]} request
         {:keys [{{form_column_string}}]} {{singular}}]
     [:div
       error
-      (coast/form-for [:post "/{{table}}"]){% for col in form_columns %}
+      (coast/form-for [:post "/{{table}}"]{% for col in form_columns %}
         [:div
          [:label "{{col}}"]
          [:input {:type "text" :name "{{col}}" :value {{col}}{% endfor %}}]]
         [:div
-          [:input {:type "submit" :value "Save"}]]
-        [:div
-         [:a {:href (coast/url-for ["/{{table}}"])}
-          "Back"]]]))
+          [:input {:type "submit" :value "Save"}]])
+      [:div
+       (coast/link-to "Back" ["/{{table}}"])]]))
 
 (defn edit [request]
   (let [{:keys [{{singular}} error]} request
         {:keys [{{form_column_string}}]} {{singular}}]
     [:div
       error
-      (coast/form-for [:put "/{{table}}/:id" {{singular}}]){% for col in form_columns %}
+      (coast/form-for [:put "/{{table}}/:id" {{singular}}]{% for col in form_columns %}
         [:div
          [:label "{{col}}"]
          [:input {:type "text" :name "{{col}}" :value {{col}}{% endfor %}}]]
         [:div
-         [:input {:type "submit" :value "Save"}]]
-        [:div
-         [:a {:href (coast/url-for ["/{{table}}"])}
-          "Back"]]]))
+         [:input {:type "submit" :value "Save"}]])
+      [:div
+       (coast/link-to "Back" ["/{{table}}"])]]))
