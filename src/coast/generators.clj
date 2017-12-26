@@ -9,7 +9,7 @@
 (defn form-col? [s]
   (and (not= s "id")
        (not= s "created_at")
-       (not (clojure.string/ends-with? s "_id"))))
+       (not= s "created-at")))
 
 (defn path [& parts]
   (string/join "/" parts))
@@ -70,7 +70,8 @@
 
 (defn view [project table]
   (let [cols (->> (db/get-cols table)
-                  (map :column_name))
+                  (map :column_name)
+                  (map #(string/replace % "_" "-")))
         form-cols (filter form-col? cols)
         params {:project project
                 :ns (string/replace project #"_" "-")
