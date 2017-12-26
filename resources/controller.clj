@@ -38,4 +38,4 @@
 (defn delete [request]
   (let [id (get-in request [:params :id])
         [{{singular}} error] (coast/try! ({{table}}/delete id))]
-    (coast/redirect "/" error)))
+    (coast/redirect "/{{table}}" error)))
