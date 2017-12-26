@@ -5,11 +5,13 @@
 (defn {{singular}} [m]
   (let [{:keys [{{column_string}}]} m]
     [:tr{% for col in columns %}
-     [:td {{col}}{% endfor %}]
+     [:td {{col}}]{% endfor %}
      [:td
-      (coast/link-to "Edit {{singular}}" ["/{{table}}/:id/edit" m])]
+      (coast/link-to "Edit" ["/{{table}}/:id/edit" m])]
      [:td
-      (coast/link-to "Show {{singular}}" ["/{{table}}/:id" m])]]))
+      (coast/link-to "Delete" [:delete "/{{table}}/:id" m])]
+     [:td
+      (coast/link-to "Show" ["/{{table}}/:id" m])]]))
 
 (defn index [request]
   (let [{:keys [{{table}}]} request]
@@ -17,7 +19,10 @@
       [:table
        [:thead
         [:tr{% for col in columns %}
-         [:th "{{col}}"]{% endfor %}]]
+         [:th "{{col}}"]{% endfor %}
+         [:th]
+         [:th]
+         [:th]]]
        [:tbody
          (for [m {{table}}]
            ({{singular}} m))]]
@@ -30,7 +35,9 @@
    [:div{% for col in columns %}
      [:div {{col}}]{% endfor %}
      [:div
-      (coast/link-to "Back" ["/{{table}}"])]]))
+       (coast/link-to "Delete" [:delete "/{{table}}/:id" {{singular}}])]
+     [:div
+       (coast/link-to "Back" ["/{{table}}"])]]))
 
 (defn fresh [request]
   (let [{:keys [{{singular}} error]} request
@@ -40,7 +47,7 @@
       (coast/form-for [:post "/{{table}}"]{% for col in form_columns %}
         [:div
          [:label "{{col}}"]
-         [:input {:type "text" :name "{{col}}" :value {{col}}{% endfor %}}]]
+         [:input {:type "text" :name "{{col}}" :value {{col}}}]]{% endfor %}
         [:div
           [:input {:type "submit" :value "Save"}]])
       [:div
@@ -54,7 +61,7 @@
       (coast/form-for [:put "/{{table}}/:id" {{singular}}]{% for col in form_columns %}
         [:div
          [:label "{{col}}"]
-         [:input {:type "text" :name "{{col}}" :value {{col}}{% endfor %}}]]
+         [:input {:type "text" :name "{{col}}" :value {{col}}}]]{% endfor %}
         [:div
          [:input {:type "submit" :value "Save"}]])
       [:div
