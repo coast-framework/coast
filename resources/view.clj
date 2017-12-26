@@ -13,19 +13,24 @@
 
 (defn index [request]
   (let [{:keys [{{table}}]} request]
-    [:table
-     (map {{singular}} {{table}})]
     [:div
-     (coast/link-to "New {{singular}}" ["/{{table}}/fresh"])]
-    [:div
-     (coast/link-to "Back" ["/{{table}}"])]))
+      [:table
+       [:thead
+        [:tr{% for col in columns %}
+         [:th "{{col}}"]{% endfor %}]]
+       [:tbody
+         (for [m {{table}}]
+           ({{singular}} m))]]
+      [:div
+       (coast/link-to "New {{singular}}" ["/{{table}}/fresh"])]]))
 
 (defn show [request]
  (let [{:keys [{{singular}}]} request
-       {:keys [{{column_string}}]} {{singular}}]{% for col in columns %}
-   [:div {{col}}{% endfor %}]
-   [:div
-    (coast/link-to "Back" ["/{{table}}"])]))
+       {:keys [{{column_string}}]} {{singular}}]
+   [:div{% for col in columns %}
+     [:div {{col}}]{% endfor %}
+     [:div
+      (coast/link-to "Back" ["/{{table}}"])]]))
 
 (defn fresh [request]
   (let [{:keys [{{singular}} error]} request
