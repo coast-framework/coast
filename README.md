@@ -22,6 +22,21 @@ lein db/migrate
 lein mvc/gen posts
 ```
 
+Go ahead and add the routes too, this will probably be generated in the future as well
+```clojure
+(ns blog.routes
+  (:require [coast.core :as coast]
+            [kanab.controllers.home-controller :as home]
+            [kanab.controllers.errors-controller :as errors]
+            [kanab.controllers.posts-controller :as posts]))
+
+(def routes
+  (-> (coast/get "/" home/index)
+      (coast/resource :posts)
+      (coast/route-not-found errors/not-found)
+      (coast/wrap-routes-with coast/wrap-coerce-params)))
+```
+
 Let's see our masterpiece so far
 
 ```clojure
