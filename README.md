@@ -26,9 +26,9 @@ Go ahead and add the routes too, this will probably be generated in the future a
 ```clojure
 (ns blog.routes
   (:require [coast.core :as coast]
-            [kanab.controllers.home-controller :as home]
-            [kanab.controllers.errors-controller :as errors]
-            [kanab.controllers.posts-controller :as posts]))
+            [blog.controllers.home-controller :as home]
+            [blog.controllers.errors-controller :as errors]
+            [blog.controllers.posts-controller :as posts]))
 
 (def routes
   (-> (coast/get "/" home/index)
