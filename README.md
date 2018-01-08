@@ -2,7 +2,7 @@
 
 The easy full stack clojure web framework
 
-Current version: `[coast "0.5.4"]`
+Current version: `[coast "0.6.0"]`
 
 ## Table of Contents
 
@@ -34,7 +34,7 @@ lein db/migrate
 lein mvc/gen posts
 ```
 
-Go ahead and add the routes too, this will probably be generated in the future as well
+Go ahead and add the routes too
 ```clojure
 (ns blog.routes
   (:require [coast.core :as coast]
@@ -45,8 +45,7 @@ Go ahead and add the routes too, this will probably be generated in the future a
 (def routes
   (-> (coast/get "/" home/index)
       (coast/resource :posts)
-      (coast/route-not-found errors/not-found)
-      (coast/wrap-routes-with coast/wrap-coerce-params)))
+      (coast/route-not-found errors/not-found)))
 ```
 
 Let's see our masterpiece so far
@@ -261,5 +260,3 @@ of open source projects that coast uses:
 - [selmer](https://github.com/yogthos/Selmer)
 - [inflections](https://github.com/r0man/inflections-clj)
 - [prone](https://github.com/magnars/prone)
-- [com.jakemccrary/reload](https://github.com/jakemcc/reload)
-- [cheshire](https://github.com/dakrone/cheshire)
