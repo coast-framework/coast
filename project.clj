@@ -20,6 +20,4 @@
                  [oksql "1.2.0"]
                  [selmer "1.11.1"]
                  [inflections "0.13.0"]
-                 [prone "1.1.4"]
-                 [com.jakemccrary/reload "0.1.0"]
-                 [cheshire "5.8.0"]])
+                 [prone "1.1.4"]])

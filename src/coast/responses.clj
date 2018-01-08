@@ -1,6 +1,6 @@
 (ns coast.responses
   (:require [hiccup.core :as h]
-            [cheshire.core :as cheshire]))
+            [clojure.data.json :as json]))
 
 (defn content-type [k]
   (condp = k
@@ -8,13 +8,10 @@
    :xml {"Content-Type" "text/xml"}
    {"Content-Type" "text/html"}))
 
-(defn json? [response]
-  (= "application/json" (get-in response [:headers "Content-Type"])))
-
 (defn body [content-type bd]
   (condp = (get content-type "Content-Type")
     "text/html" (h/html bd)
-    "application/json" (cheshire/generate-string bd)))
+    "application/json" (json/write-str bd)))
 
 (defn response
   ([status val ct headers]

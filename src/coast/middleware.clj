@@ -5,10 +5,10 @@
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.resource :as resource]
             [ring.middleware.flash :as flash]
+            [ring.middleware.reload :as reload]
             [environ.core :as environ]
             [bunyan.core :as bunyan]
             [prone.middleware :as prone]
-            [com.jakemccrary.middleware.reload :as reload]
             [trail.core :as trail]))
 
 (defn layout? [response layout]
@@ -36,7 +36,7 @@
         max-age (get-in session [:cookie-attrs :max-age] 86400)
         session-store (or cookie-store (cookie/cookie-store {:key secret}))]
     (-> handler
-        (trail/match-routes)
+        (trail/wrap-match-routes)
         (wrap-layout layout)
         (bunyan/wrap-with-logger)
         (resource/wrap-resource (or public "public"))
