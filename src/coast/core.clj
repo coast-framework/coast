@@ -31,7 +31,10 @@
    wrap-routes-with
    match-routes
    url-for
-   action-for]
+   action-for
+   coerce-params
+   wrap-coerce-params
+   wrap-match-routes]
   [bunyan.core
    wrap-with-logger]
   [environ.core
@@ -63,13 +66,13 @@
    now
    uuid
    parse-int
-   coerce-params
    current-user
    printerr
    dev?
    test?
    prod?
-   unique-index-error?]
+   unique-index-error?
+   map-vals]
   [ring.middleware.defaults
    wrap-defaults
    site-defaults]
@@ -85,7 +88,6 @@
    wrap-exceptions]
   [coast.middleware
    wrap-coast-defaults
-   wrap-coerce-params
    wrap-layout]
   [coast.server
    start-server

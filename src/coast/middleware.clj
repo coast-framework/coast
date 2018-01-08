@@ -1,6 +1,5 @@
 (ns coast.middleware
   (:require [coast.responses :as responses]
-            [coast.utils :as utils]
             [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.resource :as resource]
@@ -23,12 +22,6 @@
         (map? response) response
         (layout? response layout) (responses/ok (layout request response))
         :else (responses/ok response)))))
-
-(defn wrap-coerce-params [handler]
-  (fn [request]
-    (let [{:keys [params]} request
-          request (assoc request :params (utils/map-vals utils/coerce-params params))]
-      (handler request))))
 
 (defn wrap-coast-defaults [handler config]
   (let [{:keys [layout public session cookie-store]} config
