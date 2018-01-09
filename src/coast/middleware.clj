@@ -16,7 +16,7 @@
     (try
       (handler request)
       (catch Exception e
-        (responses/internal-server-error error-page)))))
+        (responses/internal-server-error (error-page))))))
 
 (defn layout? [response layout]
   (and (not (nil? layout))
