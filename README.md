@@ -257,6 +257,5 @@ of open source projects that coast uses:
 - [org.clojure/java.jdbc](https://github.com/clojure/java.jdbc)
 - [org.clojure/tools.namespace](https://github.com/clojure/tools.namespace)
 - [oksql](https://github.com/swlkr/oksql) (another swlkr special)
-- [selmer](https://github.com/yogthos/Selmer)
 - [inflections](https://github.com/r0man/inflections-clj)
 - [prone](https://github.com/magnars/prone)
