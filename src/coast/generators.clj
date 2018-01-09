@@ -1,10 +1,24 @@
 (ns coast.generators
-  (:require [selmer.parser :as selmer]
-            [inflections.core :as inflections]
+  (:require [inflections.core :as inflections]
             [coast.db :as db]
             [clojure.string :as string]
             [clojure.java.io :as io])
   (:import (java.io File)))
+
+(def mustache-re #"\{\{([\w-_]+)\}\}")
+
+(defn replacement [match m]
+  (let [default (first match)
+        k (-> match last keyword)]
+    (str (get m k default))))
+
+(defn render [s m]
+  (string/replace s mustache-re #(replacement % m)))
+
+(defn render-resource [r m]
+  (-> (io/resource r)
+      (slurp)
+      (render m)))
 
 (defn form-col? [s]
   (and (not= s "id")
@@ -31,7 +45,7 @@
         _ (.mkdirs (File. dir))]
     (if (overwrite? filename)
       (do
-        (spit filename (selmer/render-file "crud.sql" params))
+        (spit filename (render-resource "crud.sql" params))
         (println table "sql generated"))
       (println table "sql skipped"))))
 
@@ -50,7 +64,7 @@
     (sql project table)
     (if (overwrite? filename)
       (do
-        (spit filename (selmer/render-file "model.clj" params))
+        (spit filename (render-resource "model.clj" params))
         (println table "model generated"))
       (println table "model skipped"))))
 
@@ -64,7 +78,7 @@
         _ (.mkdirs (File. dir))]
     (if (overwrite? filename)
       (do
-        (spit filename (selmer/render-file "controller.clj" params))
+        (spit filename (render-resource "controller.clj" params))
         (println table "controller generated"))
       (println table "controller skipped"))))
 
@@ -86,7 +100,7 @@
         _ (.mkdirs (File. dir))]
     (if (overwrite? filename)
       (do
-        (spit filename (selmer/render-file "view.clj" params))
+        (spit filename (render-resource "view.clj" params))
         (println table "view generated"))
       (println table "view skipped"))))
 

@@ -18,6 +18,6 @@
                  [org.clojure/java.jdbc "0.7.1"]
                  [org.clojure/tools.namespace "0.2.11"]
                  [oksql "1.2.0"]
-                 [selmer "1.11.1"]
                  [inflections "0.13.0"]
-                 [prone "1.1.4"]])
+                 [prone "1.1.4"]
+                 [org.clojure/data.json "0.2.6"]])
