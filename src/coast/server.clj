@@ -3,7 +3,6 @@
             [org.httpkit.server :as httpkit]
             [environ.core :as environ]
             [coast.utils :as utils]
-            [coast.middleware :as middleware]
             [trail.core :as trail]))
 
 (defonce server-atom (atom nil))
@@ -18,7 +17,7 @@
   ([app]
    (start app {}))
   ([]
-   (reset! server-atom (start (middleware/dev (resolve (symbol "app")))))))
+   (reset! server-atom (start (resolve (symbol "app"))))))
 
 (defn stop []
   (when @server-atom
@@ -29,17 +28,9 @@
   (stop)
   (repl/refresh :after 'coast.server/start))
 
-(defn dev [app opts]
-  (def app app)
-  (restart))
-
-(defn prod [app opts]
-  (start app opts))
-
-(defn start-server
-  ([app opts]
-   (if utils/dev?
-     (dev app opts)
-     (prod app opts)))
-  ([app]
-   (start-server app {})))
+(defn start-server [app opts]
+  (if utils/dev?
+    (do
+      (def app app)
+      (restart))
+    (start app opts)))
