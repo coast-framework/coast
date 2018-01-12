@@ -245,9 +245,6 @@ of open source projects that coast uses:
 
 - [potemkin](https://github.com/ztellman/potemkin)
 - [http-kit](https://github.com/http-kit/http-kit)
-- [trail](https://github.com/swlkr/trail) (this one is a swlkr special)
-- [trek](https://github.com/swlkr/trek) (so is this one)
-- [bunyan](https://github.com/swlkr/bunyan) (and this one. although I guess real logging is coming... maybe)
 - [environ](https://github.com/weavejester/environ)
 - [hiccup](https://github.com/weavejester/hiccup)
 - [ring/ring-core](https://github.com/ring-clojure/ring)
@@ -256,6 +253,4 @@ of open source projects that coast uses:
 - [org.postgresql/postgresql](https://github.com/pgjdbc/pgjdbc)
 - [org.clojure/java.jdbc](https://github.com/clojure/java.jdbc)
 - [org.clojure/tools.namespace](https://github.com/clojure/tools.namespace)
-- [oksql](https://github.com/swlkr/oksql) (another swlkr special)
-- [inflections](https://github.com/r0man/inflections-clj)
 - [prone](https://github.com/magnars/prone)
