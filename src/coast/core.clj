@@ -7,7 +7,7 @@
             [hiccup.core]
             [ring.middleware.resource]
             [coast.responses]
-            [inflections.core]
+            [word.core]
             [coast.utils]
             [coast.db]
             [ring.middleware.defaults]
@@ -57,9 +57,8 @@
    internal-server-error]
   [coast.db
    query]
-  [inflections.core
+  [word.core
    plural
-   pluralize
    singular]
   [coast.utils
    try!

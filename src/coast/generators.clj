@@ -1,5 +1,5 @@
 (ns coast.generators
-  (:require [inflections.core :as inflections]
+  (:require [word.core :as word]
             [coast.db :as db]
             [clojure.string :as string]
             [clojure.java.io :as io])
@@ -72,7 +72,7 @@
   (let [params {:project project
                 :ns (string/replace project #"_" "-")
                 :table (string/replace table #"_" "-")
-                :singular (inflections/singular table)}
+                :singular (word/singular table)}
         dir (path "src" project "controllers")
         filename (path dir (str table "_controller.clj"))
         _ (.mkdirs (File. dir))]
@@ -90,7 +90,7 @@
         params {:project project
                 :ns (string/replace project #"_" "-")
                 :table (string/replace table #"_" "-")
-                :singular (inflections/singular table)
+                :singular (word/singular table)
                 :columns cols
                 :form_columns form-cols
                 :column_string (string/join " " cols)
