@@ -2,7 +2,7 @@
 
 The easy full stack clojure web framework
 
-Current version: `[coast "0.6.1"]`
+Current version: `[coast "0.6.2"]`
 
 ## Table of Contents
 
