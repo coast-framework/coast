@@ -20,4 +20,5 @@
                  [oksql "1.2.0"]
                  [swlkr/word "0.1.0"]
                  [prone "1.1.4"]
-                 [org.clojure/data.json "0.2.6"]])
+                 [org.clojure/data.json "0.2.6"]
+                 [jkkramer/verily "0.6.0"]])

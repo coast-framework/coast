@@ -6,8 +6,35 @@
             [coast.utils :as utils])
   (:refer-clojure :exclude [drop update]))
 
+(defn unique-index-error? [error]
+  (when (not (nil? error))
+    (string/includes? error "duplicate key value violates unique constraint")))
+
+(defn fmt-unique-index-error [s]
+  (let [column (->> (re-matches #"(?s)ERROR: duplicate key value violates unique constraint.*Detail: Key \((.*)\)=\((.*)\).*" s)
+                    (clojure.core/drop 1)
+                    (first))]
+    {(keyword column) (str (utils/humanize column) " is already taken")}))
+
+(defn throw-db-exception [e]
+  (let [s (.getMessage e)]
+    (cond
+      (unique-index-error? s) (throw
+                                (ex-info "Unique index error"
+                                         (fmt-unique-index-error s)))
+      :else (throw e))))
+
+(defmacro transact! [f]
+  `(try
+     ~f
+     (catch Exception e#
+       (throw-db-exception e#))))
+
 (defn connection []
   {:connection (sql/get-connection (environ/env :database-url))})
+
+(defn admin-connection []
+  {:connection (sql/get-connection (or (environ/env :admin-database-url) "postgres://localhost:5432/postgres"))})
 
 (defn query
   ([k m]
@@ -16,13 +43,16 @@
    (query k {})))
 
 (defn insert [k m]
-  (oksql/insert (connection) k m))
+  (-> (oksql/insert (connection) k m)
+      (transact!)))
 
 (defn update [k m where where-map]
-  (oksql/update (connection) k m where where-map))
+  (-> (oksql/update (connection) k m where where-map)
+      (transact!)))
 
 (defn delete [k where where-map]
-  (oksql/delete (connection) k where where-map))
+  (-> (oksql/delete (connection) k where where-map)
+      (transact!)))
 
 (defn exec [db sql]
   (sql/with-db-connection [conn db]
@@ -32,7 +62,7 @@
 
 (defn create [name]
   (let [name (if utils/prod? (str name "_prod") (str name "_dev"))
-        db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
+        db (admin-connection)
         [_ error] (-> (exec db (str "create database " name))
                       (utils/try!))]
     (if (nil? error)
@@ -42,7 +72,7 @@
 
 (defn drop [name]
   (let [name (if utils/prod? (str name "_prod") (str name "_dev"))
-        db {:connection (sql/get-connection "postgres://localhost:5432/postgres")}
+        db (admin-connection)
         [_ error] (-> (exec db (str "drop database " name))
                       (utils/try!))]
     (if (nil? error)

@@ -1,7 +1,7 @@
 (ns coast.utils
   (:require [environ.core :as environ]
             [clojure.string :as string]
-            [clojure.edn :as edn])
+            [jkkramer.verily :as v])
   (:import (java.time LocalDateTime)
            (java.util UUID)))
 
@@ -14,11 +14,16 @@
 (defn now []
   (LocalDateTime/now))
 
+(defn humanize [k]
+  (-> (name k)
+      (string/capitalize)
+      (string/replace "-" " ")))
+
 (defmacro try! [fn]
   `(try
-     [~fn nil]
-     (catch Exception e#
-       [nil (.getMessage e#)])))
+    [~fn nil]
+    (catch Exception e#
+      [nil (or (ex-data e#) (.getMessage e#))])))
 
 (defn parse-int [s]
   (if (string? s)
@@ -42,6 +47,19 @@
 (defn current-user [request]
   (get-in request [:session :identity]))
 
-(defn unique-index-error? [error]
-  (when (not (nil? error))
-    (string/includes? error "duplicate key value violates unique constraint")))
+(defn fmt-validation [result]
+  (let [{:keys [keys msg]} result]
+    (map #(hash-map % (str (humanize %) " " msg)) keys)))
+
+(defn fmt-validations [results]
+  (when (some? results)
+    (->> (map fmt-validation results)
+         (flatten)
+         (into {}))))
+
+(defn validate [m validations]
+  (let [result (-> (v/validate m validations)
+                   (fmt-validations))]
+    (if (empty? result)
+      m
+      (throw (ex-info "Validation has failed" result)))))

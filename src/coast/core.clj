@@ -56,7 +56,9 @@
    forbidden
    internal-server-error]
   [coast.db
-   query]
+   query
+   unique-index-error?
+   transact!]
   [word.core
    plural
    singular]
@@ -70,8 +72,8 @@
    dev?
    test?
    prod?
-   unique-index-error?
-   map-vals]
+   map-vals
+   validate]
   [ring.middleware.defaults
    wrap-defaults
    site-defaults]
