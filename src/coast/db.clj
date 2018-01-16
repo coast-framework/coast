@@ -2,6 +2,7 @@
   (:require [environ.core :as environ]
             [clojure.java.jdbc :as sql]
             [clojure.string :as string]
+            [clojure.edn :as edn]
             [oksql.core :as oksql]
             [coast.utils :as utils])
   (:refer-clojure :exclude [drop update]))
@@ -31,10 +32,10 @@
        (throw-db-exception e#))))
 
 (defn connection []
-  {:connection (sql/get-connection (environ/env :database-url))})
+  {:connection (sql/get-connection (edn/read-string (environ/env :db-spec-or-url)))})
 
 (defn admin-connection []
-  {:connection (sql/get-connection (or (environ/env :admin-database-url) "postgres://localhost:5432/postgres"))})
+  {:connection (sql/get-connection (edn/read-string (or (environ/env :admin-db-spec-or-url) "postgres://localhost:5432/postgres")))})
 
 (defn query
   ([k m]
