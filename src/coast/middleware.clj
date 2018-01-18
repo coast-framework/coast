@@ -44,10 +44,9 @@
 
 (defn coast-defaults [opts]
   (let [secret (environ/env :secret)
-        site-defaults (if utils/prod? defaults/secure-site-defaults defaults/site-defaults)
         default-opts {:session {:cookie-attrs {:max-age 86400}
                                 :store (cookie/cookie-store {:key secret})}}]
-    (deep-merge site-defaults default-opts opts)))
+    (deep-merge defaults/site-defaults default-opts opts)))
 
 (defn wrap-coast-defaults
   ([handler opts]
