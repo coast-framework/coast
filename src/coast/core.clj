@@ -89,7 +89,8 @@
    wrap-exceptions]
   [coast.middleware
    wrap-coast-defaults
-   wrap-layout]
+   wrap-layout
+   wrap-if]
   [coast.server
    start-server
    stop
