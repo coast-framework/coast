@@ -16,10 +16,10 @@
       (= :delete method)))
 
 (defn form-for [v & content]
-  (let [[method] v
+  (let [[method _ _ params] v
         action (trail/action-for v)
         method-str (if (= :get method) "get" "post")]
-    [:form {:method method-str :action action}
+    [:form (merge params {:method method-str :action action})
       (csrf)
       (when (hidden-method? method)
         [:input {:type "hidden" :name "_method" :value (name method)}])
