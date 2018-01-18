@@ -2,8 +2,6 @@
   (:require [coast.responses :as responses]
             [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
-            [ring.middleware.resource :as resource]
-            [ring.middleware.flash :as flash]
             [ring.middleware.reload :as reload]
             [environ.core :as environ]
             [bunyan.core :as bunyan]
@@ -36,21 +34,29 @@
     (apply wrapper handler args)
     handler))
 
+(defn deep-merge [& ms]
+  (apply merge-with
+         (fn [& vs]
+           (if (every? map? vs)
+             (apply deep-merge vs)
+             (last vs)))
+         ms))
+
+(defn coast-defaults [opts]
+  (let [secret (environ/env :secret)
+        site-defaults (if utils/prod? defaults/secure-site-defaults defaults/site-defaults)
+        default-opts {:session {:cookie-attrs {:max-age 86400}
+                                :store (cookie/cookie-store {:key secret})}}]
+    (deep-merge site-defaults default-opts opts)))
+
 (defn wrap-coast-defaults
   ([handler opts]
-   (let [{:keys [layout public session cookie-store error-page]} opts
-         secret (environ/env :secret)
-         max-age (get-in session [:cookie-attrs :max-age] 86400)
-         session-store (or cookie-store (cookie/cookie-store {:key secret}))]
+   (let [{:keys [layout error-page]} opts]
      (-> handler
          (trail/wrap-match-routes)
          (wrap-layout layout)
          (bunyan/wrap-with-logger)
-         (resource/wrap-resource (or public "public"))
-         (defaults/wrap-defaults (-> defaults/site-defaults
-                                     (assoc-in [:session :cookie-attrs :max-age] max-age)
-                                     (assoc-in [:session :store] session-store)))
-         (flash/wrap-flash)
+         (defaults/wrap-defaults (coast-defaults opts))
          (wrap-if utils/dev? reload/wrap-reload)
          (wrap-if utils/dev? prone/wrap-exceptions)
          (wrap-if utils/prod? wrap-errors error-page))))
