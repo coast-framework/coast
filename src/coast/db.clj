@@ -32,7 +32,7 @@
        (throw-db-exception e#))))
 
 (defn connection []
-  {:connection (sql/get-connection (environ/env :db-spec-or-url))})
+  {:connection (sql/get-connection (or (environ/env :db-spec-or-url) (environ/env :database-url)))})
 
 (defn admin-connection []
   {:connection (sql/get-connection (or (environ/env :admin-db-spec-or-url) "postgres://localhost:5432/postgres"))})
