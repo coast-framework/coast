@@ -32,10 +32,10 @@
        (throw-db-exception e#))))
 
 (defn connection []
-  {:connection (sql/get-connection (edn/read-string (environ/env :db-spec-or-url)))})
+  {:connection (sql/get-connection (environ/env :db-spec-or-url))})
 
 (defn admin-connection []
-  {:connection (sql/get-connection (edn/read-string (or (environ/env :admin-db-spec-or-url) "postgres://localhost:5432/postgres")))})
+  {:connection (sql/get-connection (or (environ/env :admin-db-spec-or-url) "postgres://localhost:5432/postgres"))})
 
 (defn query
   ([k m]
