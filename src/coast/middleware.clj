@@ -7,13 +7,15 @@
             [bunyan.core :as bunyan]
             [prone.middleware :as prone]
             [trail.core :as trail]
-            [coast.utils :as utils]))
+            [coast.utils :as utils]
+            [clojure.stacktrace :as st]))
 
 (defn wrap-errors [handler error-page]
   (fn [request]
     (try
       (handler request)
       (catch Exception e
+        (println (st/print-stack-trace e))
         (responses/internal-server-error (error-page))))))
 
 (defn layout? [response layout]
