@@ -31,12 +31,12 @@
   (stop)
   (repl/refresh :after 'coast.server/start))
 
+(defn reload-server [app]
+  (def app app)
+  (restart))
+
 (defn start-server
   ([app opts]
-   (if utils/dev?
-     (do
-       (def app app)
-       (restart))
-     (start app opts)))
+   (start app opts))
   ([app]
-   (start-server app {})))
+   (reload-server app)))
