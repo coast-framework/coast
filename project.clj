@@ -17,7 +17,7 @@
                  [org.postgresql/postgresql "42.1.4"]
                  [org.clojure/java.jdbc "0.7.1"]
                  [org.clojure/tools.namespace "0.2.11"]
-                 [oksql "1.2.0"]
+                 [oksql "1.2.1"]
                  [swlkr/word "0.1.0"]
                  [prone "1.1.4"]
                  [org.clojure/data.json "0.2.6"]
