@@ -6,11 +6,16 @@
 
 (defonce server-atom (atom nil))
 
+(defn parse-port [opts]
+  (-> (or (get opts :port)
+          (environ/env :port)
+          1337)
+      (utils/parse-int)))
+
 (defn start
   ([app opts]
-   (let [{:keys [port]} opts
-         port (-> (or port (environ/env :port) "1337") (utils/parse-int))]
-     (println (str "Server is listening on port " port))
+   (let [port (parse-port opts)]
+     (println "Server is listening on port" port)
      (httpkit/run-server app {:port port})))
   ([app]
    (start app {}))
