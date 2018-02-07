@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [potemkin "0.4.4"]
                  [http-kit "2.2.0"]
-                 [trail "2.2.1"]
+                 [trail "2.3.1"]
                  [trek "0.1.4"]
                  [bunyan "0.1.1"]
                  [environ "1.1.0"]
