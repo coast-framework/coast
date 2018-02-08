@@ -20,9 +20,7 @@
 (defn throw-db-exception [e]
   (let [s (.getMessage e)]
     (cond
-      (unique-index-error? s) (throw
-                                (ex-info "Unique index error"
-                                         (fmt-unique-index-error s)))
+      (unique-index-error? s) (utils/throw+ (fmt-unique-index-error s))
       :else (throw e))))
 
 (defmacro transact! [f]

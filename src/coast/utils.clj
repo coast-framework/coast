@@ -3,7 +3,8 @@
             [clojure.string :as string]
             [jkkramer.verily :as v])
   (:import (java.time LocalDateTime)
-           (java.util UUID)))
+           (java.util UUID)
+           (clojure.lang ExceptionInfo)))
 
 (defn uuid
   ([]
@@ -23,7 +24,7 @@
   `(try
     [~fn nil]
     (catch Exception e#
-      [nil (or (ex-data e#) (.getMessage e#))])))
+      [nil (.getMessage e#)])))
 
 (defn parse-int [s]
   (if (string? s)
@@ -47,6 +48,24 @@
 (defn current-user [request]
   (get-in request [:session :identity]))
 
+(defn throw+ [m]
+  (if (map? m)
+    (throw (ex-info "App exception" (merge m {:coast-ex true})))
+    (throw (Exception. "Throw+ only accepts maps, not strings"))))
+
+(defmacro try+ [fn]
+  `(try
+     [~fn nil]
+     (catch ExceptionInfo e#
+       (if (true? (get (ex-data e#) :coast-ex))
+         [nil (dissoc (ex-data e#) :coast-ex)]
+         (throw e#)))))
+
+(defn humanize [k]
+  (-> (name k)
+      (string/capitalize)
+      (string/replace "-" " ")))
+
 (defn fmt-validation [result]
   (let [{:keys [keys msg]} result]
     (map #(hash-map % (str (humanize %) " " msg)) keys)))
@@ -62,4 +81,4 @@
                    (fmt-validations))]
     (if (empty? result)
       m
-      (throw (ex-info "Validation has failed" result)))))
+      (throw+ (merge result {:error "Validation has failed"})))))

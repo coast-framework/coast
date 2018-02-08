@@ -63,6 +63,8 @@
    plural
    singular]
   [coast.utils
+   try+
+   throw+
    try!
    now
    uuid
