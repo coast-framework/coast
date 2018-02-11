@@ -8,15 +8,33 @@
             [prone.middleware :as prone]
             [trail.core :as trail]
             [coast.utils :as utils]
-            [clojure.stacktrace :as st]))
+            [clojure.stacktrace :as st])
+  (:import (clojure.lang ExceptionInfo)))
 
 (defn wrap-errors [handler error-page]
-  (fn [request]
-    (try
-      (handler request)
-      (catch Exception e
-        (println (st/print-stack-trace e))
-        (responses/internal-server-error (error-page))))))
+  (if (nil? error-page)
+    (fn [request]
+      (handler request))
+    (fn [request]
+      (try
+        (handler request)
+        (catch Exception e
+          (println (st/print-stack-trace e))
+          (responses/internal-server-error (error-page)))))))
+
+(defn wrap-not-found [handler not-found-page]
+  (if (nil? not-found-page)
+    (fn [request]
+      (handler request))
+    (fn [request]
+      (try
+        (handler request)
+        (catch ExceptionInfo e
+          (let [m (ex-data e)
+                type (get m :coast/error-type)]
+            (if (= type :not-found)
+              (responses/not-found (not-found-page))
+              (throw e))))))))
 
 (defn layout? [response layout]
   (and (not (nil? layout))
@@ -52,12 +70,13 @@
 
 (defn wrap-coast-defaults
   ([handler opts]
-   (let [{:keys [layout error-page]} opts]
+   (let [{:keys [layout error-page not-found-page]} opts]
      (-> handler
          (trail/wrap-match-routes)
          (wrap-layout layout)
          (bunyan/wrap-with-logger)
          (defaults/wrap-defaults (coast-defaults opts))
+         (wrap-not-found not-found-page)
          (wrap-if utils/dev? reload/wrap-reload)
          (wrap-if utils/dev? prone/wrap-exceptions)
          (wrap-if utils/prod? wrap-errors error-page))))

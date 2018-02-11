@@ -50,15 +50,15 @@
 
 (defn throw+ [m]
   (if (map? m)
-    (throw (ex-info "App exception" (merge m {:coast-ex true})))
+    (throw (ex-info "App exception" (merge m {:coast/exception true})))
     (throw (Exception. "Throw+ only accepts maps, not strings"))))
 
 (defmacro try+ [fn]
   `(try
      [~fn nil]
      (catch ExceptionInfo e#
-       (if (true? (get (ex-data e#) :coast-ex))
-         [nil (dissoc (ex-data e#) :coast-ex)]
+       (if (true? (get (ex-data e#) :coast/exception))
+         [nil (dissoc (ex-data e#) :coast/exception)]
          (throw e#)))))
 
 (defn humanize [k]
@@ -81,4 +81,4 @@
                    (fmt-validations))]
     (if (empty? result)
       m
-      (throw+ (merge result {:error "Validation has failed"})))))
+      (throw+ (merge result {:coast/error "Validation has failed"})))))
