@@ -41,6 +41,17 @@
   ([k]
    (query k {})))
 
+(defn query!
+  ([k m]
+   (let [results (oksql/query (connection) k m)]
+     (if (or (nil? results)
+             (empty? results))
+       (utils/throw+ {:coast/error "Query results were empty"
+                      :coast/error-type :not-found})
+       results)))
+  ([k]
+   (query! k {})))
+
 (defn insert [k m]
   (-> (oksql/insert (connection) k m)
       (transact!)))

@@ -56,6 +56,7 @@
    forbidden
    internal-server-error]
   [coast.db
+   query!
    query
    unique-index-error?
    transact!]
