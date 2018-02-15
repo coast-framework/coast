@@ -31,6 +31,9 @@
     (Integer. (re-find  #"^\d+$" s))
     s))
 
+(defn in? [val coll]
+  (not= -1 (.indexOf coll val)))
+
 (defn map-vals [f m]
   (->> m
        (map (fn [[k v]] [k (f v)]))
@@ -82,3 +85,11 @@
     (if (empty? result)
       m
       (throw+ (merge result {:coast/error "Validation has failed"})))))
+
+(defn deep-merge [& ms]
+  (apply merge-with
+         (fn [& vs]
+           (if (every? map? vs)
+             (apply deep-merge vs)
+             (last vs)))
+         ms))

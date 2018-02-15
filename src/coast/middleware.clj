@@ -54,19 +54,11 @@
     (apply wrapper handler args)
     handler))
 
-(defn deep-merge [& ms]
-  (apply merge-with
-         (fn [& vs]
-           (if (every? map? vs)
-             (apply deep-merge vs)
-             (last vs)))
-         ms))
-
 (defn coast-defaults [opts]
   (let [secret (environ/env :secret)
         default-opts {:session {:cookie-name "id"
                                 :store (cookie/cookie-store {:key secret})}}]
-    (deep-merge defaults/site-defaults default-opts opts)))
+    (utils/deep-merge defaults/site-defaults default-opts opts)))
 
 (defn wrap-coast-defaults
   ([handler opts]
