@@ -1,13 +1,13 @@
 (ns coast.server
   (:require [clojure.tools.namespace.repl :as repl]
             [org.httpkit.server :as httpkit]
-            [environ.core :as environ]
+            [coast.env :as env]
             [coast.utils :as utils]))
 
 (defonce server-atom (atom nil))
 
 (defn parse-port [opts]
-  (-> (or (get opts :port) (environ/env :port) 1337)
+  (-> (or (get opts :port) (env/env :port) 1337)
       (utils/parse-int)))
 
 (defn start
