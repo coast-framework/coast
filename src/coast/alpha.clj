@@ -1,13 +1,14 @@
-(ns coast.alpha.core
+(ns coast.alpha
   (:refer-clojure :exclude [get update list])
-  (:require [bunyan.core :as bunyan]
-            [coast.alpha.middleware :as middleware]
+  (:require [coast.alpha.middleware :as middleware]
             [coast.alpha.router :as router]
             [coast.alpha.server :as server]
             [coast.alpha.db]
             [coast.alpha.responses]
             [coast.alpha.env]
-            [coast.utils :as utils]
+            [coast.alpha.components]
+            [coast.alpha.time]
+            [coast.alpha.utils :as utils]
             [ring.middleware.defaults :as defaults]
             [ring.middleware.reload :as reload]
             [prone.middleware :as prone]
@@ -15,19 +16,18 @@
             [potemkin]))
 
 (defn app
-  ([handler opts]
+  ([app-name routes opts]
    (let [{:keys [layout error-fn not-found-fn]} opts]
-     (-> handler
-         (router/wrap-match-routes not-found-fn)
+     (-> (router/match-routes app-name routes not-found-fn)
          (middleware/wrap-layout layout)
-         (bunyan/wrap-with-logger)
+         (middleware/wrap-with-logger)
          (defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-fn)
          (middleware/wrap-if utils/dev? reload/wrap-reload)
          (middleware/wrap-if utils/dev? prone/wrap-exceptions)
          (middleware/wrap-if utils/prod? middleware/wrap-errors error-fn))))
-  ([handler]
-   (app handler {})))
+  ([app-name handler]
+   (app app-name handler {})))
 
 (def start server/start-server)
 
@@ -44,8 +44,8 @@
    url
    action]
   [coast.alpha.db
-   query
-   query!]
+   defq
+   defq!]
   [coast.alpha.responses
    ok
    bad-request
@@ -59,18 +59,24 @@
    html5
    include-js
    include-css]
-  [coast.utils
+  [coast.alpha.utils
    try+
    throw+
-   now
    uuid
    parse-int
-   current-user
-   printerr
    dev?
    test?
    prod?
    map-vals
-   validate]
+   validate
+   flip
+   kebab
+   snake]
+  [coast.alpha.time
+   now
+   fmt]
   [coast.alpha.env
-   env])
+   env]
+  [coast.alpha.components
+   form-for
+   link-to])
