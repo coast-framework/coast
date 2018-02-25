@@ -1,6 +1,5 @@
 (ns coast.utils
-  (:require [coast.env :as env]
-            [jkkramer.verily :as v]
+  (:require [jkkramer.verily :as v]
             [clojure.string :as string])
   (:import (java.util UUID)
            (clojure.lang ExceptionInfo)))
@@ -21,9 +20,6 @@
     (Integer. (re-find  #"^\d+$" s))
     s))
 
-(defn in? [val coll]
-  (not= -1 (.indexOf coll val)))
-
 (defn map-vals [f m]
   (->> (map (fn [[k v]] [k (f v)]) m)
        (into {})))
@@ -31,10 +27,6 @@
 (defn map-keys [f m]
   (->> (map (fn [[k v]] [(f k) v]) m)
        (into {})))
-
-(def test? (= "test" (env/env :coast-env)))
-(def prod? (= "prod" (env/env :coast-env)))
-(def dev? (= "dev" (env/env :coast-env)))
 
 (defn throw+ [m]
   (if (map? m)
