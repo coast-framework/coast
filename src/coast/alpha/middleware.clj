@@ -1,12 +1,15 @@
 (ns coast.alpha.middleware
-  (:require [coast.responses :as responses]
-            [ring.middleware.defaults :as defaults]
+  (:require [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
-            [environ.core :as environ]
-            [coast.utils :as utils]
-            [hiccup.page]
-            [clojure.stacktrace :as st])
-  (:import (clojure.lang ExceptionInfo)))
+            [clojure.stacktrace :as st]
+            [clojure.string :as string]
+            [coast.alpha.time :as time]
+            [coast.alpha.utils :as utils]
+            [coast.responses :as responses]
+            [coast.alpha.env :as env]
+            [hiccup.page])
+  (:import (clojure.lang ExceptionInfo)
+           (java.time Duration)))
 
 (defn internal-server-error []
   (responses/internal-server-error
@@ -23,7 +26,7 @@
       (catch Exception e
         (println (st/print-stack-trace e))
         (or (internal-server-error)
-            (responses/internal-server-error (error-fn)))))))
+            (responses/internal-server-error (error-fn request)))))))
 
 (defn wrap-not-found [handler not-found-page]
   (if (nil? not-found-page)
@@ -36,7 +39,7 @@
           (let [m (ex-data e)
                 type (get m :coast/error-type)]
             (if (= type :not-found)
-              (responses/not-found (not-found-page))
+              (responses/not-found (not-found-page request))
               (throw e))))))))
 
 (defn layout? [response layout]
@@ -58,7 +61,30 @@
     handler))
 
 (defn coast-defaults [opts]
-  (let [secret (environ/env :secret)
+  (let [secret (env/env :secret)
         default-opts {:session {:cookie-name "id"
                                 :store (cookie/cookie-store {:key secret})}}]
     (utils/deep-merge defaults/site-defaults default-opts opts)))
+
+(defn diff [start end]
+  (let [duration (Duration/between start end)]
+    (.toMillis duration)))
+
+(defn log-string [request response start-time]
+  (let [ms (diff start-time (time/now))
+        {:keys [request-method uri]} request
+        request-method (or request-method "N/A")
+        uri (or uri "N/A")
+        method (-> request-method name string/upper-case)
+        status (or (-> response :status) "N/A")]
+    (format "%s %s %s %sms" method uri status ms)))
+
+(defn log [request response start-time]
+  (println (log-string request response start-time)))
+
+(defn wrap-with-logger [handler]
+  (fn [request]
+    (let [start-time (time/now)
+          response (handler request)]
+      (log request response start-time)
+      response)))
