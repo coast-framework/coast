@@ -27,7 +27,7 @@
 
 (defn restart []
   (stop)
-  (repl/refresh :after 'coast.alpha.server/start))
+  (repl/refresh :after 'coast.server/start))
 
 (defn reload-server [app]
   (def app app)
