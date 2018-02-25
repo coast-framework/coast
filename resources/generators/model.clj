@@ -1,6 +1,5 @@
 (ns __project.models.__table
-  (:require [__project.db.__table :as db.__table]
-            [coast.utils :as utils]))
+  (:require [__project.db.__table :as db.__table]))
 (:refer-clojure :exclude [list find update])
 
 (def columns [__columns])
@@ -23,10 +22,13 @@
         (assoc request :__singular %)))
 
 (defn update [request]
-  (as-> (:params request) %
-        (select-keys % columns)
-        (db.__table/update %)
-        (assoc request :__singular %)))
+  (let [id (get-in request [:params :id])
+        __singular (db.__table/find {:id id})]
+    (as-> (:params request) %
+          (merge __singular %)
+          (select-keys % columns)
+          (db.__table/update %)
+          (assoc request :__singular %))))
 
 (defn delete [request]
   (as-> (:params request) %

@@ -15,10 +15,15 @@
 (defn fill [m s]
   (string/replace s pattern #(replacement % m)))
 
+(def excluded-col-set #{"id" "created_at"})
+
+(defn excluded-cols [s]
+  (not (contains? excluded-col-set s)))
+
 (defn sql [_ table]
   (let [cols (->> (db/columns {:table-name table})
                   (map :column-name)
-                  (filter #(not= "id" %)))
+                  (filter excluded-cols))
         insert-columns (string/join ",\n  " cols)
         insert-values (->> (map #(str ":" %) cols)
                            (string/join ",\n  "))
