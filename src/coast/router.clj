@@ -18,15 +18,14 @@
 (defn route-str [s m]
   (string/replace s param-re #(replacement % m)))
 
-(def verbs [:get :post :put :patch :delete])
+(def verbs #{:get :post :put :patch :delete})
 
 (defn verb? [value]
-  (utils/in? value verbs))
+  (contains? verbs value))
 
 (defn method-verb? [value]
-  (let [method-verbs (-> (drop 1 verbs)
-                         (vec))]
-    (utils/in? value method-verbs)))
+  (-> (disj verbs :get)
+      (contains? value)))
 
 (defn param-method [method]
   (when (method-verb? method)
