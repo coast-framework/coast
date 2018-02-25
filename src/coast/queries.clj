@@ -1,7 +1,7 @@
-(ns coast.alpha.queries
+(ns coast.queries
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
-            [coast.alpha.utils :as utils]))
+            [coast.utils :as utils]))
 
 (def name-regex #"^--\s*name\s*:\s*(.+)$")
 (def fn-regex #"^--\s*fn\s*:\s*(.+)$")

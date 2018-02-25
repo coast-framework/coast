@@ -1,11 +1,10 @@
 (ns coast.db
-  (:require [environ.core :as environ]
-            [clojure.java.jdbc :as sql]
+  (:require [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
-            [clojure.edn :as edn]
-            [oksql.core :as oksql]
+            [coast.env :as env]
+            [coast.queries :as queries]
             [coast.utils :as utils])
-  (:refer-clojure :exclude [drop update]))
+  (:refer-clojure :exclude [drop]))
 
 (defn unique-index-error? [error]
   (when (not (nil? error))
@@ -30,66 +29,77 @@
        (throw-db-exception e#))))
 
 (defn connection []
-  {:connection (sql/get-connection (or (environ/env :db-spec-or-url) (environ/env :database-url)))})
+  (let [db-url (or (env/env :database-url)
+                   (env/env :db-spec-or-url))]
+    (if (string/blank? db-url)
+      (throw (Exception. "Your database connection string is blank. Set the DATABASE_URL or DB_SPEC_OR_URL environment variable"))
+      {:connection (jdbc/get-connection db-url)})))
 
 (defn admin-connection []
-  {:connection (sql/get-connection (or (environ/env :admin-db-spec-or-url) "postgres://localhost:5432/postgres"))})
+  (let [db-url (or (env/env :admin-db-spec-or-url)
+                   "postgres://localhost:5432")]
+    (if (string/blank? db-url)
+      (throw (Exception. "Your admin database connection string is blank. Set the ADMIN_DB_SPEC_OR_URL environment variable"))
+      {:connection (jdbc/get-connection db-url)})))
+
+(defn sql-vec? [v]
+  (and (vector? v)
+       (string? (first v))
+       (not (string/blank? (first v)))))
 
 (defn query
-  ([k m]
-   (oksql/query (connection) k m))
-  ([k]
-   (query k {})))
+  ([conn v opts]
+   (if (and (sql-vec? v) (map? opts))
+     (transact!
+       (jdbc/with-db-connection [db-conn conn]
+         (jdbc/query db-conn v {:row-fn (partial utils/map-keys utils/kebab)})))
+     '()))
+  ([conn v]
+   (query conn v {})))
 
 (defn query!
-  ([k m]
-   (let [results (oksql/query (connection) k m)]
+  ([conn v opts]
+   (let [results (query conn v opts)]
      (if (or (nil? results)
              (empty? results))
        (utils/throw+ {:coast/error "Query results were empty"
                       :coast/error-type :not-found})
        results)))
-  ([k]
-   (query! k {})))
+  ([conn v]
+   (query! conn v {})))
 
-(defn insert [k m]
-  (-> (oksql/insert (connection) k m)
-      (transact!)))
+(defmacro defq [n filename]
+  (let [queries (queries/parts filename)
+        {:keys [sql f]} (get queries (str n))]
+    (if (nil? sql)
+      (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
+      `(def
+         ^{:doc ~sql}
+         ~n
+         ~(fn [& [m]]
+            (let [v (queries/sql-vec sql m)]
+              (f (query (connection) v))))))))
 
-(defn update [k m where where-map]
-  (-> (oksql/update (connection) k m where where-map)
-      (transact!)))
+(defmacro defq! [n filename]
+  (let [queries (queries/parts filename)
+        {:keys [sql f]} (get queries (str n))]
+    (if (nil? sql)
+      (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
+      `(def
+         ^{:doc ~sql}
+         ~n
+         ~(fn [& [m]]
+            (let [v (queries/sql-vec sql m)]
+              (f (query! (connection) v))))))))
 
-(defn delete [k where where-map]
-  (-> (oksql/delete (connection) k where where-map)
-      (transact!)))
+(defq columns "resources/sql/schema.sql")
 
-(defn exec [db sql]
-  (sql/with-db-connection [conn db]
-    (with-open [s (.createStatement (sql/db-connection conn))]
-      (.addBatch s sql)
-      (seq (.executeBatch s)))))
+(defn create [db-name]
+  (let [v [(format "create database %_%" db-name (env/env :coast-env))]]
+    (query (admin-connection) v)
+    (println "Database" name "created successfully")))
 
-(defn create [name]
-  (let [name (if utils/prod? (str name "_prod") (str name "_dev"))
-        db (admin-connection)
-        [_ error] (-> (exec db (str "create database " name))
-                      (utils/try!))]
-    (if (nil? error)
-      (println "Database" name "created successfully")
-      (utils/printerr "Database could not be created"
-                error))))
-
-(defn drop [name]
-  (let [name (if utils/prod? (str name "_prod") (str name "_dev"))
-        db (admin-connection)
-        [_ error] (-> (exec db (str "drop database " name))
-                      (utils/try!))]
-    (if (nil? error)
-      (println "Database" name "dropped successfully")
-      (utils/printerr "Database could not be dropped"
-                      error))))
-
-(defn get-cols [table]
-  (let [sql ["select column_name from information_schema.columns where table_name = ?" table]]
-    (sql/query (connection) sql)))
+(defn drop [db-name]
+  (let [v [(format "drop database %_%" db-name (env/env :coast-env))]]
+    (query (admin-connection) v)
+    (println "Database" name "dropped successfully")))

@@ -7,9 +7,7 @@
 (defonce server-atom (atom nil))
 
 (defn parse-port [opts]
-  (-> (or (get opts :port)
-          (environ/env :port)
-          1337)
+  (-> (or (get opts :port) (environ/env :port) 1337)
       (utils/parse-int)))
 
 (defn start
@@ -29,7 +27,7 @@
 
 (defn restart []
   (stop)
-  (repl/refresh :after 'coast.server/start))
+  (repl/refresh :after 'coast.alpha.server/start))
 
 (defn reload-server [app]
   (def app app)

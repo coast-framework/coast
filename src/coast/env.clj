@@ -1,10 +1,10 @@
-(ns coast.alpha.env
+(ns coast.env
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
-            [word.core :as word]))
+            [coast.utils :as utils]))
 
 (defn fmt [m]
-  (->> (map (fn [[k v]] [(-> k .toLowerCase word/kebab keyword) v]) m)
+  (->> (map (fn [[k v]] [(-> k .toLowerCase (utils/kebab) keyword) v]) m)
        (into {})))
 
 (defn dot-env []

@@ -1,9 +1,8 @@
 (ns coast.utils
-  (:require [environ.core :as environ]
-            [clojure.string :as string]
-            [jkkramer.verily :as v])
-  (:import (java.time LocalDateTime)
-           (java.util UUID)
+  (:require [coast.env :as env]
+            [jkkramer.verily :as v]
+            [clojure.string :as string])
+  (:import (java.util UUID)
            (clojure.lang ExceptionInfo)))
 
 (defn uuid
@@ -12,19 +11,10 @@
   ([s]
    (UUID/fromString s)))
 
-(defn now []
-  (LocalDateTime/now))
-
 (defn humanize [k]
   (-> (name k)
       (string/capitalize)
       (string/replace "-" " ")))
-
-(defmacro try! [fn]
-  `(try
-    [~fn nil]
-    (catch Exception e#
-      [nil (.getMessage e#)])))
 
 (defn parse-int [s]
   (if (string? s)
@@ -35,21 +25,16 @@
   (not= -1 (.indexOf coll val)))
 
 (defn map-vals [f m]
-  (->> m
-       (map (fn [[k v]] [k (f v)]))
+  (->> (map (fn [[k v]] [k (f v)]) m)
        (into {})))
 
-(defn printerr [header body]
-  (println "-- " header " --------------------")
-  (println "")
-  (println body))
+(defn map-keys [f m]
+  (->> (map (fn [[k v]] [(f k) v]) m)
+       (into {})))
 
-(def test? (= "test" (environ/env :coast-env)))
-(def prod? (= "prod" (environ/env :coast-env)))
-(def dev? (not prod?))
-
-(defn current-user [request]
-  (get-in request [:session :identity]))
+(def test? (= "test" (env/env :coast-env)))
+(def prod? (= "prod" (env/env :coast-env)))
+(def dev? (= "dev" (env/env :coast-env)))
 
 (defn throw+ [m]
   (if (map? m)
@@ -93,3 +78,30 @@
              (apply deep-merge vs)
              (last vs)))
          ms))
+
+(defn convert-keyword [re replacement k]
+  (if (keyword? k)
+    (let [ns (-> (or (namespace k) "")
+                 (string/replace re replacement))
+          n (-> (or (name k) "")
+                (string/replace re replacement))]
+      (if (string/blank? ns)
+        (keyword n)
+        (keyword ns n)))))
+
+(defn convert-string [re replacement s]
+  (if (string? s)
+    (string/replace s re replacement)
+    s))
+
+(defn convert-case [re replacement val]
+  (cond
+    (keyword? val) (convert-keyword re replacement val)
+    (string? val) (convert-string re replacement val)
+    :else val))
+
+(def kebab (partial convert-case #"_" "-"))
+(def snake (partial convert-case #"-" "_"))
+
+(defn long-str [& s]
+  (string/join "\n" s))

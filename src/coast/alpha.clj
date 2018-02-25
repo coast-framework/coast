@@ -1,14 +1,14 @@
 (ns coast.alpha
   (:refer-clojure :exclude [get update list])
-  (:require [coast.alpha.middleware :as middleware]
-            [coast.alpha.router :as router]
-            [coast.alpha.server :as server]
-            [coast.alpha.db]
-            [coast.alpha.responses]
-            [coast.alpha.env]
-            [coast.alpha.components]
-            [coast.alpha.time]
-            [coast.alpha.utils :as utils]
+  (:require [coast.middleware :as middleware]
+            [coast.router :as router]
+            [coast.server :as server]
+            [coast.db]
+            [coast.responses]
+            [coast.env]
+            [coast.components]
+            [coast.time]
+            [coast.utils]
             [ring.middleware.defaults :as defaults]
             [ring.middleware.reload :as reload]
             [prone.middleware :as prone]
@@ -23,16 +23,16 @@
          (middleware/wrap-with-logger)
          (defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-fn)
-         (middleware/wrap-if utils/dev? reload/wrap-reload)
-         (middleware/wrap-if utils/dev? prone/wrap-exceptions)
-         (middleware/wrap-if utils/prod? middleware/wrap-errors error-fn))))
+         (middleware/wrap-if #(= "dev" (coast.env/env :coast-env)) reload/wrap-reload)
+         (middleware/wrap-if #(= "dev" (coast.env/env :coast-env)) prone/wrap-exceptions)
+         (middleware/wrap-if #(= "prod" (coast.env/env :coast-env)) middleware/wrap-errors error-fn))))
   ([app-name handler]
    (app app-name handler {})))
 
 (def start server/start-server)
 
 (potemkin/import-vars
-  [coast.alpha.router
+  [coast.router
    get
    post
    put
@@ -43,10 +43,10 @@
    match-routes
    url
    action]
-  [coast.alpha.db
+  [coast.db
    defq
    defq!]
-  [coast.alpha.responses
+  [coast.responses
    ok
    bad-request
    unauthorized
@@ -59,24 +59,20 @@
    html5
    include-js
    include-css]
-  [coast.alpha.utils
+  [coast.utils
    try+
    throw+
    uuid
    parse-int
-   dev?
-   test?
-   prod?
    map-vals
    validate
-   flip
    kebab
    snake]
-  [coast.alpha.time
+  [coast.time
    now
    fmt]
-  [coast.alpha.env
+  [coast.env
    env]
-  [coast.alpha.components
+  [coast.components
    form-for
    link-to])

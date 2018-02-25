@@ -1,26 +1,32 @@
 (ns coast.middleware
-  (:require [coast.responses :as responses]
-            [ring.middleware.defaults :as defaults]
+  (:require [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
-            [ring.middleware.reload :as reload]
-            [environ.core :as environ]
-            [bunyan.core :as bunyan]
-            [prone.middleware :as prone]
-            [trail.core :as trail]
+            [clojure.stacktrace :as st]
+            [clojure.string :as string]
+            [coast.time :as time]
             [coast.utils :as utils]
-            [clojure.stacktrace :as st])
-  (:import (clojure.lang ExceptionInfo)))
+            [coast.responses :as responses]
+            [coast.env :as env]
+            [hiccup.page])
+  (:import (clojure.lang ExceptionInfo)
+           (java.time Duration)))
 
-(defn wrap-errors [handler error-page]
-  (if (nil? error-page)
-    (fn [request]
-      (handler request))
-    (fn [request]
-      (try
-        (handler request)
-        (catch Exception e
-          (println (st/print-stack-trace e))
-          (responses/internal-server-error (error-page)))))))
+(defn internal-server-error []
+  (responses/internal-server-error
+    (hiccup.page/html5
+      [:head
+       [:title "Internal Server Error"]]
+      [:body
+       [:h1 "500 Internal server error"]])))
+
+(defn wrap-errors [handler error-fn]
+  (fn [request]
+    (try
+      (handler request)
+      (catch Exception e
+        (println (st/print-stack-trace e))
+        (or (internal-server-error)
+            (responses/internal-server-error (error-fn request)))))))
 
 (defn wrap-not-found [handler not-found-page]
   (if (nil? not-found-page)
@@ -33,7 +39,7 @@
           (let [m (ex-data e)
                 type (get m :coast/error-type)]
             (if (= type :not-found)
-              (responses/not-found (not-found-page))
+              (responses/not-found (not-found-page request))
               (throw e))))))))
 
 (defn layout? [response layout]
@@ -55,22 +61,30 @@
     handler))
 
 (defn coast-defaults [opts]
-  (let [secret (environ/env :secret)
+  (let [secret (env/env :secret)
         default-opts {:session {:cookie-name "id"
                                 :store (cookie/cookie-store {:key secret})}}]
     (utils/deep-merge defaults/site-defaults default-opts opts)))
 
-(defn wrap-coast-defaults
-  ([handler opts]
-   (let [{:keys [layout error-page not-found-page]} opts]
-     (-> handler
-         (trail/wrap-match-routes)
-         (wrap-layout layout)
-         (bunyan/wrap-with-logger)
-         (defaults/wrap-defaults (coast-defaults opts))
-         (wrap-not-found not-found-page)
-         (wrap-if utils/dev? reload/wrap-reload)
-         (wrap-if utils/dev? prone/wrap-exceptions)
-         (wrap-if utils/prod? wrap-errors error-page))))
-  ([handler]
-   (wrap-coast-defaults handler {})))
+(defn diff [start end]
+  (let [duration (Duration/between start end)]
+    (.toMillis duration)))
+
+(defn log-string [request response start-time]
+  (let [ms (diff start-time (time/now))
+        {:keys [request-method uri]} request
+        request-method (or request-method "N/A")
+        uri (or uri "N/A")
+        method (-> request-method name string/upper-case)
+        status (or (-> response :status) "N/A")]
+    (format "%s %s %s %sms" method uri status ms)))
+
+(defn log [request response start-time]
+  (println (log-string request response start-time)))
+
+(defn wrap-with-logger [handler]
+  (fn [request]
+    (let [start-time (time/now)
+          response (handler request)]
+      (log request response start-time)
+      response)))

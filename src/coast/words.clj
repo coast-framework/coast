@@ -1,4 +1,4 @@
-(ns coast.alpha.words
+(ns coast.words
   (:require [clojure.string :as string]))
 
 (def exceptions (atom #{}))

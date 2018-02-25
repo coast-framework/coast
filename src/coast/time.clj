@@ -1,4 +1,4 @@
-(ns coast.alpha.time
+(ns coast.time
   (:import (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)))
 

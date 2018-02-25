@@ -1,11 +1,11 @@
-(ns coast.alpha.router
+(ns coast.router
   (:require [clojure.string :as string]
-            [word.core :as word]
             [clojure.edn :as edn]
             [hiccup.page]
             [hiccup.core]
-            [coast.alpha.responses :as responses]
-            [coast.alpha.utils :as utils])
+            [coast.responses :as responses]
+            [coast.utils :as utils]
+            [coast.words :as words])
   (:refer-clojure :exclude [get]))
 
 (def param-re #":([\w-_]+)")
@@ -172,12 +172,12 @@
           handler (resolve-handler app-name k not-found-fn)
           coerced-params (utils/map-vals coerce-params params)
           request (assoc request :params coerced-params
-                                 ::params params
-                                 ::route-name k)]
+                                 :route-name k
+                                 ::params params)]
       (handler request))))
 
 (defn prefix-param [s]
-  (as-> (word/singular s) %
+  (as-> (words/singular s) %
         (str  % "-id")))
 
 (defn resource-route [m]
