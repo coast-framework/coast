@@ -1,7 +1,7 @@
 (ns coast.alpha.env
   (:require [clojure.string :as string]
-            [word.core :as word]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [word.core :as word]))
 
 (defn fmt [m]
   (->> (map (fn [[k v]] [(-> k .toLowerCase word/kebab keyword) v]) m)
