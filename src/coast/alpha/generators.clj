@@ -1,117 +1,83 @@
 (ns coast.alpha.generators
   (:require [clojure.string :as string]
-            [word.core :as word]
-            [coast.alpha.db :as db]))
+            [coast.alpha.db :as db]
+            [coast.alpha.utils :as utils]
+            [coast.alpha.words :as words]
+            [clojure.java.io :as io]))
 
-(def pattern #"_([\w-]+)")
+(def pattern #"__([\w-]+)")
 
 (defn replacement [match m]
   (let [default (first match)
         k (-> match last keyword)]
     (str (get m k default))))
 
-(defn fill [s m]
+(defn fill [m s]
   (string/replace s pattern #(replacement % m)))
 
-(defn long-str [& strings]
-  (clojure.string/join "\n" strings))
+(defn sql [_ table]
+  (let [cols (->> (db/columns {:table-name table})
+                  (map :column-name)
+                  (filter #(not= "id" %)))
+        insert-columns (string/join ",\n  " cols)
+        insert-values (->> (map #(str ":" %) cols)
+                           (string/join ",\n  "))
+        update-columns (->> (map #(format "%s = %s" % (str ":" %)) cols)
+                            (string/join ",\n  "))
+        output-filename (format "resources/sql/%s.db.sql" table)]
+    (->> (io/resource "generators/db.sql")
+         (slurp)
+         (fill {:table table
+                :insert-columns insert-columns
+                :insert-values insert-values
+                :update-columns update-columns})
+         (spit output-filename))
+    (println (format "%s created successfully" output-filename))))
+
+(defn db [project table]
+  (let [output (format "src/%s/db/%s.clj" project table)]
+    (->> (io/resource "generators/db.clj")
+         (slurp)
+         (fill {:table (utils/kebab table)
+                :project (utils/kebab project)})
+         (spit output))
+    (println (format "%s created successfully" output))))
 
 (defn model [project table]
-  (-> (long-str
-        "(ns _project.models._table"
-        "  (:require [coast.db :as db])"
-        "  (:refer-clojure :exclude [update list]))"
-        ""
-        "(def columns [_columns])"
-        ""
-        "(defn list [request]"
-        "  (db/query :_table/list))"
-        ""
-        "(defn find-by-id [request]"
-        "  (->> (select-keys (:params request) [:id])"
-        "       (db/query :_table/find-by-id)))"
-        ""
-        "(defn insert [request]"
-        "  (->> (select-keys (:params request) columns)"
-        "       (db/insert :_table)))"
-        ""
-        "(defn update [request]"
-        "  (let [{:keys [params]} request"
-        "        {:keys [id]} params]"
-        "    (as-> (select-keys params columns) %"
-        "          (db/update :_table % :_table/where {:id id}))))"
-        ""
-        "(defn delete [request]"
-        "  (->> (select-keys (:params request) [:id])"
-        "       (db/delete :_table :_table/where)))")
-      (fill {:table   (word/kebab table)
-             :project      (word/kebab project)})))
+  (let [output (format "src/%s/models/%s.clj" project table)]
+    (->> (io/resource "generators/model.clj")
+         (slurp)
+         (fill {:table (utils/kebab table)
+                :project (utils/kebab project)
+                :singular (-> table utils/kebab words/singular)
+                :columns (->> (db/columns {:table-name table})
+                              (map :column-name)
+                              (map utils/kebab)
+                              (string/join ", "))})
+         (spit output))
+    (println (format "%s created successfully" output))))
 
 (defn controller [project table]
-  (-> (long-str
-        "(ns _project.controllers._table"
-        "  (:require [coast.core :as coast]"
-        "            [_ns.models._table :as _table]"
-        "            [_ns.views._table :as views._table])"
-        "  (:refer-clojure :exclude [update]))"
-        ""
-        "(defn index [request]"
-        "  (-> request"
-        "      _table/list"
-        "      views._table/index))"
-        ""
-        "(defn show [request]"
-        "  (-> request"
-        "      _table/find-by-id"
-        "      views._table/show))"
-        ""
-        "(defn fresh [request]"
-        "  (views._table/fresh request))"
-        ""
-        "(defn create [request]"
-        "  (let [[_ errors] (-> request"
-        "                       _table/create"
-        "                       coast/try+)]"
-        "    (if (empty? errors)"
-        "       (-> (coast/redirect \"/_table\")"
-        "           (coast/flash \"_singular created successfully\"))"
-        "       (fresh (assoc request :errors errors))))"
-        ""
-        "(defn edit [request]"
-        "  (-> request"
-        "      _table/find-by-id"
-        "      views._table/edit))"
-        ""
-        "(defn update [request]"
-        "  (let [[_ errors] (-> request"
-        "                       _table/find-by-id"
-        "                       _table/update"
-        "                       coast/try+)]"
-        ""
-        "    (if (empty? errors)"
-        "      (-> (coast/redirect \"/_table\")"
-        "          (coast/flash \"_singular updated successfully\"))"
-        "      (edit (assoc request :errors errors))))"
-        ""
-        "(defn delete [request]"
-        "  (let [_ (_table/delete request)]"
-        "    (-> (coast/redirect \"/_table\")"
-        "        (coast/flash \"_singular deleted successfully\"))))")
-      (fill {:table   (word/kebab table)
-             :project (word/kebab project)
-             :singular (word/singular table)})))
+  (let [output (format "src/%s/controllers/%s.clj" project table)]
+    (->> (io/resource "generators/controller.clj")
+         (slurp)
+         (fill {:table (utils/kebab table)
+                :project (utils/kebab project)
+                :singular (-> table utils/kebab words/singular)})
+         (spit output))
+    (println (format "%s created successfully" output))))
 
 (defn view [project table]
-  (let [columns (->> (db/get-cols table)
-                     (map :column_name)
-                     (map word/kebab))
+  (let [columns (->> (db/columns {:table-name table})
+                     (map :column-name)
+                     (map utils/kebab))
         th-columns (->> (map #(str "[:th \"" % "\"]") columns)
                         (string/join "\n            "))
         td-columns (->> (map #(str "[:td " % "]") columns)
                         (string/join "\n      "))
         div-columns (->> (map #(str "[:div " % "]") columns)
                          (string/join "\n      "))]
-    (-> (long-str
+    (-> (utils/long-str
           "(ns _project.views._table"
           "  (:require [_project.components :as c]"
           "            [coast.core :as coast]))"
@@ -154,9 +120,9 @@
           "      [:div"
           "        [:a {:href \"/_table\"} \"Back\"]]]))"
           "")
-        (fill {:project (word/kebab project)
-               :table (word/kebab table)
-               :singular (word/singular table)
+        (fill {:project (utils/kebab project)
+               :table (utils/kebab table)
+               :singular (words/singular table)
                :columns (string/join " " columns)
                :td-columns td-columns
                :th-columns th-columns
