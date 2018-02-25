@@ -2,7 +2,7 @@
   (:require [clojure.tools.namespace.repl :as repl]
             [org.httpkit.server :as httpkit]
             [environ.core :as environ]
-            [coast.utils :as utils]))
+            [coast.alpha.utils :as utils]))
 
 (defonce server-atom (atom nil))
 

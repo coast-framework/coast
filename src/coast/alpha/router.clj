@@ -5,7 +5,7 @@
             [hiccup.page]
             [hiccup.core]
             [coast.alpha.responses :as responses]
-            [coast.utils :as utils])
+            [coast.alpha.utils :as utils])
   (:refer-clojure :exclude [get]))
 
 (def param-re #":([\w-_]+)")
@@ -101,8 +101,10 @@
 
 (defn wrap-route-with [route middleware]
   "Wraps a single route in a ring middleware fn"
-  (let [[method uri f] route]
-    [method uri (middleware f)]))
+  (let [[method uri k] route]
+    (if (keyword? k)
+      [method uri (conj [k] middleware)]
+      [method uri (conj k middleware)])))
 
 (defn wrap-routes-with [routes middleware]
   "Wraps a given set of routes in a function."
@@ -125,14 +127,7 @@
     (list? val) (map coerce-params val)
     :else val))
 
-(defn wrap-coerce-params [handler]
-  "Coerces integers and uuid values in params"
-  (fn [request]
-    (let [{:keys [params]} request
-          request (assoc request :params (utils/map-vals coerce-params params))]
-      (handler request))))
-
-(defn default-not-found-fn []
+(defn default-not-found-fn [_]
   (responses/not-found
     (hiccup.page/html5
       [:head
@@ -140,26 +135,46 @@
       [:body
        [:h1 "404 Page not found"]])))
 
-(defn match-routes [routes not-found-fn]
+(defn resolve-keyword [kind k app-name not-found-fn]
+  (if (qualified-keyword? k)
+    (let [key-name (name k)
+          key-namespace (namespace k)
+          prefix (->> (filter some? [app-name kind key-namespace])
+                      (string/join "."))
+          f (-> (symbol prefix key-name) (resolve))]
+      (or f
+          not-found-fn
+          default-not-found-fn))
+    (throw (Exception. "Route names must be qualified (namespaced) keywords"))))
+
+(def resolve-controller (partial resolve-keyword "controllers"))
+(def resolve-middleware (partial resolve-keyword nil))
+
+(defn resolve-handler [app-name handler not-found-fn]
+  (if (vector? handler)
+    (let [f (-> (first handler) (resolve-controller app-name not-found-fn))
+          middleware (->> (rest handler)
+                          (map #(resolve-middleware % app-name not-found-fn))
+                          (apply comp))]
+      (middleware f))
+    (resolve-controller handler app-name not-found-fn)))
+
+(defn match-routes [app-name routes not-found-fn]
   "Turns trail routes into a ring handler"
   (fn [request]
     (let [{:keys [request-method uri params]} request
           method (or (-> params :_method keyword) request-method)
           route (-> (filter #(match [method uri] %) routes)
                     (first))
-          [_ route-uri handler] route
+          [_ route-uri k] route
           trail-params (route-params uri route-uri)
           params (merge params trail-params)
-          handler (or handler not-found-fn default-not-found-fn)
-          params (utils/map-vals coerce-params params)
-          request (assoc request :params params)]
+          handler (resolve-handler app-name k not-found-fn)
+          coerced-params (utils/map-vals coerce-params params)
+          request (assoc request :params coerced-params
+                                 ::params params
+                                 ::route-name k)]
       (handler request))))
-
-(defn wrap-match-routes [arg not-found-fn]
-  (if (fn? arg)
-    (fn [request]
-      (arg request))
-    (match-routes arg not-found-fn)))
 
 (defn prefix-param [s]
   (as-> (word/singular s) %
@@ -167,7 +182,7 @@
 
 (defn resource-route [m]
   (let [{:keys [method route handler]} m]
-    [method route (-> handler symbol resolve)]))
+    [method route handler]))
 
 (defn resource
   "Creates a set of seven functions that map to a conventional set of named functions.
@@ -215,31 +230,31 @@
                         (string/join "/" %))
         resources [{:method :get
                     :route route-str
-                    :handler (str resource-name "/index")
+                    :handler (keyword resource-name "index")
                     :name :index}
                    {:method :get
                     :route (str route-str "/fresh")
-                    :handler (str resource-name "/fresh")
+                    :handler (keyword resource-name "fresh")
                     :name :fresh}
                    {:method :get
                     :route (str route-str "/:id")
-                    :handler (str resource-name "/show")
+                    :handler (keyword resource-name "show")
                     :name :show}
                    {:method :post
                     :route route-str
-                    :handler (str resource-name "/create")
+                    :handler (keyword resource-name "create")
                     :name :create}
                    {:method :get
                     :route (str route-str "/:id/edit")
-                    :handler (str resource-name "/edit")
+                    :handler (keyword resource-name "edit")
                     :name :edit}
                    {:method :put
                     :route (str route-str "/:id")
-                    :handler (str resource-name "/change")
+                    :handler (keyword resource-name "change")
                     :name :change}
                    {:method :delete
                     :route (str route-str "/:id")
-                    :handler (str resource-name "/delete")
+                    :handler (keyword resource-name "delete")
                     :name :delete}]
         resources (if only?
                     (filter #(not= -1 (.indexOf filter-resources (clojure.core/get % :name))) resources)
