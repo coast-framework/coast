@@ -2,7 +2,7 @@
 
 The easy full stack clojure web framework
 
-Current version: `[coast "0.6.7"]`
+Current version: `[coast.alpha "0.1.0"]`
 
 ## Table of Contents
 
@@ -37,15 +37,11 @@ lein mvc/gen posts
 Go ahead and add the routes too
 ```clojure
 (ns blog.routes
-  (:require [coast.core :as coast]
-            [blog.controllers.home-controller :as home]
-            [blog.controllers.errors-controller :as errors]
-            [blog.controllers.posts-controller :as posts]))
+  (:require [coast.core :as coast]))
 
 (def routes
-  (-> (coast/get "/" home/index)
-      (coast/resource :posts)
-      (coast/route-not-found errors/not-found)))
+  (-> (coast/get "/" :home/index)
+      (coast/resource :posts)))
 ```
 
 Let's see our masterpiece so far
@@ -69,8 +65,7 @@ Amazing!
 
 ## Database
 
-The only currently supported database is postgres. PRs gladly accepted to add more, the db abstraction is
-jdbc along with a sql library I wrote [oksql](https://github.com/swlkr/oksql).
+The only currently supported database is postgres. PRs gladly accepted to add more.
 
 There are a few generators in the form of lein aliases to help you get the boilerplate-y database stuff out of the way:
 
@@ -79,9 +74,10 @@ lein db/create
 lein db/drop
 lein db/migration
 lein db/migrate
+lein db/rollback
 ```
 
-Those all pretty much do what you think they do.
+Those all do what you think they do.
 
 #### `lein db/create`
 
@@ -150,76 +146,166 @@ This performs the migration, if one of them fails, it should stop migrating the 
 
 ## Models
 
-Models are just clojure functions that call external sql files in `resources/sql` There's a generator for the basic crud operations:
+Models are clojure functions that call external sql files in `resources/sql` There's a generator for the basic crud operations:
 
 #### `lein model/gen posts`
 
-This requires that the posts table already exists and it creates two files:
+This requires that the posts table already exists and it creates three files:
 
-1. A sql file named `resources/sql/posts.sql`
-2. A model file named `src/models/posts.clj`
+1. A sql file named `resources/sql/posts.db.sql`
+3. A clojure file named `src/db/posts.clj`
+2. Another clojure file named `src/models/posts.clj`
 
-The model file and the sql file work together for sql queries and the where clause on updates and deletes.
-Here's an example of how they work together.
+The model file, the db file and the sql file all work together to make your life better:
 
-Here's `posts.sql`. Each query is separated by a newline and `-- name`.
+Here's `posts.db.sql`. Each query is separated by a newline and `-- name`.
 They all have a `-- name` which comes after the colon. These values can be any string that can be resolved to a clojure function.
 They also optionally have a function which runs after the results are received from the database, and this functions operates on all rows
 at once, not just row by row, luckily, clojure still works and you can use `map` for row by row function application.
 
 ```sql
--- name: all
+-- name: list
 select *
 from posts
-order by created_at desc
+order by created_at
+limit = :limit
+offset = :offset
 
--- name: find-by-id
+
+-- name: find
 -- fn: first
 select *
 from posts
 where id = :id
 
--- name: where
+
+-- name: insert
+-- fn: first
+insert into posts (
+  title,
+  body
+)
+values (
+  :title,
+  :body
+)
+returning *
+
+
+-- name: update
+-- fn: first
+update posts
+set
+  title = :title,
+  body = :body
 where id = :id
 returning *
+
+
+-- name: delete
+-- fn: first
+delete from posts
+where id = :id
+returning *
+
 ```
 
-Here is where clojure comes in and references the `posts.sql` file
+Here is where the `db.clj` file comes in and references the `posts.db.sql` file
+
+```clojure
+(ns blog.db.posts
+  (:require [coast.alpha :refer [defq]])
+  (:refer-clojure :exclude [update list find]))
+
+(defq list "resources/sql/posts.db.sql")
+(defq find "resources/sql/posts.db.sql")
+(defq insert "resources/sql/posts.db.sql")
+(defq update "resources/sql/posts.db.sql")
+(defq delete "resources/sql/posts.db.sql")
+```
+
+`defq` is a macro that reads the sql file at compile time and generates functions
+with the symbols of the names in the sql file. If you try to specify a name that doesn't have a corresponding `-- name:`
+in the sql file, you'll get a compile exception, so that's kind of cool. I know this part is kind of boilerplate-y but luckily
+this gets generated for you.
+
+The idea behind the .db.sql naming is that this sql file is special and not manually edited, so it can be regenerated at any time with
+new schema changes for insert/update queries. You can of course create any number of .sql files you want, so if you needed to customize
+posts with comment counts or something similar, you could do this in `posts.sql`, not `posts.db.sql`:
+
+```sql
+-- name: posts-with-count
+select
+  posts.*,
+  p.comments
+from
+  posts
+join
+  (
+    select
+      comments.post_id,
+      count(comments.id) as comments
+    from
+      comments
+    where
+      comments.post_id = :id
+    group by
+      comments.post_id
+ ) p on p.post_id = posts.id
+ ```
+
+ Then in the db file:
+
+ ```clojure
+ (defq posts-with-count "resources/sql/posts.sql")
+ ```
+
+And now you have a new function wired to a bit of custom sql.
+
+The last part of the this three part process is the model file in a different namespace so the function names can be reused and called from the controllers:
 
 ```clojure
 (ns blog.models.posts
-  (:require [coast.db :as db])
-  (:refer-clojure :exclude [update]))
+  (:require [blog.db.posts :as db.posts]
+            [coast.utils :as utils]))
+(:refer-clojure :exclude [list find update])
 
 (def columns [:title :body])
 
- ; the keyword namespace is the file where the query is located, and the name corresponds to -- name: all
-(defn all []
-  (db/query :posts/all))
+(defn list [request]
+  (->> (:params request)
+       (db.posts/list)
+       (assoc request :posts)))
 
-; same thing here
-(defn find-by-id [id]
-  (db/query :posts/find-by-id {:id id}))
+(defn find [request]
+  (->> (:params request)
+       (hash-map :id)
+       (db.posts/find)
+       (assoc request :post)))
 
-; insert does not reference the sql file at all, it dynamically generates the sql
-(defn insert [m]
-  (->> (select-keys m columns)
-       (db/insert :posts)))
+(defn insert [request]
+  (as-> (:params request) %
+        (select-keys % columns)
+        (db.posts/insert %)
+        (assoc request :post %)))
 
-; db/update and db/delete both reference the :file/where name which can be anything or you can have multiple
-; queries with multiple where's if you want to
-(defn update [id m]
-  (as-> (select-keys m columns) %
-        (db/update :posts % :posts/where {:id id})))
+(defn update [request]
+  (let [id (get-in request [:params :id])
+        post (db.posts/find {:id id})]
+    (as-> (:params request) %
+          (merge post %)
+          (select-keys % columns)
+          (db.posts/update %)
+          (assoc request :post %))))
 
-; same thing here, it's :table :file/name where name is where in this case
-; could easily be
-
-; (db/delete :posts :posts/delete-where {:id id}) or anything you can imagine
-
-(defn delete [id]
-  (db/delete :posts :posts/where {:id id}))
+(defn delete [request]
+  (as-> (:params request) %
+        (select-keys % columns)
+        (db.posts/delete %)
+        (assoc request :post %)))
 ```
+
+There's a lot to the models, but quite a bit less than something like active record.
 
 ## TODO
 
