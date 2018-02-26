@@ -60,7 +60,7 @@
 (defn query-fn [n filename]
   (let [queries (queries/parts filename)
         {:keys [sql f]} (get queries (str n))
-        q-fn (fn [m]
+        q-fn (fn [& [m]]
                (let [v (queries/sql-vec sql m)]
                  (f (query (connection) v))))]
     (if (nil? sql)
@@ -70,7 +70,7 @@
 (defmacro defq [n filename]
   `(def ~n (query-fn '~n ~filename)))
 
-(def columns (query-fn "columns" "resources/sql/schema.sql"))
+(defq columns "resources/sql/schema.sql")
 
 (defn create [db-name]
   (let [v [(format "create database %_%" db-name (env/env :coast-env))]]
