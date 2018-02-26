@@ -57,40 +57,20 @@
   ([conn v]
    (query conn v {})))
 
-(defn query!
-  ([conn v opts]
-   (let [results (query conn v opts)]
-     (if (or (nil? results)
-             (empty? results))
-       (utils/throw+ {:coast/error "Query results were empty"
-                      :coast/error-type :not-found})
-       results)))
-  ([conn v]
-   (query! conn v {})))
+(defn defn+ [name value]
+  (intern *ns* (with-meta (symbol name)
+                          (meta value))
+          value))
 
 (defmacro defq [n filename]
   (let [queries (queries/parts filename)
-        {:keys [sql f]} (get queries (str n))]
+        {:keys [sql f]} (get queries (str n))
+        func (fn [m]
+               (let [v (queries/sql-vec sql m)]
+                 (f (query (connection) v))))]
     (if (nil? sql)
       (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
-      `(def
-         ^{:doc ~sql}
-         ~n
-         ~(fn [& [m]]
-            (let [v (queries/sql-vec sql m)]
-              (f (query (connection) v))))))))
-
-(defmacro defq! [n filename]
-  (let [queries (queries/parts filename)
-        {:keys [sql f]} (get queries (str n))]
-    (if (nil? sql)
-      (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
-      `(def
-         ^{:doc ~sql}
-         ~n
-         ~(fn [& [m]]
-            (let [v (queries/sql-vec sql m)]
-              (f (query! (connection) v))))))))
+      (defn+ (str n) func))))
 
 (defq columns "resources/sql/schema.sql")
 

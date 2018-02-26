@@ -44,8 +44,7 @@
    url
    action]
   [coast.db
-   defq
-   defq!]
+   defq]
   [coast.responses
    ok
    bad-request
