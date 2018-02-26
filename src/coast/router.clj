@@ -100,10 +100,10 @@
 
 (defn wrap-route-with [route middleware]
   "Wraps a single route in a ring middleware fn"
-  (let [[method uri k] route]
-    (if (keyword? k)
-      [method uri (conj [k] middleware)]
-      [method uri (conj k middleware)])))
+  (let [[method uri val] route]
+    (if (vector? val)
+      [method uri (conj val middleware)]
+      [method uri (conj [val] middleware)])))
 
 (defn wrap-routes-with [routes middleware]
   "Wraps a given set of routes in a function."
@@ -134,44 +134,32 @@
       [:body
        [:h1 "404 Page not found"]])))
 
-(defn resolve-keyword [kind k app-name not-found-fn]
-  (if (qualified-keyword? k)
-    (let [key-name (name k)
-          key-namespace (namespace k)
-          prefix (->> (filter some? [app-name kind key-namespace])
-                      (string/join "."))
-          f (-> (symbol prefix key-name) (resolve))]
-      (or f
-          not-found-fn
-          default-not-found-fn))
-    (throw (Exception. "Route names must be qualified (namespaced) keywords"))))
+(defn resolve-route-fn [val not-found-fn]
+  (let [f (if (symbol? val) (resolve val) val)]
+    (or f not-found-fn default-not-found-fn)))
 
-(def resolve-controller (partial resolve-keyword "controllers"))
-(def resolve-middleware (partial resolve-keyword nil))
-
-(defn resolve-handler [app-name handler not-found-fn]
-  (if (vector? handler)
-    (let [f (-> (first handler) (resolve-controller app-name not-found-fn))
-          middleware (->> (rest handler)
-                          (map #(resolve-middleware % app-name not-found-fn))
+(defn resolve-route [val not-found-fn]
+  (if (vector? val)
+    (let [f (-> (first val) (resolve-route-fn not-found-fn))
+          middleware (->> (rest val)
+                          (map #(resolve-route-fn % not-found-fn))
                           (apply comp))]
       (middleware f))
-    (resolve-controller handler app-name not-found-fn)))
+    (resolve-route-fn val not-found-fn)))
 
-(defn match-routes [app-name routes not-found-fn]
+(defn match-routes [routes not-found-fn]
   "Turns trail routes into a ring handler"
   (fn [request]
     (let [{:keys [request-method uri params]} request
           method (or (-> params :_method keyword) request-method)
           route (-> (filter #(match [method uri] %) routes)
                     (first))
-          [_ route-uri k] route
+          [_ route-uri f] route
           trail-params (route-params uri route-uri)
           params (merge params trail-params)
-          handler (resolve-handler app-name k not-found-fn)
+          handler (resolve-route f not-found-fn)
           coerced-params (utils/map-vals coerce-params params)
           request (assoc request :params coerced-params
-                                 :route-name k
                                  ::params params)]
       (handler request))))
 
@@ -229,31 +217,31 @@
                         (string/join "/" %))
         resources [{:method :get
                     :route route-str
-                    :handler (keyword resource-name "index")
+                    :handler (symbol resource-name "index")
                     :name :index}
                    {:method :get
                     :route (str route-str "/fresh")
-                    :handler (keyword resource-name "fresh")
+                    :handler (symbol resource-name "fresh")
                     :name :fresh}
                    {:method :get
                     :route (str route-str "/:id")
-                    :handler (keyword resource-name "show")
+                    :handler (symbol resource-name "show")
                     :name :show}
                    {:method :post
                     :route route-str
-                    :handler (keyword resource-name "create")
+                    :handler (symbol resource-name "create")
                     :name :create}
                    {:method :get
                     :route (str route-str "/:id/edit")
-                    :handler (keyword resource-name "edit")
+                    :handler (symbol resource-name "edit")
                     :name :edit}
                    {:method :put
                     :route (str route-str "/:id")
-                    :handler (keyword resource-name "change")
+                    :handler (symbol resource-name "change")
                     :name :change}
                    {:method :delete
                     :route (str route-str "/:id")
-                    :handler (keyword resource-name "delete")
+                    :handler (symbol resource-name "delete")
                     :name :delete}]
         resources (if only?
                     (filter #(not= -1 (.indexOf filter-resources (clojure.core/get % :name))) resources)

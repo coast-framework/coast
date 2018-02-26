@@ -16,9 +16,9 @@
             [potemkin]))
 
 (defn app
-  ([app-name routes opts]
+  ([routes opts]
    (let [{:keys [layout error-fn not-found-fn]} opts]
-     (-> (router/match-routes app-name routes not-found-fn)
+     (-> (router/match-routes routes not-found-fn)
          (middleware/wrap-layout layout)
          (middleware/wrap-with-logger)
          (defaults/wrap-defaults (middleware/coast-defaults opts))
@@ -26,8 +26,8 @@
          (middleware/wrap-if #(= "dev" (coast.env/env :coast-env)) reload/wrap-reload)
          (middleware/wrap-if #(= "dev" (coast.env/env :coast-env)) prone/wrap-exceptions)
          (middleware/wrap-if #(= "prod" (coast.env/env :coast-env)) middleware/wrap-errors error-fn))))
-  ([app-name handler]
-   (app app-name handler {})))
+  ([handler]
+   (app handler {})))
 
 (def start server/start-server)
 
