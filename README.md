@@ -4,7 +4,11 @@ The easy full stack clojure web framework
 
 Previous version: `[coast "0.6.8"]` [README](https://github.com/swlkr/coast/tree/0.6.8)
 
-Current version: `[coast.alpha "0.1.3"]`
+Current version: `[coast.alpha "0.1.4"]`
+
+### Warning
+The current version is kind of not ready for production use
+
 
 ## Table of Contents
 
