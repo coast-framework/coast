@@ -12,10 +12,15 @@
   (.mkdirs (File. "resources/migrations"))
   "resources/migrations")
 
-(defq create-table "resources/sql/migrations.sql")
 (defq migrations "resources/sql/migrations.sql")
 (defq insert "resources/sql/migrations.sql")
 (defq delete "resources/sql/migrations.sql")
+
+(defn create-table []
+  (let [sql (-> (queries/parts "resources/sql/migrations.sql")
+                (get "create-table")
+                (get :sql))]
+    (db/exec (db/connection) [sql])))
 
 (defn completed-migrations []
   (let [_ (create-table)]

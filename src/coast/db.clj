@@ -47,6 +47,12 @@
        (string? (first v))
        (not (string/blank? (first v)))))
 
+(defn exec [conn v]
+  (when (sql-vec? v)
+    (transact!
+      (jdbc/with-db-connection [db-conn conn]
+        (jdbc/execute! db-conn v)))))
+
 (defn query
   ([conn v opts]
    (if (and (sql-vec? v) (map? opts))
