@@ -43,11 +43,13 @@ lein mvc/gen posts
 Go ahead and add the routes too
 ```clojure
 (ns blog.routes
-  (:require [coast.core :as coast]))
+  (:require [coast.core :as coast]
+            [blog.controllers.posts :as c.posts]
+            [blog.controllers.home :as c.home]))
 
 (def routes
-  (-> (coast/get "/" :home/index)
-      (coast/resource :posts)))
+  (-> (coast/get "/" c.home/index)
+      (coast/resource :c.posts)))
 ```
 
 Let's see our masterpiece so far
@@ -337,7 +339,6 @@ of open source projects that coast uses:
 
 - [potemkin](https://github.com/ztellman/potemkin)
 - [http-kit](https://github.com/http-kit/http-kit)
-- [environ](https://github.com/weavejester/environ)
 - [hiccup](https://github.com/weavejester/hiccup)
 - [ring/ring-core](https://github.com/ring-clojure/ring)
 - [ring/ring-defaults](https://github.com/ring-clojure/ring-defaults)
