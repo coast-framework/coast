@@ -134,9 +134,8 @@
       [:body
        [:h1 "404 Page not found"]])))
 
-(defn resolve-route-fn [val not-found-fn]
-  (let [f (if (symbol? val) (resolve val) val)]
-    (or f not-found-fn default-not-found-fn)))
+(defn resolve-route-fn [f not-found-fn]
+  (or f not-found-fn default-not-found-fn))
 
 (defn resolve-route [val not-found-fn]
   (if (vector? val)
@@ -169,7 +168,7 @@
 
 (defn resource-route [m]
   (let [{:keys [method route handler]} m]
-    [method route handler]))
+    [method route (resolve handler)]))
 
 (defn resource
   "Creates a set of seven functions that map to a conventional set of named functions.
