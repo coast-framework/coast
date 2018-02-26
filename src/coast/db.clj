@@ -70,6 +70,8 @@
 (defmacro defq [n filename]
   `(def ~n (query-fn '~n ~filename)))
 
+(def columns (query-fn "columns" "resources/sql/schema.sql"))
+
 (defn create [db-name]
   (let [v [(format "create database %_%" db-name (env/env :coast-env))]]
     (query (admin-connection) v)
