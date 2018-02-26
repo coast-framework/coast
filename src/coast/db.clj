@@ -57,22 +57,18 @@
   ([conn v]
    (query conn v {})))
 
-(defn defn+ [name value]
-  (intern *ns* (with-meta (symbol name)
-                          (meta value))
-          value))
-
-(defmacro defq [n filename]
+(defn query-fn [n filename]
   (let [queries (queries/parts filename)
         {:keys [sql f]} (get queries (str n))
-        func (fn [m]
+        q-fn (fn [m]
                (let [v (queries/sql-vec sql m)]
                  (f (query (connection) v))))]
     (if (nil? sql)
       (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
-      (defn+ (str n) func))))
+      q-fn)))
 
-(defq columns "resources/sql/schema.sql")
+(defmacro defq [n filename]
+  `(def ~n (query-fn '~n ~filename)))
 
 (defn create [db-name]
   (let [v [(format "create database %_%" db-name (env/env :coast-env))]]
