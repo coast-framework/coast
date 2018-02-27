@@ -5,7 +5,7 @@
             [hiccup.core]
             [coast.responses :as responses]
             [coast.utils :as utils]
-            [coast.words :as words])
+            [clojure.repl :as repl])
   (:refer-clojure :exclude [get]))
 
 (def param-re #":([\w-_]+)")
@@ -162,13 +162,27 @@
                                  ::params params)]
       (handler request))))
 
-(defn prefix-param [s]
-  (as-> (words/singular s) %
-        (str  % "-id")))
+(defn resolve-keyword [k]
+  (when (qualified-keyword? k)
+    (let [n (name k)
+          ns (namespace k)]
+      (-> (symbol ns n)
+          (resolve)))))
 
-(defn resource-route [m]
-  (let [{:keys [method route handler]} m]
-    [method route (resolve handler)]))
+(defn resource-routes [m]
+  (let [s (-> (vals m)
+              (first)
+              (namespace)
+              (string/split #"\.") (last))
+        {:strs [index show fresh edit create change delete]} m]
+    (->> [[:get (format "/%s" s) (-> index resolve-keyword)]
+          [:get (format "/%s/:id" s) (-> show resolve-keyword)]
+          [:get (format "/%s/fresh" s) (-> fresh resolve-keyword)]
+          [:get (format "/%s/:id/edit" s) (-> edit resolve-keyword)]
+          [:post (format "/%s" s) (-> create resolve-keyword)]
+          [:put (format "/%s/:id" s) (-> change resolve-keyword)]
+          [:delete (format "/%s/:id" s) (-> delete resolve-keyword)]]
+         (filterv #(-> % (last) (some?))))))
 
 (defn resource
   "Creates a set of seven functions that map to a conventional set of named functions.
@@ -176,77 +190,27 @@
 
    [[:get    '/resources          resources/index]
     [:get    '/resources/:id      resources/show]
-    [:get    '/resources/fresh    resources/fresh] ; this is 'fresh' not 'new' because new is reserved
+    [:get    '/resources/fresh    resources/fresh]
     [:get    '/resources/:id/edit resources/edit]
     [:post   '/resources          resources/create]
-    [:put    '/resources/:id      resources/change] ; this is 'change' not 'update' because update is in clojure.core
+    [:put    '/resources/:id      resources/change]
     [:delete '/resources/:id      resources/delete]]
 
    Examples:
 
-   (resource :items)
-   (resource :items :only [:create :delete])
-   (resource :items :sub-items :only [:index :create])
-   (resource :items :except [:index])
+   (resource items/show items/index)
+   (resource items/create items/delete)
+   (resource items/index items/create)
+   (resource items/index)
    "
-  [routes & ks]
-  (let [ks (if (not (vector? routes))
-             (apply conj [routes] ks)
-             (vec ks))
-        routes (if (vector? routes)
-                 routes
-                 [])
-        only? (and (not (empty? (filter #(= % :only) ks)))
-                   (vector? (last ks))
-                   (not (empty? (last ks))))
-        except? (and (not (empty? (filter #(= % :except) ks)))
-                     (vector? (last ks))
-                     (not (empty? (last ks))))
-        filter-resources (when (or only? except?) (last ks))
-        route-ks (if (or only? except?)
-                   (vec (take (- (count ks) 2) ks))
-                   ks)
-        resource-ks (take-last 1 route-ks)
-        resource-names (map name resource-ks)
-        resource-name (first resource-names)
-        prefix-ks (drop-last route-ks)
-        route-str (as-> (map str prefix-ks) %
-                        (map prefix-param %)
-                        (concat '("") (interleave (map name prefix-ks) %) resource-names)
-                        (string/join "/" %))
-        resources [{:method :get
-                    :route route-str
-                    :handler (symbol resource-name "index")
-                    :name :index}
-                   {:method :get
-                    :route (str route-str "/fresh")
-                    :handler (symbol resource-name "fresh")
-                    :name :fresh}
-                   {:method :get
-                    :route (str route-str "/:id")
-                    :handler (symbol resource-name "show")
-                    :name :show}
-                   {:method :post
-                    :route route-str
-                    :handler (symbol resource-name "create")
-                    :name :create}
-                   {:method :get
-                    :route (str route-str "/:id/edit")
-                    :handler (symbol resource-name "edit")
-                    :name :edit}
-                   {:method :put
-                    :route (str route-str "/:id")
-                    :handler (symbol resource-name "change")
-                    :name :change}
-                   {:method :delete
-                    :route (str route-str "/:id")
-                    :handler (symbol resource-name "delete")
-                    :name :delete}]
-        resources (if only?
-                    (filter #(not= -1 (.indexOf filter-resources (clojure.core/get % :name))) resources)
-                    resources)
-        resources (if except?
-                    (filter #(= -1 (.indexOf filter-resources (clojure.core/get % :name))) resources)
-                    resources)
-        resources (map resource-route resources)]
-    (vec (concat routes resources))))
+  [& args]
+  (let [functions (if (vector? (first args))
+                    (rest args)
+                    args)
+        routes (->> (map #(-> % str repl/demunge (string/replace #"@\w+" "") keyword) functions)
+                    (mapv #(vector (name %) %))
+                    (into {})
+                    (resource-routes))]
+    (if (vector? (first args))
+      (vec (concat (first args) routes))
+      routes)))
