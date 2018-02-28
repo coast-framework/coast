@@ -49,7 +49,7 @@ Go ahead and add the routes too
 
 (def routes
   (-> (coast/get "/" c.home/index)
-      (coast/resource :c.posts)))
+      (coast/resource c.posts/index c.posts/show c.posts/fresh c.posts/create c.posts/edit c.posts/change c.posts/delete)))
 ```
 
 Let's see our masterpiece so far
@@ -57,12 +57,6 @@ Let's see our masterpiece so far
 ```clojure
 lein repl ; or start a repl your preferred way
 (coast) ; => Listening on port 1337
-```
-
-OR
-
-```bash
-lein run
 ```
 
 You should be greeted with the text "You're coasting on clojure!"
@@ -133,7 +127,7 @@ drop table posts
 #### `lein db/migration create-posts title:text body:text`
 
 This makes a new migration that creates a table with the given name:type
-columns. Juicy.
+columns.
 
 ```sql
 -- up
@@ -150,7 +144,7 @@ drop table posts
 
 #### `lein db/migrate`
 
-This performs the migration, if one of them fails, it should stop migrating the rest.
+This performs the migration
 
 ## Models
 
@@ -278,7 +272,9 @@ The last part of the this three part process is the model file in a different na
             [coast.utils :as utils]))
 (:refer-clojure :exclude [list find update])
 
-(def columns [:title :body])
+(defn params [request]
+  (-> (:params request)
+      (select-keys [:title :body])))
 
 (defn list [request]
   (->> (:params request)
@@ -292,28 +288,46 @@ The last part of the this three part process is the model file in a different na
        (assoc request :post)))
 
 (defn insert [request]
-  (as-> (:params request) %
-        (select-keys % columns)
-        (db.posts/insert %)
-        (assoc request :post %)))
+  (->> (:params request))
+       (params)
+       (db.posts/insert)
+       (assoc request :post)))
 
 (defn update [request]
   (let [id (get-in request [:params :id])
         post (db.posts/find {:id id})]
-    (as-> (:params request) %
-          (merge post %)
-          (select-keys % columns)
-          (db.posts/update %)
-          (assoc request :post %))))
+    (->> (:params request)
+         (merge post)
+         (params)
+         (db.posts/update)
+         (assoc request :post))))
 
 (defn delete [request]
-  (as-> (:params request) %
-        (select-keys % columns)
-        (db.posts/delete %)
-        (assoc request :post %)))
+  (->> (:params request)
+       (params)
+       (db.posts/delete)
+       (assoc request :post)))
 ```
 
 There's a lot to the models, but quite a bit less than something like active record.
+
+## Views
+
+Views are clojure functions the emit hiccup with a few implicit things related to re-usable layouts
+When starting up a coast app, you call `coast/app` and you can pass in a few options, one of which
+is a function that represents a persistent set of html elements you want to see across all pages
+of your site
+
+```clojure
+(ns blog.core
+  (:require [coast.alpha :as coast]
+            [coast.components :as c]))
+
+(def app (coast/app {:layout c/layout})
+```
+
+When you return a vector from any view function, it automatically gets rendered as html and rendered inside
+of the layout function where you specify
 
 ## TODO
 
