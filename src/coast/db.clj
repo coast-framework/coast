@@ -37,7 +37,8 @@
 
 (defn admin-connection []
   (let [db-url (or (env/env :admin-db-spec-or-url)
-                   "postgres://localhost:5432")]
+                   (env/env :admin-database-url)
+                   "postgres://localhost:5432/postgres")]
     (if (string/blank? db-url)
       (throw (Exception. "Your admin database connection string is blank. Set the ADMIN_DB_SPEC_OR_URL environment variable"))
       {:connection (jdbc/get-connection db-url)})))
@@ -49,9 +50,10 @@
 
 (defn exec [conn v]
   (when (sql-vec? v)
-    (transact!
-      (jdbc/with-db-connection [db-conn conn]
-        (jdbc/execute! db-conn v)))))
+    (jdbc/with-db-connection [db-conn conn]
+      (with-open [s (.createStatement (jdbc/db-connection conn))]
+        (.addBatch s (first v))
+        (seq (.executeBatch s))))))
 
 (defn query
   ([conn v opts]
@@ -79,11 +81,11 @@
 (defq columns "resources/sql/schema.sql")
 
 (defn create [db-name]
-  (let [v [(format "create database %_%" db-name (env/env :coast-env))]]
-    (query (admin-connection) v)
-    (println "Database" name "created successfully")))
+  (let [v [(format "create database %s_%s" db-name (env/env :coast-env))]]
+    (exec (admin-connection) v)
+    (println "Database" db-name "created successfully")))
 
 (defn drop [db-name]
-  (let [v [(format "drop database %_%" db-name (env/env :coast-env))]]
-    (query (admin-connection) v)
-    (println "Database" name "dropped successfully")))
+  (let [v [(format "drop database %s_%s" db-name (env/env :coast-env))]]
+    (exec (admin-connection) v)
+    (println "Database" db-name "dropped successfully")))

@@ -1,4 +1,4 @@
-(defproject coast.alpha "0.1.8"
+(defproject coast.alpha "0.1.9"
   :description "An easy full stack framework for clojure"
   :url "https://coastonclojure.com"
   :license {:name "MIT License"
