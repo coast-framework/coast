@@ -327,7 +327,43 @@ of your site
 ```
 
 When you return a vector from any view function, it automatically gets rendered as html and rendered inside
-of the layout function where you specify
+of the layout function where you tell it to, the default layout function looks like this:
+
+```clojure
+(ns blog.components
+  (:require [coast.alpha :as coast]))
+
+(defn layout [request body]
+  (coast/html5
+    [:head
+     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+     (coast/include-css "/css/app.css")]
+    [:body
+     body
+     (coast/include-js "/js/app.js")]))
+```
+
+So this returns a vector and then there's the coast middleware that turns vector and string responses into ring response maps:
+
+```clojure
+(defn layout? [response layout]
+  (and (not (nil? layout))
+       (or (vector? response)
+           (string? response))))
+
+(defn wrap-layout [handler layout]
+  (fn [request]
+    (let [response (handler request)]
+      (cond
+        (map? response) response
+        (layout? response layout) (responses/ok (layout request response))
+        :else (responses/ok response)))))
+```
+
+which you can override by returning your own response map, that's pretty much all there is to views. The goal
+is to do a clojure-y thing by combining small functions in the components namespace into the components of your app,
+text fields, select fields, forms, lists, headers, "cards", "panels", similar to bootstrap but hopefully re-usable.
+I also recommend functional css or atomic css libraries like [tachyons](http://tachyons.io) or basscss.
 
 ## TODO
 
