@@ -74,4 +74,5 @@
    env]
   [coast.components
    form-for
-   link-to])
+   link-to
+   csrf])
