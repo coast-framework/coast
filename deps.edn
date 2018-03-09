@@ -1,0 +1,25 @@
+{:paths ["src" "resources"]
+ :deps
+ {org.clojure/data.json {:mvn/version "0.2.6"}
+  org.clojure/clojure {:mvn/version "1.9.0"}
+  ring/ring-devel {:mvn/version "1.5.0"}
+  prone {:mvn/version "1.1.4"}
+  ring/ring-defaults {:mvn/version "0.2.3"}
+  org.postgresql/postgresql {:mvn/version "42.2.1"}
+  org.clojure/tools.namespace {:mvn/version "0.2.11"}
+  http-kit {:mvn/version "2.2.0"}
+  potemkin {:mvn/version "0.4.4"}
+  org.clojure/java.jdbc {:mvn/version "0.7.5"}
+  hiccup {:mvn/version "1.0.5"}
+  jkkramer/verily {:mvn/version "0.6.0"}
+  ring/ring-core {:mvn/version "1.6.2"}}
+
+ :aliases
+ {
+  :uberjar
+  {:main-opts ["-m" "mach.pack.alpha.capsule" "deps.edn" "target/coast.jar" "resources"]
+   :extra-deps
+   {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
+                     :sha     "bb2c5a2c78aca9328e023b029c06ba0efdd1e3b7"}}}
+  :nrepl {:extra-deps {org.clojure/tools.nrepl {:mvn/version "0.2.12"}}}
+  :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.15.1"}}}}}
