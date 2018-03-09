@@ -1,4 +1,4 @@
-(ns __project.views.__table
+(ns views.__table
   (:require [coast.alpha :as coast]))
 
 (defn table-row [m]

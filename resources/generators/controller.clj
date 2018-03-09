@@ -1,4 +1,4 @@
-(ns __project.controllers.__table
+(ns controllers.__table
   (:require [coast.alpha :as coast]
             [__ns.models.__table :as __table]
             [__ns.views.__table :as views.__table])

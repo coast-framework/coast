@@ -1,4 +1,4 @@
-(ns __project.db.__table
+(ns db.__table
   (:require [coast.alpha :refer [defq]])
   (:refer-clojure :exclude [update list find]))
 

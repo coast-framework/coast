@@ -1,4 +1,4 @@
-(ns __project.models.__table
+(ns models.__table
   (:require [__project.db.__table :as db.__table]))
 (:refer-clojure :exclude [list find update])
 
