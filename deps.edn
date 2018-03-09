@@ -1,4 +1,4 @@
-{:paths ["src" "resources"]
+{:paths ["src" "resources/sql"]
  :deps
  {org.clojure/data.json {:mvn/version "0.2.6"}
   org.clojure/clojure {:mvn/version "1.9.0"}
