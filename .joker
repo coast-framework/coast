@@ -1,0 +1,3 @@
+{:known-macros [defq coast/defq coast.db/defq [with-db-connection [db-conn conn]]]}
+ :rules {:if-without-else true
+         :no-forms-threading false}
