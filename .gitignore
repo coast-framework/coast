@@ -12,3 +12,4 @@ pom.xml.asc
 .idea/
 *.iml
 .env
+.cpcache
