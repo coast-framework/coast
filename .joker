@@ -1,3 +1,3 @@
-{:known-macros [coast.db/defq clojure.java.jdbc/with-db-connection]
+{:known-macros [coast.db/defq coast.alpha/defq clojure.java.jdbc/with-db-connection]
  :rules {:if-without-else true
          :no-forms-threading false}}
