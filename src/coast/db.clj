@@ -48,12 +48,14 @@
        (string? (first v))
        (not (string/blank? (first v)))))
 
-(defn exec [conn v]
-  (when (sql-vec? v)
-    (jdbc/with-db-connection [db-conn conn]
-      (with-open [s (.createStatement (jdbc/db-connection conn))]
-        (.addBatch s (first v))
-        (seq (.executeBatch s))))))
+(defn execute! [db sql]
+  (jdbc/execute! db sql))
+
+(defn exec [db sql]
+  (jdbc/with-db-connection [conn db]
+    (with-open [s (.createStatement (jdbc/db-connection conn))]
+      (.addBatch s sql)
+      (seq (.executeBatch s)))))
 
 (defn query
   ([conn v opts]
@@ -78,14 +80,16 @@
 (defmacro defq [n filename]
   `(def ~n (query-fn '~n ~filename)))
 
-(defq columns "resources/sql/schema.sql")
+(defq columns "schema.sql")
 
 (defn create [db-name]
-  (let [v [(format "create database %s_%s" db-name (env/env :coast-env))]]
-    (exec (admin-connection) v)
+  (let [db-name (format "%s_%s" db-name (env/env :coast-env))
+        sql (format "create database %s" db-name)]
+    (exec (admin-connection) sql)
     (println "Database" db-name "created successfully")))
 
 (defn drop [db-name]
-  (let [v [(format "drop database %s_%s" db-name (env/env :coast-env))]]
-    (exec (admin-connection) v)
+  (let [db-name (format "%s_%s" db-name (env/env :coast-env))
+        sql (format "drop database %s" db-name)]
+    (exec (admin-connection) sql)
     (println "Database" db-name "dropped successfully")))
