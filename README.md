@@ -2,7 +2,7 @@
 
 The easy full stack clojure web framework
 
-Current version: `[coast.alpha "0.1.9"]`
+Current version: `[coast.alpha "0.1.10"]`
 
 Previous version: `[coast "0.6.8"]` [README](https://github.com/swlkr/coast/tree/0.6.8)
 
@@ -12,6 +12,7 @@ The current version is kind of not ready for production use
 ## Table of Contents
 
 - [Quickstart](#quickstart)
+- [Shipping](#shipping)
 - [Database](#database)
 - [Models](#models)
 - [Views](#views)
@@ -23,64 +24,77 @@ The current version is kind of not ready for production use
 
 Create a new coast project like this
 ```bash
-lein new coast blog
-cd blog
+brew install clojure
+curl -O https://raw.githubusercontent.com/swlkr/coast/coast /usr/local/bin/coast
+chmod a+x /usr/local/bin/coast
+coast new blog
 ```
 
 Let's set up the database!
 ```bash
-lein db/create # assumes a running postgres server. creates a new db called blog_dev
+make db/create # assumes a running postgres server. creates a new db called blog_dev
 ```
 
 Let's create a table to store posts and generate some code to so we can interact with that table!
 ```bash
-lein db/migration create-posts title:text body:text
-lein db/migrate
-lein mvc/gen posts
+coast gen migration create-posts title:text body:text
+make db/migrate
+coast gen mvc posts
 ```
 
 Go ahead and add the routes too
 ```clojure
-(ns blog.routes
+(ns routes
   (:require [coast.core :as coast]
-            [blog.controllers.posts :as c.posts]
-            [blog.controllers.home :as c.home]))
+            [controllers.posts :as c.posts]
+            [controllers.home :as c.home]))
 
 (def routes
   (-> (coast/get "/" c.home/index)
-      (coast/resource c.posts/index c.posts/show c.posts/fresh c.posts/create c.posts/edit c.posts/change c.posts/delete)))
+      (coast/resource 'c.posts)))
 ```
 
 Let's see our masterpiece so far
 
+```bash
+make nrepl
+```
+
+Then in your editor, send this to your repl on port 7888
+
 ```clojure
-lein repl ; or start a repl your preferred way
 (coast) ; => Listening on port 1337
 ```
 
 You should be greeted with the text "You're coasting on clojure!"
-when you visit http://localhost:1337 and when you visit http://localhost:1337/posts
+when you visit `http://localhost:1337` and when you visit `http://localhost:1337/posts`
 you should be able to add, edit, view and delete the rows from the post table!
 
-Amazing!
+## Shipping
+
+```bash
+make uberjar
+make db/migrate
+make server
+```
 
 ## Database
 
 The only currently supported database is postgres. PRs gladly accepted to add more.
 
-There are a few generators in the form of lein aliases to help you get the boilerplate-y database stuff out of the way:
+There are a few generators to help you get the boilerplate-y database stuff out of the way:
 
 ```bash
-lein db/create
-lein db/drop
-lein db/migration
-lein db/migrate
-lein db/rollback
+make db/create
+make db/drop
+make db/migrate
+make db/rollback
+coast gen migration
 ```
 
 Those all do what you think they do.
 
-#### `lein db/create`
+#### `make db/create`
 
 The database name is your project name underscore dev. So
 if your project name is `cryptokitties`, your db would be named `cryptokitties_dev`. This assumes a running
@@ -88,15 +102,15 @@ postgres server and the process running leiningen has permission to create datab
 when those requirements aren't met. Probably an error of some kind. You can actually change this from `project.clj`
 since the aliases have the name in them as the first argument.
 
-#### `lein db/drop`
+#### `make db/drop`
 
 The opposite of `db/create`. Again, I don't know what happens when you run drop before create. Probably an error.
 
-#### `lein db/migration`
+#### `coast gen migration`
 
 This creates a migration which is just plain sql 😎 with a timestamp and the filename in the `resources/migrations` folder
 
-#### `lein db/migration the-name-of-a-migration`
+#### `coast gen migration the-name-of-a-migration`
 
 This creates an empty migration that looks like this
 
@@ -107,7 +121,7 @@ This creates an empty migration that looks like this
 
 ```
 
-#### `lein db/migration create-posts`
+#### `coast gen migration create-posts`
 
 This creates a migration that creates a new table with the "default coast"
 columns of id and created_at.
@@ -123,7 +137,7 @@ create table posts (
 drop table posts
 ```
 
-#### `lein db/migration create-posts title:text body:text`
+#### `coast gen migration create-posts title:text body:text`
 
 This makes a new migration that creates a table with the given name:type
 columns.
@@ -141,7 +155,7 @@ create table posts (
 drop table posts
 ```
 
-#### `lein db/migrate`
+#### `make db/migrate`
 
 This performs the migration
 
@@ -149,7 +163,7 @@ This performs the migration
 
 Models are clojure functions that call external sql files in `resources/sql` There's a generator for the basic crud operations:
 
-#### `lein model/gen posts`
+#### `coast gen model posts`
 
 This requires that the posts table already exists and it creates three files:
 
@@ -214,23 +228,23 @@ returning *
 Here is where the `db.clj` file comes in and references the `posts.db.sql` file
 
 ```clojure
-(ns blog.db.posts
+(ns db.posts
   (:require [coast.alpha :refer [defq]])
   (:refer-clojure :exclude [update list find]))
 
-(defq list "resources/sql/posts.db.sql")
-(defq find "resources/sql/posts.db.sql")
-(defq insert "resources/sql/posts.db.sql")
-(defq update "resources/sql/posts.db.sql")
-(defq delete "resources/sql/posts.db.sql")
+(defq list "sql/posts.db.sql")
+(defq find "sql/posts.db.sql")
+(defq insert "sql/posts.db.sql")
+(defq update "sql/posts.db.sql")
+(defq delete "sql/posts.db.sql")
 ```
 
-`defq` is a macro that reads the sql file at compile time and generates functions
-with the symbols of the names in the sql file. If you try to specify a name that doesn't have a corresponding `-- name:`
-in the sql file, you'll get a compile exception, so that's kind of cool. I know this part is kind of boilerplate-y but luckily
+`defq` is a macro that reads the sql resource at compile time and generates functions
+with the symbols of the names in the sql resource. If you try to specify a name that doesn't have a corresponding `-- name:`
+in the sql resource, you'll get a compile exception, so that's kind of cool. I know this part is kind of boilerplate-y but luckily
 this gets generated for you.
 
-The idea behind the .db.sql naming is that this sql file is special and not manually edited, so it can be regenerated at any time with
+The idea behind the `.db.sql` naming is that this sql file is special and not manually edited, so it can be regenerated at any time with
 new schema changes for insert/update queries. You can of course create any number of .sql files you want, so if you needed to customize
 posts with comment counts or something similar, you could do this in `posts.sql`, not `posts.db.sql`:
 
@@ -257,23 +271,29 @@ join
 
  Then in the db file:
 
- ```clojure
- (defq posts-with-count "resources/sql/posts.sql")
- ```
+```clojure
+(defq posts-with-count "sql/posts.sql")
+```
 
 And now you have a new function wired to a bit of custom sql.
 
 The last part of the this three part process is the model file in a different namespace so the function names can be reused and called from the controllers:
 
 ```clojure
-(ns blog.models.posts
-  (:require [blog.db.posts :as db.posts]
-            [coast.utils :as utils]))
-(:refer-clojure :exclude [list find update])
+(ns models.posts
+  (:require [db.posts :as db.posts]
+            [coast.utils :as utils])
+  (:refer-clojure :exclude [list find update]))
+
+(def columns [:title :body])
+
+(defn id [request]
+  (-> (:params request)
+      (select-keys [:id])))
 
 (defn params [request]
   (-> (:params request)
-      (select-keys [:title :body])))
+      (select-keys columns)))
 
 (defn list [request]
   (->> (:params request)
@@ -281,29 +301,25 @@ The last part of the this three part process is the model file in a different na
        (assoc request :posts)))
 
 (defn find [request]
-  (->> (:params request)
-       (hash-map :id)
+  (->> (id request)
        (db.posts/find)
        (assoc request :post)))
 
 (defn insert [request]
-  (->> (:params request))
-       (params)
+  (->> (params request)
        (db.posts/insert)
        (assoc request :post)))
 
 (defn update [request]
-  (let [id (get-in request [:params :id])
-        post (db.posts/find {:id id})]
-    (->> (:params request)
+  (let [post (-> (id request)
+                 (db.posts/find))]
+    (->> (params request)
          (merge post)
-         (params)
          (db.posts/update)
          (assoc request :post))))
 
 (defn delete [request]
-  (->> (:params request)
-       (params)
+  (->> (params request)
        (db.posts/delete)
        (assoc request :post)))
 ```
@@ -318,18 +334,18 @@ is a function that represents a persistent set of html elements you want to see 
 of your site
 
 ```clojure
-(ns blog.core
+(ns server
   (:require [coast.alpha :as coast]
             [coast.components :as c]))
 
-(def app (coast/app {:layout c/layout})
+(def app (coast/app {:layout c/layout}))
 ```
 
 When you return a vector from any view function, it automatically gets rendered as html and rendered inside
 of the layout function where you tell it to, the default layout function looks like this:
 
 ```clojure
-(ns blog.components
+(ns components
   (:require [coast.alpha :as coast]))
 
 (defn layout [request body]
@@ -342,7 +358,7 @@ of the layout function where you tell it to, the default layout function looks l
      (coast/include-js "/js/app.js")]))
 ```
 
-So this returns a vector and then there's the coast middleware that turns vector and string responses into ring response maps:
+So this returns a vector and then there's the coast middleware that turns a hiccup vector and string responses into ring response maps:
 
 ```clojure
 (defn layout? [response layout]
