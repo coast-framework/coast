@@ -9,7 +9,7 @@
   (:refer-clojure :exclude [read]))
 
 (def empty-migration "-- up\n\n-- down")
-(def migration-regex #"(?s)--\s*up(.+)--\s*down(.+)")
+(def migration-regex #"(?s)--\s*up\s*(.+)--\s*down\s*(.+)")
 
 (defn migrations-dir []
   (.mkdirs (File. "resources/migrations"))
@@ -56,18 +56,29 @@
        :down down})))
 
 (defn migrate []
-  (let [migrations (pending)]
+  (let [migrations (pending)
+        conn (db/connection)]
     (doseq [migration migrations]
-      (db/execute! (db/connection) (-> migration read parse :up))
-      (insert {:id migration})
-      (println (format "%s migrated successfully" (string/replace migration #"\.sql" ""))))))
+      (let [contents (-> migration read parse :up)]
+        (if (or (string/blank? contents)
+                (nil? contents))
+          (throw (Exception. (format "%s up statement is empty" migration)))
+          (do
+            (db/execute! conn contents)
+            (insert {:id migration})
+            (println (format "%s migrated successfully" (string/replace migration #"\.sql" "")))))))))
 
 (defn rollback []
   (let [migration (-> (completed-migrations) (last))
-        _ (->> (-> migration read parse :down)
-               (db/execute! (db/connection)))]
-    (delete {:id migration})
-    (println (format "%s rolled back successfully" (string/replace migration #"\.sql" "")))))
+        conn (db/connection)
+        contents (-> migration read parse :down)]
+    (if (or (string/blank? contents)
+            (nil? contents))
+      (throw (Exception. (format "%s down statement is empty" migration)))
+      (do
+        (db/execute! conn contents)
+        (delete {:id migration})
+        (println (format "%s rolled back successfully" (string/replace migration #"\.sql" "")))))))
 
 (defn timestamp []
   (-> (time/now)
