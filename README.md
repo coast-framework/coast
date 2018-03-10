@@ -42,7 +42,7 @@ make db/migrate
 coast gen mvc posts
 ```
 
-Go ahead and add the routes too
+Add the routes too
 ```clojure
 (ns routes
   (:require [coast.core :as coast]
