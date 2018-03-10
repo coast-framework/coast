@@ -1,13 +1,13 @@
 (ns controllers.__table
   (:require [coast.alpha :as coast]
-            [__ns.models.__table :as __table]
-            [__ns.views.__table :as views.__table])
+            [models.__table :as __table]
+            [views.__table :as views.__table])
   (:refer-clojure :exclude [update]))
 
-defn index [request]
-(-> request
-    __table/list
-    views.__table/index)
+(defn index [request]
+  (-> request
+      __table/list
+      views.__table/index))
 
 (defn show [request]
   (-> request
@@ -43,7 +43,7 @@ defn index [request]
 
 (defn delete [request]
   (let [[_ errors] (-> request
-                       _table/delete
+                       __table/delete
                        coast/try+)]
     (if (empty? errors)
       (-> (coast/redirect "/__table")

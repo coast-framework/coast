@@ -4,7 +4,8 @@
             [coast.utils :as utils]
             [coast.words :as words]
             [clojure.java.io :as io]
-            [coast.migrations :as migrations]))
+            [coast.migrations :as migrations])
+  (:import (java.io File)))
 
 (def pattern #"__([\w-]+)")
 
@@ -21,6 +22,27 @@
 (defn excluded-cols [s]
   (not (contains? excluded-col-set s)))
 
+(defn sql-dir []
+  (.mkdirs (File. "resources/sql"))
+  "resources/sql")
+
+(defn db-dir []
+  (.mkdirs (File. "src/db"))
+  "src/db")
+
+(defn model-dir []
+  (.mkdirs (File. "src/models"))
+  "src/models")
+
+(defn prompt [s]
+  (print s)
+  (flush)
+  (read-line))
+
+(defn overwrite? [filename]
+  (and (.exists (io/file filename))
+       (= (prompt (str filename " already exists. Overwrite? [y/n] ")) "y")))
+
 (defn sql [table]
   (let [cols (->> (db/columns {:table-name table})
                   (map :column-name)
@@ -30,47 +52,58 @@
                            (string/join ",\n  "))
         update-columns (->> (map #(format "%s = %s" % (str ":" %)) cols)
                             (string/join ",\n  "))
-        output-filename (format "resources/sql/%s.db.sql" table)]
-    (->> (io/resource "generators/db.sql")
-         (slurp)
-         (fill {:table table
-                :insert-columns insert-columns
-                :insert-values insert-values
-                :update-columns update-columns})
-         (spit output-filename))
-    (println (format "%s created successfully" output-filename))))
+        output (format "%s/%s.db.sql" (sql-dir) table)]
+    (if (overwrite? output)
+      (do
+        (->> (io/resource "generators/db.sql")
+             (slurp)
+             (fill {:table table
+                    :insert-columns insert-columns
+                    :insert-values insert-values
+                    :update-columns update-columns})
+             (spit output))
+        (println output "created successfully"))
+      (println "sql file skipped"))))
 
 (defn db [table]
-  (let [output (format "src/db/%s.clj" table)]
-    (->> (io/resource "generators/db.clj")
-         (slurp)
-         (fill {:table (utils/kebab table)})
-         (spit output))
-    (println (format "%s created successfully" output))))
+  (let [output (format "%s/%s.clj" (db-dir) table)]
+    (if (overwrite? output)
+      (do
+        (->> (io/resource "generators/db.clj")
+             (slurp)
+             (fill {:table (utils/kebab table)})
+             (spit output))
+        (println output "created successfully"))
+      (println "db file skipped"))))
 
 (defn model [table]
-  (let [output (format "src/models/%s.clj" table)
-        _ (sql table)
-        _ (db table)]
-    (->> (io/resource "generators/model.clj")
-         (slurp)
-         (fill {:table (utils/kebab table)
-                :singular (-> table utils/kebab words/singular)
-                :columns (->> (db/columns {:table-name table})
-                              (map :column-name)
-                              (map utils/kebab)
-                              (string/join ", "))})
-         (spit output))
-    (println (format "%s created successfully" output))))
+  (let [output (format "%s/%s.clj" (model-dir) table)]
+    (if (overwrite? output)
+      (do
+        (->> (io/resource "generators/model.clj")
+             (slurp)
+             (fill {:table (utils/kebab table)
+                    :singular (-> table utils/kebab words/singular)
+                    :columns (->> (db/columns {:table-name table})
+                                  (map :column-name)
+                                  (map utils/kebab)
+                                  (map #(str ":" %))
+                                  (string/join " "))})
+             (spit output))
+        (println output "created successfully"))
+      (println "model file skipped"))))
 
 (defn controller [table]
   (let [output (format "src/controllers/%s.clj" table)]
-    (->> (io/resource "generators/controller.clj")
-         (slurp)
-         (fill {:table (utils/kebab table)
-                :singular (-> table utils/kebab words/singular)})
-         (spit output))
-    (println (format "%s created successfully" output))))
+    (if (overwrite? output)
+      (do
+        (->> (io/resource "generators/controller.clj")
+             (slurp)
+             (fill {:table (utils/kebab table)
+                    :singular (-> table utils/kebab words/singular)})
+             (spit output))
+        (println output "created successfully"))
+      (println "controller file skipped"))))
 
 (defn view [table]
   (let [columns (->> (db/columns {:table-name table})
@@ -86,17 +119,21 @@
         form-columns (->> (map #(format "[:div\n         [:label \"%s\"]\n         [:input {:type \"text\" :name  \"%s\" :value %s}]]" % % %) columns)
                           (string/join "\n       "))
         output (format "src/views/%s.clj" table)]
-    (->> (io/resource "generators/view.clj")
-         (slurp)
-         (fill {:table (utils/kebab table)
-                :singular (words/singular table)
-                :columns (string/join " " columns)
-                :td-columns td-columns
-                :th-columns th-columns
-                :form-columns form-columns
-                :div-columns div-columns})
-         (spit output))
-    (println (format "%s created successfully" output))))
+    (if (overwrite? output)
+      (do
+        (->> (io/resource "generators/view.clj")
+             (slurp)
+             (fill {:table (utils/kebab table)
+                    :singular (words/singular table)
+                    :columns (string/join " " columns)
+                    :td-columns td-columns
+                    :th-columns th-columns
+                    :form-columns form-columns
+                    :div-columns div-columns})
+             (spit output))
+        (println output "created successfully"))
+      (println "view file skipped"))))
+
 
 (defn usage []
   (println "Usage:

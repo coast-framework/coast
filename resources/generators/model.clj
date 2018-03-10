@@ -1,6 +1,6 @@
 (ns models.__table
-  (:require [__project.db.__table :as db.__table]))
-(:refer-clojure :exclude [list find update])
+  (:require [db.__table :as db.__table])
+  (:refer-clojure :exclude [list find update]))
 
 (def columns [__columns])
 
