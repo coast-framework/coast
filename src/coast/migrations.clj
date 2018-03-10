@@ -1,26 +1,29 @@
 (ns coast.migrations
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
+            [clojure.set :as set]
             [coast.db :refer [defq] :as db]
             [coast.queries :as queries]
             [coast.time :as time])
-  (:import (java.io File)))
+  (:import (java.io File))
+  (:refer-clojure :exclude [read]))
 
 (def empty-migration "-- up\n\n-- down")
+(def migration-regex #"(?s)--\s*up(.+)--\s*down(.+)")
 
 (defn migrations-dir []
   (.mkdirs (File. "resources/migrations"))
   "resources/migrations")
 
-(defq migrations "resources/sql/migrations.sql")
-(defq insert "resources/sql/migrations.sql")
-(defq delete "resources/sql/migrations.sql")
+(defq migrations "migrations.sql")
+(defq insert "migrations.sql")
+(defq delete "migrations.sql")
 
 (defn create-table []
-  (let [sql (-> (queries/parts "resources/sql/migrations.sql")
+  (let [sql (-> (queries/parts "migrations.sql")
                 (get "create-table")
                 (get :sql))]
-    (db/exec (db/connection) [sql])))
+    (db/execute! (db/connection) sql)))
 
 (defn completed-migrations []
   (let [_ (create-table)]
@@ -38,26 +41,31 @@
 (defn pending []
   (let [all (set (migration-files))
         completed (set (completed-migrations))]
-    (sort (vec (clojure.set/difference all completed)))))
+    (sort (vec (set/difference all completed)))))
 
-(defn parse [s name]
-  (when (not (nil? name))
-    (-> (str (migrations-dir) "/" name)
-        (slurp)
-        (queries/parse)
-        (get-in [s :sql]))))
+(defn path [s]
+  (format "%s/%s" (migrations-dir) s))
+
+(defn read [s]
+  (-> s path slurp))
+
+(defn parse [s]
+  (when (string? s)
+    (let [[_ up down] (re-matches migration-regex s)]
+      {:up up
+       :down down})))
 
 (defn migrate []
   (let [migrations (pending)]
     (doseq [migration migrations]
-      (db/query (db/connection) (parse "up" migration))
+      (db/execute! (db/connection) (-> migration read parse :up))
       (insert {:id migration})
       (println (format "%s migrated successfully" (string/replace migration #"\.sql" ""))))))
 
 (defn rollback []
   (let [migration (-> (completed-migrations) (last))
-        _ (->> (parse "down" migration)
-               (db/query (db/connection)))]
+        _ (->> (-> migration read parse :down)
+               (db/execute! (db/connection)))]
     (delete {:id migration})
     (println (format "%s rolled back successfully" (string/replace migration #"\.sql" "")))))
 
