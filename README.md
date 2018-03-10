@@ -25,7 +25,7 @@ The current version is kind of not ready for production use
 Create a new coast project like this
 ```bash
 brew install clojure
-curl -O https://raw.githubusercontent.com/swlkr/coast/coast /usr/local/bin/coast
+curl -O https://raw.githubusercontent.com/swlkr/coast/master/coast /usr/local/bin/coast
 chmod a+x /usr/local/bin/coast
 coast new blog
 ```
