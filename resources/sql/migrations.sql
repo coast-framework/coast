@@ -14,9 +14,11 @@ order by
 -- name: insert
 insert into schema_migrations (id)
 values (:id)
+returning *
 
 -- name: delete
 delete
 from
   schema_migrations
 where id = :id
+returning *
