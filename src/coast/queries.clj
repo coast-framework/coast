@@ -1,10 +1,12 @@
 (ns coast.queries
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
-            [coast.utils :as utils]))
+            [coast.utils :as utils]
+            [clojure.set :as set]))
 
 (def name-regex #"^--\s*name\s*:\s*(.+)$")
 (def fn-regex #"^--\s*fn\s*:\s*(.+)$")
+(def qualified-keyword-pattern #":([\w-\.]+/?[\w-\.]+)Z?")
 
 (defn name-line? [s]
   (not (nil? (re-matches name-regex s))))
@@ -44,8 +46,6 @@
   (let [query-lines (clojure.string/split lines #"\n\n")]
     (into {} (filter #(not (nil? %)) (map parse-query-string query-lines)))))
 
-(def qualified-keyword-pattern #":([\w-\.]+/?[\w-\.]+)Z?")
-
 (defn parameterize [s m]
   (string/replace s qualified-keyword-pattern (fn [[_ s]]
                                                 (let [k (keyword s)
@@ -62,7 +62,7 @@
           sql-ks (mapv #(-> % second keyword) (re-seq qualified-keyword-pattern sql))
           sql-ks (mapv utils/snake sql-ks)
           params (map #(get m %) sql-ks)
-          diff (clojure.set/difference (set sql-ks) (set (keys (select-keys m sql-ks))))
+          diff (set/difference (set sql-ks) (set (keys (select-keys m sql-ks))))
           f-sql (parameterize sql m)
           s-vec (vec (concat [f-sql] (->> (map (fn [val] (if (coll? val) (flatten val) val)) params)
                                           (flatten))))]
@@ -71,7 +71,7 @@
         (throw (Exception. (str "Parameter mismatch. Expected " (string/join ", " (map utils/kebab sql-ks)) ". Got " (string/join ", " (map utils/kebab (keys m))))))))))
 
 (defn parts [filename]
-  (let [content (-> filename (string/replace #"^resources/" "") io/resource slurp)]
+  (let [content (-> filename io/resource slurp)]
     (if (or (nil? content)
             (string/blank? content))
       (throw (Exception. (format "%s doesn't exist" filename)))
