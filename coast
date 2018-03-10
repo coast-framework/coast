@@ -1,0 +1,91 @@
+#!/usr/bin/env sh
+
+# helper functions for strings
+lowercase() {
+  local string="${1}"
+
+  if [[ -z "${string}" ]] && [ ! -t 0 ]; then
+      string=$(cat <&0)
+  fi
+
+  echo ${string} | sed -e 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/'
+}
+
+kebabcase() {
+  local string="${1}"
+
+  if [[ -z "${string}" ]] && [ ! -t 0 ]; then
+      string=$(cat <&0)
+  fi
+
+  echo ${string} | tr '_' '-'
+}
+
+snakecase() {
+  local string="${1}"
+
+  if [[ -z "${string}" ]] && [ ! -t 0 ]; then
+      string=$(cat <&0)
+  fi
+
+  echo ${string} | tr '-' '_'
+}
+
+random() {
+  echo $(LC_CTYPE=C tr -dc A-Za-z0-9 < /dev/urandom | fold -w ${1:-16} | head -n 1)
+}
+
+# help
+usage() {
+  cat << EOF
+Usage:
+  coast new <project-name>
+
+Examples:
+  coast new foo
+  coast new another-foo
+
+  coast gen migration                                          # Creates a new migration
+  coast gen migration create-<table> column1:text column2:text # Creates a new migration with a create table statement along with columns/types specified
+  coast gen sql <table>                                        # Creates a new db.sql file in resources/sql with default sql queries/statement
+  coast gen db <table>                                         # Creates a new db.clj file in src/db with default database functions
+  coast gen model <table>                                      # Creates a new model.clj file in src/models
+  coast gen controller <table>                                 # Creates a new controller.clj file in src/controllers
+  coast gen view <table>                                       # Creates a new view.clj file in src/views
+EOF
+  exit 0
+}
+
+if [ "$1" == "" ]
+then
+  usage;
+fi
+
+# new <project name>
+if [ "$1" == "new" ]
+then
+  if [ "$2" != "" ]
+  then
+    name=$(kebabcase $(lowercase "$2"))
+    sanitized=$(snakecase $(lowercase "$2"))
+    secret=$(random)
+    echo Downloading a fresh copy of coast...
+    mkdir $2
+    curl -fsSkL https://github.com/swlkr/coast-template/archive/master.tar.gz > master.tar.gz
+    tar xzf master.tar.gz -C $2 --strip-components 1
+    rm master.tar.gz
+    cd $2
+    echo .env >> .gitignore
+    for f in $(find . -type f) ; do
+      sed -i '' "s/{{name}}/$name/g" $f
+      sed -i '' "s/{{sanitized}}/$sanitized/g" $f
+      sed -i '' "s/{{secret}}/$secret/g" $f
+    done
+
+    echo "Created a new coast project in directory $2"
+  fi
+else
+  clj -m coast.generators $@
+fi
+
+exit 0
