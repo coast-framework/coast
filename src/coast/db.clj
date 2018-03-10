@@ -80,7 +80,7 @@
 (defmacro defq [n filename]
   `(def ~n (query-fn '~n ~filename)))
 
-(defq columns "schema.sql")
+(defq columns "sql/schema.sql")
 
 (defn create [db-name]
   (let [db-name (format "%s_%s" db-name (env/env :coast-env))

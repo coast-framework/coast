@@ -15,9 +15,9 @@
   (.mkdirs (File. "resources/migrations"))
   "resources/migrations")
 
-(defq migrations "migrations.sql")
-(defq insert "migrations.sql")
-(defq delete "migrations.sql")
+(defq migrations "sql/migrations.sql")
+(defq insert "sql/migrations.sql")
+(defq delete "sql/migrations.sql")
 
 (defn create-table []
   (let [sql (-> (queries/parts "migrations.sql")
