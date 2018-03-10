@@ -1,7 +1,6 @@
 (ns coast.components
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [coast.router :as router]
-            [hiccup.page]))
+            [coast.router :as router]))
 
 (defn csrf
   ([attrs]
