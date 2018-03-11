@@ -51,7 +51,7 @@ Add the routes too
 
 (def routes
   (-> (coast/get "/" c.home/index)
-      (coast/resource 'c.posts)))
+      (coast/resource c.posts/index c.posts/show c.posts/fresh c.posts/create c.posts/edit c.posts/update c.posts/delete)))
 ```
 
 Let's see our masterpiece so far
