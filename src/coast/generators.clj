@@ -40,8 +40,9 @@
   (read-line))
 
 (defn overwrite? [filename]
-  (and (.exists (io/file filename))
-       (= (prompt (str filename " already exists. Overwrite? [y/n] ")) "y")))
+  (if (.exists (io/file filename))
+    (= (prompt (str filename " already exists. Overwrite? [y/n] ")) "y")
+    true))
 
 (defn sql [table]
   (let [cols (->> (db/columns {:table-name table})
@@ -69,7 +70,7 @@
   (let [output (format "%s/%s.clj" (db-dir) table)]
     (if (overwrite? output)
       (do
-        (->> (io/resource "generators/db.clj")
+        (->> (io/resource "generators/db.txt")
              (slurp)
              (fill {:table (utils/kebab table)})
              (spit output))
@@ -80,7 +81,7 @@
   (let [output (format "%s/%s.clj" (model-dir) table)]
     (if (overwrite? output)
       (do
-        (->> (io/resource "generators/model.clj")
+        (->> (io/resource "generators/model.txt")
              (slurp)
              (fill {:table (utils/kebab table)
                     :singular (-> table utils/kebab words/singular)
@@ -97,7 +98,7 @@
   (let [output (format "src/controllers/%s.clj" table)]
     (if (overwrite? output)
       (do
-        (->> (io/resource "generators/controller.clj")
+        (->> (io/resource "generators/controller.txt")
              (slurp)
              (fill {:table (utils/kebab table)
                     :singular (-> table utils/kebab words/singular)})
@@ -121,7 +122,7 @@
         output (format "src/views/%s.clj" table)]
     (if (overwrite? output)
       (do
-        (->> (io/resource "generators/view.clj")
+        (->> (io/resource "generators/view.txt")
              (slurp)
              (fill {:table (utils/kebab table)
                     :singular (words/singular table)
