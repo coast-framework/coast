@@ -2,7 +2,12 @@
 
 The easy full stack clojure web framework
 
-Current version: `{coast.alpha {:git/url "https://github.com/swlkr/coast" :sha "8878c3a4cd34ec997c1243dd10f4f237816ad2bd"}}`
+Current version:
+
+```clojure
+{coast.alpha {:git/url "https://github.com/swlkr/coast"
+              :sha "4539e148bea1212c403418ec9dfbb2d68a0db3d8"}}`
+```
 
 Previous version: `[coast "0.6.8"]` [README](https://github.com/swlkr/coast/tree/0.6.8)
 
