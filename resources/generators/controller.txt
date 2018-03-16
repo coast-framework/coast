@@ -1,52 +1,53 @@
 (ns controllers.__table
-  (:require [coast.alpha :as coast]
+  (:require [coast.responses :as res]
+            [coast.utils :as utils]
             [models.__table :as __table]
             [views.__table :as views.__table])
-  (:refer-clojure :exclude [update]))
+  (:refer-clojure :exclude [update new]))
 
-(defn index [request]
+(defn index {:get "/__table"} [request]
   (-> request
       __table/list
       views.__table/index))
 
-(defn show [request]
+(defn show {:get "/__table/:id"} [request]
   (-> request
       __table/find
       views.__table/show))
 
-(defn fresh [request]
-  (views.__table/fresh request))
+(defn new {:get "/__table/new"} [request]
+  (views.__table/new request))
 
-(defn create [request]
+(defn create {:post "/__table"} [request]
   (let [[_ errors] (-> request
                        __table/create
-                       coast/try+)]
+                       utils/try+)]
     (if (empty? errors)
-      (-> (coast/redirect "/__table")
-          (coast/flash "__singular created successfully"))
+      (-> (res/redirect "/__table")
+          (res/flash "__singular created successfully"))
       (fresh (assoc request :errors errors)))))
 
-(defn edit [request]
+(defn edit {:get "/__table/:id/edit"} [request]
   (-> request
       __table/find
       views.__table/edit))
 
-(defn update [request]
+(defn update {:put "/__table/:id"} [request]
   (let [[_ errors] (-> request
                        __table/find
                        __table/update
-                       coast/try+)]
+                       utils/try+)]
     (if (empty? errors)
-      (-> (coast/redirect "/__table")
-          (coast/flash "__singular updated successfully"))
+      (-> (res/redirect "/__table")
+          (res/flash "__singular updated successfully"))
       (edit (assoc request :errors errors)))))
 
-(defn delete [request]
+(defn delete {:delete "/__table/:id"} [request]
   (let [[_ errors] (-> request
                        __table/delete
-                       coast/try+)]
+                       utils/try+)]
     (if (empty? errors)
-      (-> (coast/redirect "/__table")
-          (coast/flash "__singular deleted successfully"))
-      (-> (coast/redirect "/__table")
-          (coast/flash (format "__singular could not be deleted: %s" (:error errors)))))))
+      (-> (res/redirect "/__table")
+          (res/flash "__singular deleted successfully"))
+      (-> (res/redirect "/__table")
+          (res/flash (format "__singular could not be deleted: %s" (:error errors)))))))

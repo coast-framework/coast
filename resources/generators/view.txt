@@ -1,11 +1,12 @@
 (ns views.__table
-  (:require [coast.alpha :as coast]))
+  (:require [coast.components :as comp]))
+  (:refer-clojure :exclude [new])
 
 (defn table-row [m]
   (let [{:keys [__columns]} m
-        edit (coast/url ["/__table/:id/edit" m])
-        delete (coast/url ["/__table/:id" m])
-        show (coast/url ["/__table/:id" m])]
+        edit (format "/__table/%s/edit" id])
+        delete (format "/__table/%s" id])
+        show (format "/__table/%s" id])]
     [:tr
       __td-columns
       [:td
@@ -26,12 +27,12 @@
           (for [m __table]
             (table-row m))]]
       [:div
-        [:a {:href "/__table/fresh"} "New __singular"]]]))
+        [:a {:href "/__table/new"} "New __singular"]]]))
 
 (defn show [request]
   (let [{:keys [__singular]} request
         {:keys [__columns]} __singular
-        delete-href (coast/url [:delete "/__table/:id" __singular])]
+        delete-href (format "/__table/%s?_method=delete" id)]
     [:div
       __div-columns
       [:div
@@ -39,11 +40,11 @@
       [:div
         [:a {:href "/__table"} "Back"]]]))
 
-(defn fresh [request]
+(defn new [request]
   (let [{:keys [__singular]} request
         {:keys [__columns]} __singular]
     [:div
-     (coast/form-for [:post "/__table"]
+     (comp/form-for [:post "/__table"]
        __form-columns
        [:input {:type "submit" :value "Create"}])]))
 
@@ -51,6 +52,6 @@
   (let [{:keys [__singular]} request
         {:keys [__columns]} __singular]
     [:div
-     (coast/form-for [:put "/__table/:id" __singular]
+     (comp/form-for [:put "/__table/:id" __singular]
        __form-columns
        [:input {:type "submit" :value "Save"}])]))

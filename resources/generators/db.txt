@@ -1,5 +1,5 @@
 (ns db.__table
-  (:require [coast.alpha :refer [defq]])
+  (:require [coast.db :refer [defq]])
   (:refer-clojure :exclude [update list find]))
 
 (defq list "sql/__table.db.sql")

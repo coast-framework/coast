@@ -27,6 +27,7 @@
     (as-> (:params request) %
           (merge __singular %)
           (select-keys % columns)
+          (assoc % :id (:id __singular))
           (db.__table/update %)
           (assoc request :__singular %))))
 
