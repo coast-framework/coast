@@ -67,18 +67,28 @@
   ([conn v]
    (query conn v {})))
 
-(defn query-fn [n filename]
-  (let [queries (queries/parts filename)
-        {:keys [sql f]} (get queries (str n))
-        q-fn (fn [& [m]]
-               (let [v (queries/sql-vec sql m)]
-                 (f (query (connection) v))))]
-    (if (nil? sql)
-      (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
-      q-fn)))
+(defn query-fn
+  ([n filename throw-on-nil?]
+   (let [queries (queries/parts filename)
+         {:keys [sql f]} (get queries (str n))
+         q-fn (fn [& [m]]
+                (let [v (queries/sql-vec sql m)
+                      rows (f (query (connection) v))]
+                  (if (and (true? throw-on-nil?)
+                           (nil? rows))
+                    (utils/throw-not-found)
+                    rows)))]
+     (if (nil? sql)
+       (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
+       q-fn)))
+  ([n filename]
+   (query-fn n filename false)))
 
 (defmacro defq [n filename]
   `(def ~n (query-fn '~n ~filename)))
+
+(defmacro defq! [n filename]
+  `(def ~n (query-fn '~n ~filename true)))
 
 (defq columns "sql/schema.sql")
 
