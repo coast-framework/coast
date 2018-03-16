@@ -4,37 +4,30 @@
             [coast.env :as env]
             [coast.utils :as utils]))
 
-(defonce server-atom (atom nil))
+(defonce server (atom nil))
 
-(defn parse-port [opts]
-  (-> (or (get opts :port) (env/env :port) 1337)
+(defn port []
+  (-> (or (env/env :port) "1337")
       (utils/parse-int)))
 
+(defn options []
+  {:port (port)})
+
 (defn start
-  ([app opts]
-   (let [port (parse-port opts)]
-     (println "Server is listening on port" port)
-     (httpkit/run-server app {:port port})))
   ([app]
-   (start app {}))
+   (let [opts (options)]
+     (println "Server is listening on port" (:port opts))
+     (httpkit/run-server app opts)))
   ([]
-   (reset! server-atom (start (resolve (symbol "app"))))))
+   (reset! server (start (resolve (symbol "app"))))))
 
 (defn stop []
-  (when @server-atom
-    (@server-atom :timeout 100)
-    (reset! server-atom nil)))
+  (when (not (nil? @server))
+    (@server :timeout 100)
+    (reset! server nil)
+    (println "Resetting dev server")))
 
-(defn restart []
+(defn restart [app]
+  (def app app)
   (stop)
   (repl/refresh :after 'coast.server/start))
-
-(defn reload-server [app]
-  (def app app)
-  (restart))
-
-(defn start-server
-  ([app opts]
-   (start app opts))
-  ([app]
-   (reload-server app)))
