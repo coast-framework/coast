@@ -37,7 +37,7 @@
         (handler request)
         (catch ExceptionInfo e
           (let [m (ex-data e)
-                type (get m :coast/error-type)]
+                type (get m :coast/error)]
             (if (= type :not-found)
               (responses/not-found (not-found-page request))
               (throw e))))))))
