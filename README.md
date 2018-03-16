@@ -2,14 +2,12 @@
 
 The easy full stack clojure web framework
 
-Current version:
-
 ```clojure
 {coast.alpha {:git/url "https://github.com/swlkr/coast"
               :sha "4539e148bea1212c403418ec9dfbb2d68a0db3d8"}}`
 ```
 
-Previous version: `[coast "0.6.8"]` [README](https://github.com/swlkr/coast/tree/0.6.8)
+Previously: [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.8](https://github.com/swlkr/coast/tree/0.6.8)
 
 ### Warning
 The current version is under construction, but you can use it anyway 😅
@@ -22,7 +20,6 @@ The current version is under construction, but you can use it anyway 😅
 - [Models](#models)
 - [Views](#views)
 - [Controllers](#controllers)
-- [Routes](#routes)
 - [Helpers](#helpers)
 
 ## Quickstart
@@ -45,18 +42,6 @@ Let's create a table to store posts and generate some code to so we can interact
 coast gen migration create-posts title:text body:text
 make db/migrate
 coast gen mvc posts
-```
-
-Add the routes too
-```clojure
-(ns routes
-  (:require [coast.core :as coast]
-            [controllers.posts :as c.posts]
-            [controllers.home :as c.home]))
-
-(def routes
-  (-> (coast/get "/" c.home/index)
-      (coast/resource c.posts/index c.posts/show c.posts/fresh c.posts/create c.posts/edit c.posts/update c.posts/delete)))
 ```
 
 Let's see our masterpiece so far
