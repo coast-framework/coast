@@ -170,6 +170,9 @@ Examples:
               (model table)
               (controller table)
               (view table))
+      "jobs" (->> (io/resource "migrations/create_jobs.sql")
+                  (slurp)
+                  (spit (str "resources/migrations/" (migrations/filename "create-jobs"))))
       (usage))))
 
 (defn -main [& args]
