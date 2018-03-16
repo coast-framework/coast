@@ -98,3 +98,6 @@
 
 (defn long-str [& s]
   (string/join "\n" s))
+
+(defn throw-not-found []
+  (throw+ {:coast/error :not-found}))
