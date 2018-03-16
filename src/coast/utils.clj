@@ -79,7 +79,8 @@
                 (string/replace re replacement))]
       (if (string/blank? ns)
         (keyword n)
-        (keyword ns n)))))
+        (keyword ns n)))
+    k))
 
 (defn convert-string [re replacement s]
   (if (string? s)
