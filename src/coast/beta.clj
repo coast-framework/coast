@@ -6,11 +6,12 @@
             [ring.middleware.reload :as reload]
             [prone.middleware :as prone]))
 
-(def routes (router/routes "src/controllers"))
+(defn routes []
+  (router/routes "src/controllers"))
 
 (defn app [opts]
   (let [{:keys [layout error-fn not-found-fn]} opts]
-    (-> (router/match-routes routes not-found-fn)
+    (-> (router/match-routes (routes) not-found-fn)
         (middleware/wrap-layout layout)
         (middleware/wrap-with-logger)
         (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
