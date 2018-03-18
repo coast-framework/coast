@@ -5,7 +5,7 @@
 (defn table-row [m]
   (let [{:keys [__columns]} m
         edit (format "/__table/%s/edit" id)
-        delete (format "/__table/%s" id)
+        delete (format "/__table/%s?_method=delete" id)
         show (format "/__table/%s" id)]
     [:tr
       __td-columns
