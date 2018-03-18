@@ -4,7 +4,7 @@ The easy full stack clojure web framework
 
 ```clojure
 coast.beta {:git/url "https://github.com/swlkr/coast"
-            :sha "29b66bb847c2918fb93e214509b96263d5b09cfb"}}`
+            :sha "e6b87f1461314e8f383e26e65fd92da118a1181b"}}`
 ```
 
 Previously: [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.8](https://github.com/swlkr/coast/tree/0.6.8)
