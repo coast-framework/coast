@@ -1,12 +1,12 @@
 (ns views.__table
-  (:require [coast.components :as comp]))
-  (:refer-clojure :exclude [new])
+  (:require [coast.components :as comp])
+  (:refer-clojure :exclude [new]))
 
 (defn table-row [m]
   (let [{:keys [__columns]} m
-        edit (format "/__table/%s/edit" id])
-        delete (format "/__table/%s" id])
-        show (format "/__table/%s" id])]
+        edit (format "/__table/%s/edit" id)
+        delete (format "/__table/%s" id)
+        show (format "/__table/%s" id)]
     [:tr
       __td-columns
       [:td

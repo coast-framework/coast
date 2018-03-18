@@ -2,8 +2,8 @@
 select *
 from __table
 order by created_at
-limit = :limit
-offset = :offset
+limit :limit
+offset :offset
 
 
 -- name: find

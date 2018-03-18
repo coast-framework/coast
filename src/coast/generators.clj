@@ -109,7 +109,6 @@
 (defn view [table]
   (let [columns (->> (db/columns {:table-name table})
                      (map :column-name)
-                     (filter excluded-cols)
                      (map utils/kebab))
         th-columns (->> (map #(str "[:th \"" % "\"]") columns)
                         (string/join "\n            "))
