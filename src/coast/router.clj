@@ -130,16 +130,23 @@
       (middleware f))
     (resolve-route-fn val not-found-fn)))
 
+(defn first-or-exact-match [routes route]
+  (let [[method uri] route
+        routes (filter #(match [method uri] %) routes)]
+    (or (-> (filter #(and (= (first %) method)
+                          (= (second %) uri)) routes)
+            (first))
+        (first routes))))
+
 (defn match-routes [routes not-found-fn]
   "Turns routes into a ring handler"
   (fn [request]
     (let [{:keys [request-method uri params]} request
           method (or (-> params :_method keyword) request-method)
-          route (-> (filter #(match [method uri] %) routes)
-                    (first))
+          route (first-or-exact-match routes [method uri])
           [_ route-uri f] route
-          trail-params (route-params uri route-uri)
-          params (merge params trail-params)
+          route-params (route-params uri route-uri)
+          params (merge params route-params)
           handler (resolve-route f not-found-fn)
           coerced-params (utils/map-vals coerce-params params)
           request (assoc request :params coerced-params
