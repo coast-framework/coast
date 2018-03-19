@@ -29,7 +29,7 @@ lein db/create # assumes a running postgres server. creates a new db called blog
 
 Let's create a table to store posts and generate some code to so we can interact with that table!
 ```bash
-lein db/migration posts title:text body:text
+lein db/migration create-posts title:text body:text
 lein db/migrate
 lein mvc/gen posts
 ```
@@ -53,12 +53,6 @@ Let's see our masterpiece so far
 ```clojure
 lein repl ; or start a repl your preferred way
 (coast) ; => Listening on port 1337
-```
-
-OR
-
-```bash
-lein run
 ```
 
 You should be greeted with the text "You're coasting on clojure!"
