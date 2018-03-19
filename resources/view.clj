@@ -4,8 +4,8 @@
 
 (defn {{singular}} [m]
   (let [{:keys [{{column_string}}]} m]
-    [:tr{% for col in columns %}
-     [:td {{col}}]{% endfor %}
+    [:tr
+     {{td_col_string}}
      [:td
       (coast/link-to "Edit" ["/{{table}}/:id/edit" m])]
      [:td
@@ -18,8 +18,8 @@
     [:div
       [:table
        [:thead
-        [:tr{% for col in columns %}
-         [:th "{{col}}"]{% endfor %}
+        [:tr
+         {{th_col_string}}
          [:th]
          [:th]
          [:th]]]
@@ -32,8 +32,8 @@
 (defn show [request]
  (let [{:keys [{{singular}}]} request
        {:keys [{{column_string}}]} {{singular}}]
-   [:div{% for col in columns %}
-     [:div {{col}}]{% endfor %}
+   [:div
+     {{div_col_string}}
      [:div
        (coast/link-to "Delete" [:delete "/{{table}}/:id" {{singular}}])]
      [:div
@@ -44,10 +44,8 @@
         {:keys [{{form_column_string}}]} {{singular}}]
     [:div
       error
-      (coast/form-for [:post "/{{table}}"]{% for col in form_columns %}
-        [:div
-         [:label "{{col}}"]
-         [:input {:type "text" :name "{{col}}" :value {{col}}}]]{% endfor %}
+      (coast/form-for [:post "/{{table}}"]
+        {{form_col_string}}
         [:div
           [:input {:type "submit" :value "Save"}]])
       [:div
@@ -58,10 +56,8 @@
         {:keys [{{form_column_string}}]} {{singular}}]
     [:div
       error
-      (coast/form-for [:put "/{{table}}/:id" {{singular}}]{% for col in form_columns %}
-        [:div
-         [:label "{{col}}"]
-         [:input {:type "text" :name "{{col}}" :value {{col}}}]]{% endfor %}
+      (coast/form-for [:put "/{{table}}/:id" {{singular}}]
+        {{form_col_string}}
         [:div
          [:input {:type "submit" :value "Save"}]])
       [:div

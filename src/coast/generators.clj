@@ -94,7 +94,15 @@
                 :columns cols
                 :form_columns form-cols
                 :column_string (string/join " " cols)
-                :form_column_string (string/join " " form-cols)}
+                :form_column_string (string/join " " form-cols)
+                :th_col_string (->> (map #(str "[:th \"" % "\"]") cols)
+                                    (string/join "\n         "))
+                :td_col_string (->> (map #(str "[:td " % "]") cols)
+                                    (string/join "\n     "))
+                :div_col_string (->> (map #(str "[:div " % "]") cols)
+                                     (string/join "\n     "))
+                :form_col_string (->> (map #(format "[:div\n         [:label \"%s\"]\n         [:input {:type \"text\" :name  \"%s\" :value %s}]]" % % %) form-cols)
+                                      (string/join "\n        "))}
         dir (str "src/" project "/views")
         filename (str dir "/" table ".clj")
         _ (.mkdirs (File. dir))]
