@@ -44,6 +44,25 @@ make db/migrate
 coast gen mvc posts
 ```
 
+Can't forget the routes
+
+```clojure
+; src/routes.clj
+(ns routes
+  (:require [coast.router :refer [get post put delete]]
+            [controllers.home :as c.home]
+            [controllers.posts :as c.posts]]))
+
+(def routes (-> (get "/" c.home/index)
+                (get "/posts" c.posts/index)
+                (get "/posts/new" c.posts/new)
+                (get "/posts/:id" c.posts/show)
+                (get "/posts/:id/edit" c.posts/edit)
+                (post "/posts" c.posts/create)
+                (put "/posts/:id" c.posts/update)
+                (delete "/posts/:id" c.posts/delete)))
+```
+
 Let's see our masterpiece so far
 
 ```bash
