@@ -5,20 +5,20 @@
             [views.__table :as views.__table])
   (:refer-clojure :exclude [update new]))
 
-(defn index {:get "/__table"} [request]
+(defn index [request]
   (-> request
       __table/list
       views.__table/index))
 
-(defn show {:get "/__table/:id"} [request]
+(defn show [request]
   (-> request
       __table/find
       views.__table/show))
 
-(defn new {:get "/__table/new"} [request]
+(defn new [request]
   (views.__table/new request))
 
-(defn create {:post "/__table"} [request]
+(defn create [request]
   (let [[_ errors] (-> request
                        __table/create
                        utils/try+)]
@@ -27,12 +27,12 @@
           (res/flash "__singular created successfully"))
       (views.__table/new (assoc request :errors errors)))))
 
-(defn edit {:get "/__table/:id/edit"} [request]
+(defn edit [request]
   (-> request
       __table/find
       views.__table/edit))
 
-(defn update {:put "/__table/:id"} [request]
+(defn update [request]
   (let [[_ errors] (-> request
                        __table/find
                        __table/update
@@ -42,7 +42,7 @@
           (res/flash "__singular updated successfully"))
       (edit (assoc request :errors errors)))))
 
-(defn delete {:delete "/__table/:id"} [request]
+(defn delete [request]
   (let [[_ errors] (-> request
                        __table/delete
                        utils/try+)]
