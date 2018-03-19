@@ -4,7 +4,7 @@ The easy full stack clojure web framework
 
 ```clojure
 coast.beta {:git/url "https://github.com/swlkr/coast"
-            :sha "e6b87f1461314e8f383e26e65fd92da118a1181b"}}`
+            :sha "f5facc5fe40c641db9439d064e2e067ad5562d0a"}}`
 ```
 
 Previously: [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.8](https://github.com/swlkr/coast/tree/0.6.8)
@@ -328,7 +328,9 @@ of your site
   (:require [coast.alpha :as coast]
             [coast.components :as c]))
 
-(def app (coast/app {:layout c/layout}))
+(def routes [[:get "/" (fn [request])]])
+
+(def app (coast/app routes {:layout c/layout}))
 ```
 
 When you return a vector from any view function, it automatically gets rendered as html and rendered inside
@@ -339,13 +341,13 @@ of the layout function where you tell it to, the default layout function looks l
   (:require [coast.alpha :as coast]))
 
 (defn layout [request body]
-  (coast/html5
+  [:html
     [:head
      [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-     (coast/include-css "/css/app.css")]
+     [:link {:href "/css/app.css" :type "text/css" :rel "stylesheet"}]
     [:body
      body
-     (coast/include-js "/js/app.js")]))
+     [:script {:src "/js/app.js" :type "text/javascript"}]
 ```
 
 So this returns a vector and then there's the coast middleware that turns a hiccup vector and string responses into ring response maps:
@@ -372,7 +374,6 @@ I also recommend functional css or atomic css libraries like [tachyons](http://t
 
 ## TODO
 
-- Document views
 - Document controllers
 - Document routes
 - Document auth
@@ -392,7 +393,6 @@ a ton of great clojure devs who graciously open sourced their
 projects that took a metric ton of hard work. Here's the list
 of open source projects that coast uses:
 
-- [potemkin](https://github.com/ztellman/potemkin)
 - [http-kit](https://github.com/http-kit/http-kit)
 - [hiccup](https://github.com/weavejester/hiccup)
 - [ring/ring-core](https://github.com/ring-clojure/ring)
