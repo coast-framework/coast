@@ -7,7 +7,7 @@ coast.beta {:git/url "https://github.com/swlkr/coast"
             :sha "2bb1e9b1c99ab1ff8a2b6bf001da52ce8608c0f7"}}`
 ```
 
-Previously: [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.8](https://github.com/swlkr/coast/tree/0.6.8)
+Previously: [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
 
 ### Warning
 The current version is under construction, but you can use it anyway 😅
