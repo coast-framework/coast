@@ -6,18 +6,16 @@
             [coast.time :as time]
             [coast.utils :as utils]
             [coast.responses :as responses]
-            [coast.env :as env]
-            [hiccup.page])
+            [coast.env :as env])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
 
 (defn internal-server-error []
-  (responses/internal-server-error
-    (hiccup.page/html5
-      [:head
-       [:title "Internal Server Error"]]
-      [:body
-       [:h1 "500 Internal server error"]])))
+  [:html
+    [:head
+     [:title "Internal Server Error"]]
+    [:body
+     [:h1 "500 Internal server error"]]])
 
 (defn wrap-errors [handler error-fn]
   (fn [request]
@@ -26,7 +24,7 @@
       (catch Exception e
         (println (st/print-stack-trace e))
         (or (internal-server-error)
-            (responses/internal-server-error (error-fn request)))))))
+            (error-fn request))))))
 
 (defn wrap-not-found [handler not-found-page]
   (if (nil? not-found-page)
@@ -39,7 +37,7 @@
           (let [m (ex-data e)
                 type (get m :coast/error)]
             (if (= type :not-found)
-              (responses/not-found (not-found-page request))
+              (not-found-page request)
               (throw e))))))))
 
 (defn layout? [response layout]

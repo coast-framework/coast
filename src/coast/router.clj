@@ -1,10 +1,9 @@
 (ns coast.router
   (:require [clojure.string :as string]
             [clojure.edn :as edn]
-            [hiccup.page]
             [coast.responses :as responses]
             [coast.utils :as utils]
-            [clojure.java.io :as io])
+            [clojure.repl :as repl])
   (:refer-clojure :exclude [get]))
 
 (def param-re #":([\w-_]+)")
@@ -84,14 +83,29 @@
       (and (= request-method route-method)
            (= request-uri (route-str route-uri params))))))
 
-(defn wrap-route-with [route middleware]
+(defn route
+  "Sugar for making a trail vector"
+  ([method routes uri f]
+   (conj routes [method uri f]))
+  ([method uri f]
+   (route method [] uri f)))
+
+(def get (partial route :get))
+(def post (partial route :post))
+(def put (partial route :put))
+(def patch (partial route :patch))
+(def delete (partial route :delete))
+
+(defn wrap-route [route middleware]
   "Wraps a single route in a ring middleware fn"
-  (if (nil? middleware)
-    route
-    (let [[method uri val] route]
-      (if (vector? val)
-        [method uri (conj val middleware)]
-        [method uri (conj [val] middleware)]))))
+  (let [[method uri val] route]
+    (if (vector? val)
+      [method uri (conj val middleware)]
+      [method uri (conj [val] middleware)])))
+
+(defn wrap-routes [routes middleware]
+  "Wraps a given set of routes in a function."
+  (map #(wrap-route % middleware) routes))
 
 (defn booleans? [val]
   (and (vector? val)
@@ -112,11 +126,11 @@
 
 (defn default-not-found-fn [_]
   (responses/not-found
-    (hiccup.page/html5
+    [:html
       [:head
        [:title "Not Found"]]
       [:body
-       [:h1 "404 Page not found"]])))
+       [:h1 "404 Page not found"]]]))
 
 (defn resolve-route-fn [f not-found-fn]
   (or f not-found-fn default-not-found-fn))
@@ -130,67 +144,68 @@
       (middleware f))
     (resolve-route-fn val not-found-fn)))
 
-(defn first-or-exact-match [routes route]
-  (let [[method uri] route
-        routes (filter #(match [method uri] %) routes)]
-    (or (-> (filter #(and (= (first %) method)
-                          (= (second %) uri)) routes)
-            (first))
-        (first routes))))
-
 (defn match-routes [routes not-found-fn]
   "Turns routes into a ring handler"
   (fn [request]
     (let [{:keys [request-method uri params]} request
           method (or (-> params :_method keyword) request-method)
-          route (first-or-exact-match routes [method uri])
+          route (-> (filter #(match [method uri] %) routes)
+                    (first))
           [_ route-uri f] route
-          route-params (route-params uri route-uri)
-          params (merge params route-params)
+          trail-params (route-params uri route-uri)
+          params (merge params trail-params)
           handler (resolve-route f not-found-fn)
           coerced-params (utils/map-vals coerce-params params)
           request (assoc request :params coerced-params
                                  ::params params)]
       (handler request))))
 
-(defn paths [s]
-  (->> (io/file s)
-       (file-seq)
-       (filter #(.isFile %))
-       (map #(.getPath %))))
+(defn resolve-keyword [k]
+  (when (qualified-keyword? k)
+    (let [n (name k)
+          ns (namespace k)]
+      (-> (symbol ns n)
+          (resolve)))))
 
-(defn functions [s]
-  (->> (load-file s)
-       (meta)
-       :ns
-       (str)
-       (symbol)
-       (ns-publics)))
+(defn resource-routes [m]
+  (let [s (-> (vals m)
+              (first)
+              (namespace)
+              (string/split #"\.") (last))
+        {:strs [index show new edit create change delete]} m]
+    (->> [[:get (format "/%s" s) (-> index resolve-keyword)]
+          [:get (format "/%s/:id" s) (-> show resolve-keyword)]
+          [:get (format "/%s/new" s) (-> new resolve-keyword)]
+          [:get (format "/%s/:id/edit" s) (-> edit resolve-keyword)]
+          [:post (format "/%s" s) (-> create resolve-keyword)]
+          [:put (format "/%s/:id" s) (-> change resolve-keyword)]
+          [:delete (format "/%s/:id" s) (-> delete resolve-keyword)]]
+         (filterv #(-> % (last) (some?))))))
 
-(defn route-map? [m]
-  (or (contains? m :get)
-      (contains? m :post)
-      (contains? m :put)
-      (contains? m :patch)
-      (contains? m :delete)))
-
-(defn route [m]
-  (let [{:keys [name ns middleware]} m
-        route-map (select-keys m [:get :head :post :put :patch :delete])]
-    (->> (mapv (fn [[k v]] [k v (-> (format "%s/%s" (str ns) (str name)) symbol resolve)]) route-map)
-         (mapv #(wrap-route-with % middleware))
-         (first))))
-
-(defn make-routes [s]
-  (as-> (functions s) %
-        (vals %)
-        (map meta %)
-        (map #(select-keys % [:get :head :post :put :patch :delete :name :ns :middleware]) %)
-        (filter route-map? %)
-        (mapv route %)))
-
-(defn routes [s]
-  (->> (paths s)
-       (map make-routes)
-       (apply concat)
-       (vec)))
+(defn resource
+  "Creates a set of seven functions that map to a conventional set of named functions.
+   Generates routes that look like this:
+   [[:get    '/resources          resources/index]
+    [:get    '/resources/:id      resources/show]
+    [:get    '/resources/new      resources/new]
+    [:get    '/resources/:id/edit resources/edit]
+    [:post   '/resources          resources/create]
+    [:put    '/resources/:id      resources/change]
+    [:delete '/resources/:id      resources/delete]]
+   Examples:
+   (resource items/show items/index)
+   (resource items/create items/delete)
+   (resource items/index items/create)
+   (resource items/index)
+   "
+  [& args]
+  (let [functions (if (vector? (first args))
+                    (rest args)
+                    args)
+        routes (->> (map #(-> % str repl/demunge (string/replace #"@\w+" "") keyword) functions)
+                    (mapv #(vector (name %) %))
+                    (into {})
+                    (resource-routes))]
+    (if (vector? (first args))
+      (vec (concat (first args) routes))
+      routes)))
