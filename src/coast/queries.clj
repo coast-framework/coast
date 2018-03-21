@@ -55,20 +55,26 @@
                                                          (string/join ","))
                                                     "?")))))
 
+(defn has-keys? [m keys]
+  (every? #(contains? m %) keys))
+
 (defn sql-vec [sql m]
   (when (string? sql)
     (let [m (or m {})
           m (utils/map-keys utils/snake m)
-          sql-ks (mapv #(-> % second keyword) (re-seq qualified-keyword-pattern sql))
-          sql-ks (mapv utils/snake sql-ks)
+          sql-ks (->> (mapv #(-> % second keyword) (re-seq qualified-keyword-pattern sql))
+                      (mapv utils/snake))
           params (map #(get m %) sql-ks)
-          diff (set/difference (set sql-ks) (set (keys (select-keys m sql-ks))))
           f-sql (parameterize sql m)
           s-vec (vec (concat [f-sql] (->> (map (fn [val] (if (coll? val) (flatten val) val)) params)
                                           (flatten))))]
-      (if (empty? diff)
+      (if (has-keys? m sql-ks)
         s-vec
-        (throw (Exception. (str "Parameter mismatch. Expected " (string/join ", " (map utils/kebab sql-ks)) ". Got " (string/join ", " (map utils/kebab (keys m))))))))))
+        (->> (set/difference (set sql-ks) (keys m))
+             (string/join ", ")
+             (format "Missing keys: %s")
+             (Exception.)
+             (throw))))))
 
 (defn parts [filename]
   (let [content (-> filename io/resource slurp)]
