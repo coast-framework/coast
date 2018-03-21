@@ -69,13 +69,15 @@
   (let [duration (Duration/between start end)]
     (.toMillis duration)))
 
+(defn req-method [request]
+  (or (-> request :params :_method keyword) (:request-method request)))
+
 (defn log-string [request response start-time]
   (let [ms (diff start-time (time/now))
-        {:keys [request-method uri]} request
-        request-method (or request-method "N/A")
+        {:keys [uri]} request
         uri (or uri "N/A")
-        method (-> request-method name string/upper-case)
-        status (or (-> response :status) "N/A")]
+        status (or (-> response :status) "N/A")
+        method (-> (req-method request) name string/upper-case)]
     (format "%s %s %s %sms" method uri status ms)))
 
 (defn log [request response start-time]
