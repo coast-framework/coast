@@ -152,8 +152,8 @@
           route (-> (filter #(match [method uri] %) routes)
                     (first))
           [_ route-uri f] route
-          trail-params (route-params uri route-uri)
-          params (merge params trail-params)
+          route-params (route-params uri route-uri)
+          params (merge params route-params)
           handler (resolve-route f not-found-fn)
           coerced-params (utils/map-vals coerce-params params)
           request (assoc request :params coerced-params
