@@ -1,6 +1,7 @@
 (ns coast.middleware
   (:require [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
+            [ring.middleware.reload :as reload]
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [coast.time :as time]
@@ -86,3 +87,9 @@
           response (handler request)]
       (log request response start-time)
       response)))
+
+(defn wrap-reload [handler]
+  (if (= "dev" (env/env :coast-env))
+    (reload/wrap-reload handler)
+    (fn [request]
+      (handler request))))

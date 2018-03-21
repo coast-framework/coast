@@ -3,7 +3,7 @@
             [coast.router :as router]
             [coast.env :as env]
             [ring.middleware.defaults :as middleware.defaults]
-            [ring.middleware.reload :as reload]))
+            [coast.server :as server]))
 
 (defn app
   ([routes opts]
@@ -13,7 +13,7 @@
          (middleware/wrap-with-logger)
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-fn)
-         (middleware/wrap-if #(not= "prod" (env/env :coast-env)) reload/wrap-reload)
+         (middleware/wrap-reload)
          (middleware/wrap-if #(= "prod" (env/env :coast-env)) middleware/wrap-errors error-fn))))
   ([routes]
    (app routes {})))
