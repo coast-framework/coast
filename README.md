@@ -14,6 +14,7 @@ The current version is under construction, but you can use it anyway 😅
 
 ## Table of Contents
 
+- [Simple Quickstart](#quickstart)
 - [Quickstart](#quickstart)
 - [Shipping](#shipping)
 - [Database](#database)
@@ -21,6 +22,41 @@ The current version is under construction, but you can use it anyway 😅
 - [Views](#views)
 - [Controllers](#controllers)
 - [Helpers](#helpers)
+
+## Quickstart without a template
+
+```bash
+brew install clojure
+curl -o /usr/local/bin/coast https://raw.githubusercontent.com/swlkr/coast/master/coast
+chmod a+x /usr/local/bin/coast
+
+mkdir -p blog blog/src
+touch blog/src/server.clj
+```
+
+It only takes a few lines to get up and running
+
+```clojure
+(ns server
+  (:require [coast.beta :as coast]))
+
+(defn hello [req]
+  {:status 200
+   :body (format "hello %s" (-> req :params :name))})
+
+(def routes [[:get "/hello/:name" hello]])
+
+(def app (coast/app routes))
+
+(coast/start-server app) ; => starts listening on port 1337 by default
+```
+
+Now head to your terminal and hit `http://localhost:1337/hello/world`
+you should see "hello world" printed out
+
+```bash
+curl http://localhost:1337/hello/world # => hello world
+```
 
 ## Quickstart
 
