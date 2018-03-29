@@ -3,7 +3,10 @@
             [coast.router :as router]
             [coast.env :as env]
             [ring.middleware.defaults :as middleware.defaults]
-            [coast.server :as server]))
+            [coast.server :as server]
+            [pyro.printer :as printer]))
+
+(printer/swap-stacktrace-engine!)
 
 (defn app
   ([routes opts]
@@ -17,3 +20,7 @@
          (middleware/wrap-if #(= "prod" (env/env :coast-env)) middleware/wrap-errors error-fn))))
   ([routes]
    (app routes {})))
+
+(def start-server server/start)
+(def stop-server server/stop)
+(def restart-server server/restart)
