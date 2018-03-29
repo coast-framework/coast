@@ -2,7 +2,8 @@
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [coast.utils :as utils]
-            [clojure.set :as set]))
+            [clojure.set :as set])
+  (:import [java.io FileNotFoundException]))
 
 (def name-regex #"^--\s*name\s*:\s*(.+)$")
 (def fn-regex #"^--\s*fn\s*:\s*(.+)$")
@@ -76,8 +77,12 @@
              (Exception.)
              (throw))))))
 
+(defn slurp-resource [filename]
+  (or (some-> filename io/resource slurp)
+      (throw (FileNotFoundException. filename))))
+
 (defn parts [filename]
-  (let [content (-> filename io/resource slurp)]
+  (let [content (slurp-resource filename)]
     (if (or (nil? content)
             (string/blank? content))
       (throw (Exception. (format "%s doesn't exist" filename)))
