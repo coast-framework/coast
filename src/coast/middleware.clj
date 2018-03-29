@@ -24,8 +24,8 @@
       (handler request)
       (catch Exception e
         (println (st/print-stack-trace e))
-        (or (internal-server-error)
-            (error-fn request))))))
+        (or (error-fn (assoc request :exception e))
+            (internal-server-error))))))
 
 (defn wrap-not-found [handler not-found-page]
   (if (nil? not-found-page)
