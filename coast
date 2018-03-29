@@ -75,7 +75,7 @@ then
     tar xzf master.tar.gz -C $2 --strip-components 1
     rm master.tar.gz
     cd $2
-    echo .env >> .gitignore
+    mv gitignore .gitignore
     for f in $(find . -type f) ; do
       sed -i '' "s/{{name}}/$name/g" $f
       sed -i '' "s/{{sanitized}}/$sanitized/g" $f
