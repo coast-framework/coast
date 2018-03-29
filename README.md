@@ -420,5 +420,6 @@ of open source projects that coast uses:
 - [org.postgresql/postgresql](https://github.com/pgjdbc/pgjdbc)
 - [org.clojure/java.jdbc](https://github.com/clojure/java.jdbc)
 - [org.clojure/tools.namespace](https://github.com/clojure/tools.namespace)
-- [prone](https://github.com/magnars/prone)
 - [verily](https://github.com/jkk/verily)
+- [reload](https://github.com/jakemcc/reload)
+- [pyro](https://github.com/venantius/pyro)
