@@ -1,40 +1,43 @@
 (ns models.__table
   (:require [db.__table :as db.__table])
+            [coast.beta :as coast]
   (:refer-clojure :exclude [list find update]))
 
-(def columns [__columns])
+
+(defn params [request]
+  (:params request))
+
 
 (defn list [request]
-  (as-> (:params request) %
-        (merge {:offset 0 :limit 10} %)
-        (select-keys % [:offset :limit])
-        (db.__table/list %)
-        (assoc request :__table %)))
+  (->> (params request)
+       (merge {:offset 0 :limit 10})
+       (db.__table/list)
+       (assoc request :__table)))
+
 
 (defn find [request]
-  (as-> (:params request) %
-        (select-keys % [:id])
-        (db.__table/find %)
-        (assoc request :__singular %)))
+  (->> (params request)
+       (db.__table/find)
+       (assoc request :__singular)))
+
 
 (defn insert [request]
-  (as-> (:params request) %
-        (select-keys % columns)
-        (db.__table/insert %)
-        (assoc request :__singular %)))
+  (->> (params request)
+       (db.__table/insert)
+       (assoc request :__singular)))
+
 
 (defn update [request]
-  (let [id (get-in request [:params :id])
-        __singular (db.__table/find {:id id})]
-    (as-> (:params request) %
-          (merge __singular %)
-          (select-keys % columns)
-          (assoc % :id (:id __singular))
-          (db.__table/update %)
-          (assoc request :__singular %))))
+  (let [{:keys [__singular]} request]
+    (->> (params request)
+         (merge __singular)
+         (db.__table/update)
+         (assoc request :__singular)))))
+
 
 (defn delete [request]
-  (as-> (:params request) %
-        (select-keys % [:id])
-        (db.__table/delete %)
-        (assoc request :__singular %)))
+  (let [{:keys [__singular]} request]
+    (->> (params request)
+         (merge __singular)
+         (db.__table/delete)
+         (assoc request :__singular)))))
