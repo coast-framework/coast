@@ -20,10 +20,9 @@
 (defq delete "sql/migrations.sql")
 
 (defn create-table []
-  (let [sql (-> (queries/parts "sql/migrations.sql")
-                (get "create-table")
-                (get :sql))]
-    (db/execute! (db/connection) sql)))
+  (->> (queries/query "sql/migrations.sql" "create-table")
+       :sql
+       (db/execute! (db/connection))))
 
 (defn completed-migrations []
   (let [_ (create-table)]

@@ -40,12 +40,11 @@
         sql (clojure.string/join " " (filter sql-line? query-lines))]
     (if (nil? name)
       nil
-      {name {:sql sql
-             :f f}})))
+      {:sql sql :f f :name name})))
 
 (defn parse [lines]
   (let [query-lines (clojure.string/split lines #"\n\n")]
-    (into {} (filter #(not (nil? %)) (map parse-query-string query-lines)))))
+    (filter #(not (nil? %)) (map parse-query-string query-lines))))
 
 (defn parameterize [s m]
   (string/replace s qualified-keyword-pattern (fn [[_ s]]
@@ -81,9 +80,8 @@
   (or (some-> filename io/resource slurp)
       (throw (FileNotFoundException. filename))))
 
-(defn parts [filename]
-  (let [content (slurp-resource filename)]
-    (if (or (nil? content)
-            (string/blank? content))
-      (throw (Exception. (format "%s doesn't exist" filename)))
-      (parse content))))
+(defn query [filename name]
+  (->> (slurp-resource filename)
+       (parse)
+       (filter #(= (:name %) name))
+       (first)))

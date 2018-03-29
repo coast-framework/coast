@@ -67,30 +67,47 @@
   ([conn v]
    (query conn v {})))
 
-(defn query-fn
-  ([n filename throw-on-nil?]
-   (let [queries (queries/parts filename)
-         {:keys [sql f]} (get queries (str n))
-         q-fn (fn [& [m]]
-                (let [v (queries/sql-vec sql m)
-                      rows (f (query (connection) v))]
-                  (if (and (true? throw-on-nil?)
-                           (nil? rows))
-                    (utils/throw-not-found)
-                    rows)))]
-     (if (nil? sql)
-       (throw (Exception. (format "\nQuery %s doesn't exist in %s\nAvailable queries:\n%s\n" n filename (string/join ", " (keys queries)))))
-       q-fn)))
-  ([n filename]
-   (query-fn n filename false)))
+(defn create-root-var [name value]
+  ; shamelessly stolen from yesql
+  (intern *ns*
+          (with-meta (symbol name)
+                     (meta value))
+          value))
 
-(defmacro defq [n filename]
-  `(def ~n (query-fn '~n ~filename)))
+(defn query-fn [{:keys [sql f throw-on-nil?]}]
+  (fn [& [m]]
+    (let [val (->> (queries/sql-vec sql m)
+                   (query (connection))
+                   (f))]
+      (if (and (nil? val)
+               (true? throw-on-nil?))
+        (utils/throw-not-found)
+        val))))
+
+(defn query-fns [filename]
+   (doall (->> (queries/slurp-resource filename)
+               (queries/parse)
+               (map #(create-root-var (:name %) (query-fn %))))))
+
+(defmacro defq
+  ([n filename]
+   `(->> (queries/slurp-resource ~filename)
+         (filter #(= (:name %) ~(str n)))
+         (first)
+         (query-fn)
+         (create-root-var ~(str n))))
+  ([filename]
+   `(query-fns ~filename)))
 
 (defmacro defq! [n filename]
-  `(def ~n (query-fn '~n ~filename true)))
+  `(as-> (queries/slurp-resource ~filename) %
+         (filter #(= (:name %) ~n) %)
+         (first %)
+         (assoc % :throw-on-nil? true)
+         (query-fn %)
+         (create-root-var (str ~n) %)))
 
-(defq columns "sql/schema.sql")
+(defq "sql/schema.sql")
 
 (defn create [db-name]
   (let [db-name (format "%s_%s" db-name (env/env :coast-env))
