@@ -1,12 +1,13 @@
 (ns views.__table
-  (:require [coast.components :as comp])
+  (:require [coast.components :as comp]
+            [coast.router :refer [url]])
   (:refer-clojure :exclude [new]))
 
 (defn table-row [m]
   (let [{:keys [__columns]} m
-        edit (format "/__table/%s/edit" id)
-        delete (format "/__table/%s?_method=delete" id)
-        show (format "/__table/%s" id)]
+        edit (url ["/__table/:id/edit" m])
+        delete (url ["/__table/:id" m])
+        show (url ["/__table/:id" m])]
     [:tr
       __td-columns
       [:td
@@ -32,7 +33,7 @@
 (defn show [request]
   (let [{:keys [__singular]} request
         {:keys [__columns]} __singular
-        delete-href (format "/__table/%s?_method=delete" id)]
+        delete-href (url [:delete "/__table/:id" __singular])]
     [:div
       __div-columns
       [:div

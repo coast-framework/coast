@@ -1,7 +1,8 @@
 -- name: create-table
-create table if not exists schema_migrations
-  (id text,
-   created_at timestamp without time zone default (now() at time zone 'utc'))
+create table if not exists schema_migrations (
+  id text,
+  created_at timestamp with time zone default now()
+);
 
 -- name: migrations
 select

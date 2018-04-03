@@ -1,12 +1,9 @@
 (ns models.__table
   (:require [db.__table :as db.__table])
-            [coast.beta :as coast]
   (:refer-clojure :exclude [list find update]))
-
 
 (defn params [request]
   (:params request))
-
 
 (defn list [request]
   (->> (params request)
@@ -14,30 +11,26 @@
        (db.__table/list)
        (assoc request :__table)))
 
-
 (defn find [request]
   (->> (params request)
        (db.__table/find)
        (assoc request :__singular)))
 
-
-(defn insert [request]
+(defn create [request]
   (->> (params request)
        (db.__table/insert)
        (assoc request :__singular)))
-
 
 (defn update [request]
   (let [{:keys [__singular]} request]
     (->> (params request)
          (merge __singular)
          (db.__table/update)
-         (assoc request :__singular)))))
-
+         (assoc request :__singular))))
 
 (defn delete [request]
   (let [{:keys [__singular]} request]
     (->> (params request)
          (merge __singular)
          (db.__table/delete)
-         (assoc request :__singular)))))
+         (assoc request :__singular))))

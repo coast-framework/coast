@@ -1,55 +1,48 @@
 (ns controllers.__table
   (:require [coast.responses :as res]
-            [coast.utils]
+            [coast.errors :as errors]
             [models.__table :as m.__table]
             [views.__table :as v.__table])
   (:refer-clojure :exclude [update new]))
 
-
 (defn index [request]
-  (-> (__table/list request)
+  (-> (m.__table/list request)
       (v.__table/index)))
 
-
 (defn show [request]
-  (-> (__table/find request)
+  (-> (m.__table/find request)
       (v.__table/show)))
-
 
 (defn new [request]
   (v.__table/new request))
 
-
 (defn create [request]
-  (let [[_ errors] (-> (__table/create request)
-                       (coast.utils/try+))]
+  (let [errors (-> (m.__table/create request)
+                   (errors/catch+ :invalid))]
     (if (empty? errors)
       (-> (res/redirect "/__table")
           (res/flash "__singular created successfully"))
       (v.__table/new (assoc request :errors errors)))))
 
-
 (defn edit [request]
-  (-> (__table/find request)
+  (-> (m.__table/find request)
       (v.__table/edit)))
 
-
 (defn update [request]
-  (let [[_ errors] (-> (__table/find request)
-                       (__table/update)
-                       (coast.utils/try+))]
+  (let [errors (-> (m.__table/find request)
+                   (m.__table/update)
+                   (errors/catch+))]
     (if (empty? errors)
       (-> (res/redirect "/__table")
           (res/flash "__singular updated successfully"))
       (edit (assoc request :errors errors)))))
 
-
 (defn delete [request]
-  (let [[_ errors] (-> (__table/find request)
-                       (__table/delete)
-                       (coast.utils/try+))]
+  (let [errors (-> (m.__table/find request)
+                   (m.__table/delete)
+                   (errors/catch+))]
     (if (empty? errors)
       (-> (res/redirect "/__table")
           (res/flash "__singular deleted successfully"))
       (-> (res/redirect "/__table")
-          (res/flash (format "__singular could not be deleted: %s" (-> req :errors :error)))))))
+          (res/flash "__singular could not be deleted")))))
