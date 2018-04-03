@@ -4,7 +4,7 @@ The easy way to make websites with clojure
 
 ```clojure
 coast.gamma {:git/url "https://github.com/swlkr/coast"
-             :sha ""}}`
+             :sha "0eb962c21574e878a161013bcd2903abf43d61a9"}}
 ```
 
 Previously: [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
