@@ -1,22 +1,23 @@
 # coast on clojure
 
-The easy full stack clojure web framework
+The easy way to make websites with clojure
 
 ```clojure
-coast.beta {:git/url "https://github.com/swlkr/coast"
-            :sha "c8746380d7bb1ae09c99a7e5b268da72594f603d"}}`
+coast.gamma {:git/url "https://github.com/swlkr/coast"
+             :sha ""}}`
 ```
 
-Previously: [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
+Previously: [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
 
 ### Warning
 The current version is under construction, but you can use it anyway 😅
 
 ## Table of Contents
 
-- [Simple Quickstart](#quickstart)
+- [Simple Quickstart](#simple-quickstart)
 - [Quickstart](#quickstart)
 - [Shipping](#shipping)
+- [Routing](#routing)
 - [Database](#database)
 - [Models](#models)
 - [Views](#views)
@@ -38,7 +39,7 @@ It only takes a few lines to get up and running
 
 ```clojure
 (ns server
-  (:require [coast.beta :as coast]))
+  (:require [coast.gamma :as coast]))
 
 (defn hello [req]
   {:status 200
@@ -90,13 +91,7 @@ Can't forget the routes
             [controllers.posts :as c.posts]]))
 
 (def routes (-> (get "/" c.home/index)
-                (get "/posts" c.posts/index)
-                (get "/posts/new" c.posts/new)
-                (get "/posts/:id" c.posts/show)
-                (get "/posts/:id/edit" c.posts/edit)
-                (post "/posts" c.posts/create)
-                (put "/posts/:id" c.posts/update)
-                (delete "/posts/:id" c.posts/delete)))
+                (resource :c.posts)))
 ```
 
 Let's see our masterpiece so far
@@ -122,6 +117,69 @@ make uberjar
 make db/migrate
 make server
 ```
+
+## Routing
+
+Routing in the Clojure world has seen its fair share of implementations. Coast’s implementation is based loosely on [nav](https://github.com/taylorlapeyre/nav/blob/master/README.md)  and to some extent [pedestal[(http://pedestal.io) and [compojure](https://github.com/weavejester/compojure).
+
+Here’s a few examples of routes in coast
+```clojure
+[:get “/“ home]
+
+[:put “/posts/:id” posts/update]
+
+[:delete “/posts/:post-id/comments/:id” comments/delete]
+
+; generally: [method route-string function]
+```
+
+If you don’t care to write vectors all day you can also use the helper functions in coast.router
+
+```clojure
+(ns routes
+  (:require [coast.router :refer [get post put delete])
+            [controllers.home :as home]
+			  [controllers.posts :as posts]
+  (:refer-clojure :exclude [get]))
+
+(def routes (-> (get "/" home/index)
+                (get "/posts" posts/index)
+                (get "/posts/:id" posts/show)
+                (post "/posts" posts/create)))
+```
+
+The thread first macro is used to conj everything into one big vector so the result is this:
+
+```clojure
+[[:get "/" home/index]
+ [:get "/posts" posts/index]
+ [:get "/posts/:id" posts/show]
+ [:post "/posts" posts/create]]
+```
+
+In the case where routes conflict, the first route gets picked
+
+```clojure
+[[:get "/posts/new" posts/new]
+ [:get "/posts/:id" posts/show]]
+```
+
+Resource routing works like this:
+
+```clojure
+(def routes (-> (resource :posts)
+                (resource comments/index comments/show))
+```
+
+The last line there would be to indicate you don’t want every single route (all 7 crud routes, but just a few). Routing works with existing ring middleware like so
+
+```clojure
+(def routes (-> (get "/" home/index)
+                (middleware/wrap-auth)
+                (middleware/coerce-params))
+```
+
+So that’s how routing works in coast on clojure. Pretty straightforward, not a lot of surprises, which is kind of the whole point of coast
 
 ## Database
 
@@ -228,16 +286,14 @@ at once, not just row by row, luckily, clojure still works and you can use `map`
 select *
 from posts
 order by created_at
-limit = :limit
-offset = :offset
-
+limit :limit
+offset :offset
 
 -- name: find
 -- fn: first
 select *
 from posts
 where id = :id
-
 
 -- name: insert
 -- fn: first
@@ -251,7 +307,6 @@ values (
 )
 returning *
 
-
 -- name: update
 -- fn: first
 update posts
@@ -260,7 +315,6 @@ set
   body = :body
 where id = :id
 returning *
-
 
 -- name: delete
 -- fn: first
@@ -274,7 +328,7 @@ Here is where the `db.clj` file comes in and references the `posts.db.sql` file
 
 ```clojure
 (ns db.posts
-  (:require [coast.alpha :refer [defq]])
+  (:require [coast.gamma :refer [defq]])
   (:refer-clojure :exclude [update list find]))
 
 (defq list "sql/posts.db.sql")
@@ -326,27 +380,20 @@ The last part of the this three part process is the model file in a different na
 
 ```clojure
 (ns models.posts
-  (:require [db.posts :as db.posts]
-            [coast.utils :as utils])
+  (:require [db.posts :as db.posts])
   (:refer-clojure :exclude [list find update]))
 
-(def columns [:title :body])
-
-(defn id [request]
-  (-> (:params request)
-      (select-keys [:id])))
-
 (defn params [request]
-  (-> (:params request)
-      (select-keys columns)))
+  (:params request))
 
 (defn list [request]
-  (->> (:params request)
+  (->> (params request)
+       (merge {:offset 10 :limit 0})
        (db.posts/list)
        (assoc request :posts)))
 
 (defn find [request]
-  (->> (id request)
+  (->> (params request)
        (db.posts/find)
        (assoc request :post)))
 
@@ -356,20 +403,22 @@ The last part of the this three part process is the model file in a different na
        (assoc request :post)))
 
 (defn update [request]
-  (let [post (-> (id request)
-                 (db.posts/find))]
+  (let [{:keys [post]} request]
     (->> (params request)
          (merge post)
          (db.posts/update)
          (assoc request :post))))
 
 (defn delete [request]
-  (->> (params request)
-       (db.posts/delete)
-       (assoc request :post)))
+  (let [{:keys [post]} request]
+    (->> (params request)
+         (db.posts/delete)
+         (assoc request :post))))
 ```
 
-There's a lot to the models, but quite a bit less than something like active record.
+There's a lot to the models. Oh and as a bonus for statically writing out the sql queries
+in db.sql, the params are known ahead of time and will automatically look for the keys
+required for the query.
 
 ## Views
 
@@ -380,7 +429,7 @@ of your site
 
 ```clojure
 (ns server
-  (:require [coast.alpha :as coast]
+  (:require [coast.gamma :as coast]
             [coast.components :as c]))
 
 (def routes [[:get "/" (fn [request])]])
@@ -393,7 +442,7 @@ of the layout function where you tell it to, the default layout function looks l
 
 ```clojure
 (ns components
-  (:require [coast.alpha :as coast]))
+  (:require [coast.gamma :as coast]))
 
 (defn layout [request body]
   [:html
