@@ -139,7 +139,7 @@ If you don’t care to write vectors all day you can also use the helper functio
 (ns routes
   (:require [coast.router :refer [get post put delete])
             [controllers.home :as home]
-			  [controllers.posts :as posts]
+            [controllers.posts :as posts]
   (:refer-clojure :exclude [get]))
 
 (def routes (-> (get "/" home/index)
@@ -168,7 +168,7 @@ Resource routing works like this:
 
 ```clojure
 (def routes (-> (resource :posts)
-                (resource comments/index comments/show))
+                (resource comments/index comments/show)))
 ```
 
 The last line there would be to indicate you don’t want every single route (all 7 crud routes, but just a few). Routing works with existing ring middleware like so
@@ -176,7 +176,7 @@ The last line there would be to indicate you don’t want every single route (al
 ```clojure
 (def routes (-> (get "/" home/index)
                 (middleware/wrap-auth)
-                (middleware/coerce-params))
+                (middleware/coerce-params)))
 ```
 
 So that’s how routing works in coast on clojure. Pretty straightforward, not a lot of surprises, which is kind of the whole point of coast
