@@ -174,8 +174,8 @@
               (string/split #"\.") (last))
         {:strs [index show new edit create change delete]} m]
     (->> [[:get (format "/%s" s) (-> index resolve-keyword)]
-          [:get (format "/%s/:id" s) (-> show resolve-keyword)]
           [:get (format "/%s/new" s) (-> new resolve-keyword)]
+          [:get (format "/%s/:id" s) (-> show resolve-keyword)]
           [:get (format "/%s/:id/edit" s) (-> edit resolve-keyword)]
           [:post (format "/%s" s) (-> create resolve-keyword)]
           [:put (format "/%s/:id" s) (-> change resolve-keyword)]
@@ -190,18 +190,23 @@
     [:get    '/resources/new      resources/new]
     [:get    '/resources/:id/edit resources/edit]
     [:post   '/resources          resources/create]
-    [:put    '/resources/:id      resources/change]
+    [:put    '/resources/:id      resources/update]
     [:delete '/resources/:id      resources/delete]]
    Examples:
    (resource items/show items/index)
    (resource items/create items/delete)
    (resource items/index items/create)
    (resource items/index)
+   (resource :items)
    "
   [& args]
   (let [functions (if (vector? (first args))
                     (rest args)
                     args)
+        functions (if (and (= 1 (count functions))
+                           (keyword? (first functions)))
+                    (map #(->> (name %) (str (name (first functions)) "/" )) [:index :new :show :create :edit :update :delete])
+                    functions)
         routes (->> (map #(-> % str repl/demunge (string/replace #"@\w+" "") keyword) functions)
                     (mapv #(vector (name %) %))
                     (into {})
