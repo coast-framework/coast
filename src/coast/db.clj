@@ -6,27 +6,29 @@
             [coast.utils :as utils])
   (:refer-clojure :exclude [drop]))
 
-(defn unique-index-error? [error]
-  (when (not (nil? error))
-    (string/includes? error "duplicate key value violates unique constraint")))
+(defn not-null-constraint [s]
+  (let [col (-> (re-find #"null value in column \"(\w+)\" violates not-null constraint" s)
+                (second))]
+    (if (nil? col)
+      {}
+      {(keyword col) (str (utils/humanize col) " cannot be blank")})))
 
-(defn fmt-unique-index-error [s]
-  (let [column (->> (re-matches #"(?s)ERROR: duplicate key value violates unique constraint.*Detail: Key \((.*)\)=\((.*)\).*" s)
-                    (clojure.core/drop 1)
-                    (first))]
-    {(keyword column) (str (utils/humanize column) " is already taken")}))
-
-(defn throw-db-exception [e]
-  (let [s (.getMessage e)]
-    (cond
-      (unique-index-error? s) (utils/throw+ (fmt-unique-index-error s))
-      :else (throw e))))
+(defn unique-constraint [s]
+  (let [col (-> (re-find #"duplicate key value violates unique constraint.*Detail: Key \((.*)\)=\((.*)\).*" s)
+                (second))]
+    (if (nil? col)
+      {}
+      {(keyword col) (str (utils/humanize col) " is already taken")})))
 
 (defmacro transact! [f]
   `(try
      ~f
-     (catch Exception e#
-       (throw-db-exception e#))))
+     (catch org.postgresql.util.PSQLException e#
+       (let [msg# (.getMessage e#)
+             err1# (not-null-constraint msg#)
+             err2# (unique-constraint msg#)]
+         (throw (ex-info "Invalid data" {:type :invalid
+                                         :errors (merge err1# err2#)}))))))
 
 (defn connection []
   (let [db-url (or (env/env :database-url)
@@ -74,15 +76,11 @@
                      (meta value))
           value))
 
-(defn query-fn [{:keys [sql f throw-on-nil?]}]
+(defn query-fn [{:keys [sql f]}]
   (fn [& [m]]
-    (let [val (->> (queries/sql-vec sql m)
-                   (query (connection))
-                   (f))]
-      (if (and (nil? val)
-               (true? throw-on-nil?))
-        (utils/throw-not-found)
-        val))))
+    (->> (queries/sql-vec sql m)
+         (query (connection))
+         (f))))
 
 (defn query-fns [filename]
    (doall (->> (queries/slurp-resource filename)
@@ -91,21 +89,15 @@
 
 (defmacro defq
   ([n filename]
-   `(->> (queries/slurp-resource ~filename)
-         (filter #(= (:name %) ~(str n)))
-         (first)
+   `(->> (queries/query ~(str n) ~filename)
          (query-fn)
          (create-root-var ~(str n))))
   ([filename]
    `(query-fns ~filename)))
 
-(defmacro defq! [n filename]
-  `(as-> (queries/slurp-resource ~filename) %
-         (filter #(= (:name %) ~n) %)
-         (first %)
-         (assoc % :throw-on-nil? true)
-         (query-fn %)
-         (create-root-var (str ~n) %)))
+(defn first! [coll]
+  (or (first coll)
+      (throw (ex-info "Record not found" {:type :404}))))
 
 (defq "sql/schema.sql")
 

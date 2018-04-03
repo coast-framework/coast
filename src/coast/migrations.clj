@@ -20,7 +20,7 @@
 (defq delete "sql/migrations.sql")
 
 (defn create-table []
-  (->> (queries/query "sql/migrations.sql" "create-table")
+  (->> (queries/query "create-table" "sql/migrations.sql")
        :sql
        (db/execute! (db/connection))))
 
@@ -58,26 +58,43 @@
   (let [migrations (pending)
         conn (db/connection)]
     (doseq [migration migrations]
-      (let [contents (-> migration read parse :up)]
+      (let [contents (-> migration read parse :up)
+            friendly-name (string/replace migration #"\.sql" "")]
         (if (or (string/blank? contents)
                 (nil? contents))
           (throw (Exception. (format "%s up statement is empty" migration)))
           (do
+            (println "")
+            (println "-- Migrating: " friendly-name "---------------------")
+            (println "")
+            (println (string/trim contents))
+            (println "")
+            (println "--" friendly-name "---------------------")
+            (println "")
             (db/execute! conn contents)
             (insert {:id migration})
-            (println (format "%s migrated successfully" (string/replace migration #"\.sql" "")))))))))
+            (println friendly-name "migrated successfully")))))))
 
 (defn rollback []
-  (let [migration (-> (completed-migrations) (last))
-        conn (db/connection)
-        contents (-> migration read parse :down)]
-    (if (or (string/blank? contents)
-            (nil? contents))
-      (throw (Exception. (format "%s down statement is empty" migration)))
-      (do
-        (db/execute! conn contents)
-        (delete {:id migration})
-        (println (format "%s rolled back successfully" (string/replace migration #"\.sql" "")))))))
+  (let [migration (-> (completed-migrations) (last))]
+    (when (not (nil? migration))
+        (let [conn (db/connection)
+              contents (-> migration read parse :down)
+              friendly-name (string/replace migration #"\.sql" "")]
+          (if (or (string/blank? contents)
+                  (nil? contents))
+            (throw (Exception. (format "%s down statement is empty" migration)))
+            (do
+              (println "")
+              (println "-- Rolling back:" friendly-name "---------------------")
+              (println "")
+              (println (string/trim contents))
+              (println "")
+              (println "--" friendly-name "---------------------")
+              (println "")
+              (db/execute! conn contents)
+              (delete {:id migration})
+              (println friendly-name "rolled back successfully")))))))
 
 (defn timestamp []
   (-> (time/now)
@@ -111,7 +128,7 @@
         columns (-> columns
                     (conj "  id serial primary key")
                     vec
-                    (conj "created_at timestamp without time zone default (now() at time zone 'utc')"))
+                    (conj "created_at timestamp with time zone default now()"))
         column-string (string/join ",\n  " columns)]
     (str sql column-string "\n)")))
 

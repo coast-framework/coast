@@ -80,7 +80,7 @@
   (or (some-> filename io/resource slurp)
       (throw (FileNotFoundException. filename))))
 
-(defn query [filename name]
+(defn query [name filename]
   (->> (slurp-resource filename)
        (parse)
        (filter #(= (:name %) name))
