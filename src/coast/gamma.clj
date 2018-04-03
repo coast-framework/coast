@@ -1,4 +1,4 @@
-(ns coast.beta
+(ns coast.gamma
   (:require [coast.middleware :as middleware]
             [coast.router :as router]
             [coast.env :as env]
@@ -10,7 +10,9 @@
 
 (defn app
   ([routes opts]
-   (let [{:keys [layout error-fn not-found-fn]} opts]
+   (let [{:keys [layout]} opts
+         not-found-fn (get opts :404)
+         error-fn (get opts :500)]
      (-> (router/match-routes routes not-found-fn)
          (middleware/wrap-layout layout)
          (middleware/wrap-with-logger)
