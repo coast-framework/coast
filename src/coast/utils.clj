@@ -1,8 +1,6 @@
 (ns coast.utils
-  (:require [jkkramer.verily :as v]
-            [clojure.string :as string])
-  (:import (java.util UUID)
-           (clojure.lang ExceptionInfo)))
+  (:require [clojure.string :as string])
+  (:import (java.util UUID)))
 
 (defn uuid
   ([]
@@ -27,41 +25,6 @@
 (defn map-keys [f m]
   (->> (map (fn [[k v]] [(f k) v]) m)
        (into {})))
-
-(defn throw+ [m]
-  (if (map? m)
-    (throw (ex-info "App exception" (merge m {:coast/exception true})))
-    (throw (Exception. "Throw+ only accepts maps, not strings"))))
-
-(defmacro try+ [fn]
-  `(try
-     [~fn nil]
-     (catch ExceptionInfo e#
-       (if (true? (get (ex-data e#) :coast/exception))
-         [nil (dissoc (ex-data e#) :coast/exception)]
-         (throw e#)))))
-
-(defn humanize [k]
-  (-> (name k)
-      (string/capitalize)
-      (string/replace "-" " ")))
-
-(defn fmt-validation [result]
-  (let [{:keys [keys msg]} result]
-    (map #(hash-map % (str (humanize %) " " msg)) keys)))
-
-(defn fmt-validations [results]
-  (when (some? results)
-    (->> (map fmt-validation results)
-         (flatten)
-         (into {}))))
-
-(defn validate [m validations]
-  (let [result (-> (v/validate m validations)
-                   (fmt-validations))]
-    (if (empty? result)
-      m
-      (throw+ (merge result {:coast/error "Validation has failed"})))))
 
 (defn deep-merge [& ms]
   (apply merge-with
@@ -98,6 +61,3 @@
 
 (defn long-str [& s]
   (string/join "\n" s))
-
-(defn throw-not-found []
-  (throw+ {:coast/error :not-found}))
