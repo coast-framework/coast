@@ -6,6 +6,7 @@
      (catch Exception e#
        (let [ex# (ex-data e#)
              types# (set '~types)]
-         (if (contains? types# (:type ex#))
-           (:errors ex#)
+         (if (and (contains? types# (:type ex#))
+                  (not (empty? ex#)))
+           ex#
            (throw e#))))))

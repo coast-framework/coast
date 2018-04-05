@@ -14,7 +14,7 @@
       {(keyword col) (str (utils/humanize col) " cannot be blank")})))
 
 (defn unique-constraint [s]
-  (let [col (-> (re-find #"duplicate key value violates unique constraint.*Detail: Key \((.*)\)=\((.*)\).*" s)
+  (let [col (-> (re-find #"(?s)duplicate key value violates unique constraint.*Detail: Key \((.*)\)=\((.*)\)" s)
                 (second))]
     (if (nil? col)
       {}
@@ -26,9 +26,12 @@
      (catch org.postgresql.util.PSQLException e#
        (let [msg# (.getMessage e#)
              err1# (not-null-constraint msg#)
-             err2# (unique-constraint msg#)]
-         (throw (ex-info "Invalid data" {:type :invalid
-                                         :errors (merge err1# err2#)}))))))
+             err2# (unique-constraint msg#)
+             errors# (merge err1# err2#)]
+         (if (empty? errors#)
+           (throw e#)
+           (throw (ex-info "Invalid data" {:type :invalid
+                                           :errors errors#})))))))
 
 (defn connection []
   (let [db-url (or (env/env :database-url)
