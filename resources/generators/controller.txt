@@ -17,31 +17,31 @@
   (v.__table/new request))
 
 (defn create [request]
-  (let [errors (-> (m.__table/create request)
-                   (errors/catch+ :invalid))]
-    (if (empty? errors)
+  (let [response (-> (m.__table/create request)
+                     (errors/catch+ :invalid))]
+    (if (empty? (:errors response))
       (-> (res/redirect "/__table")
           (res/flash "__singular created successfully"))
-      (v.__table/new (assoc request :errors errors)))))
+      (v.__table/new (merge request response)))))
 
 (defn edit [request]
   (-> (m.__table/find request)
       (v.__table/edit)))
 
 (defn update [request]
-  (let [errors (-> (m.__table/find request)
-                   (m.__table/update)
-                   (errors/catch+))]
-    (if (empty? errors)
+  (let [response (-> (m.__table/find request)
+                     (m.__table/update)
+                     (errors/catch+ :invalid))]
+    (if (empty? (:errors response))
       (-> (res/redirect "/__table")
           (res/flash "__singular updated successfully"))
-      (edit (assoc request :errors errors)))))
+      (edit (merge request response)))))
 
 (defn delete [request]
-  (let [errors (-> (m.__table/find request)
-                   (m.__table/delete)
-                   (errors/catch+))]
-    (if (empty? errors)
+  (let [response (-> (m.__table/find request)
+                     (m.__table/delete)
+                     (errors/catch+ :invalid))]
+    (if (empty? (:errors response))
       (-> (res/redirect "/__table")
           (res/flash "__singular deleted successfully"))
       (-> (res/redirect "/__table")
