@@ -34,13 +34,13 @@
         name (-> (filter name-line? query-lines)
                  (first)
                  (parse-name))
-        f (->> (filter fn-line? query-lines)
-               first
-               parse-fn)
+        f-name (->> (filter fn-line? query-lines)
+                    (first))
+        f (parse-fn f-name)
         sql (clojure.string/join " " (filter sql-line? query-lines))]
     (if (nil? name)
       nil
-      {:sql sql :f f :name name})))
+      {:sql sql :f f :name name :fn f-name})))
 
 (defn parse [lines]
   (let [query-lines (clojure.string/split lines #"\n\n")]
@@ -58,19 +58,27 @@
 (defn has-keys? [m keys]
   (every? #(contains? m %) keys))
 
+(defn sql-ks [sql]
+  (->> (mapv #(-> % second keyword) (re-seq qualified-keyword-pattern sql))
+       (map utils/snake)))
+
+(defn sql-params [sql m]
+  (let [m (utils/map-keys utils/snake m)]
+    (->> (sql-ks sql)
+         (mapv (fn [k] [k (get m k)]))
+         (into {}))))
+
 (defn sql-vec [sql m]
   (when (string? sql)
-    (let [m (or m {})
-          m (utils/map-keys utils/snake m)
-          sql-ks (->> (mapv #(-> % second keyword) (re-seq qualified-keyword-pattern sql))
-                      (mapv utils/snake))
-          params (map #(get m %) sql-ks)
-          f-sql (parameterize sql m)
-          s-vec (vec (concat [f-sql] (->> (map (fn [val] (if (coll? val) (flatten val) val)) params)
+    (let [m (->> (or m {})
+                 (utils/map-keys utils/snake))
+          params (sql-params sql m)
+          f-sql (parameterize sql params)
+          s-vec (vec (concat [f-sql] (->> (map (fn [[_ v]] (if (coll? v) (flatten v) v)) params)
                                           (flatten))))]
-      (if (has-keys? m sql-ks)
+      (if (has-keys? m (keys params))
         s-vec
-        (->> (set/difference (set sql-ks) (keys m))
+        (->> (set/difference (set (keys params)) (set (keys m)))
              (string/join ", ")
              (format "Missing keys: %s")
              (Exception.)

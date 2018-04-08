@@ -3,7 +3,8 @@
             [clojure.string :as string]
             [coast.env :as env]
             [coast.queries :as queries]
-            [coast.utils :as utils])
+            [coast.utils :as utils]
+            [clojure.pprint :refer [pprint]])
   (:refer-clojure :exclude [drop]))
 
 (defn not-null-constraint [s]
@@ -79,8 +80,17 @@
                      (meta value))
           value))
 
-(defn query-fn [{:keys [sql f]}]
+(defn log [m]
+  (println (utils/long-str
+            (str (:ns m) "/" (:name m))
+            (:sql m)
+            (with-out-str (pprint (:params m))))))
+
+(defn query-fn [{:keys [sql f] :as query-map}]
   (fn [& [m]]
+    (when (and (= "dev" (env/env :coast-env))
+               (not= (str (:ns query-map)) "coast.migrations"))
+      (log (assoc query-map :params (queries/sql-params sql m))))
     (->> (queries/sql-vec sql m)
          (query (connection))
          (f))))
@@ -88,13 +98,15 @@
 (defn query-fns [filename]
    (doall (->> (queries/slurp-resource filename)
                (queries/parse)
+               (map #(assoc % :ns *ns*))
                (map #(create-root-var (:name %) (query-fn %))))))
 
 (defmacro defq
   ([n filename]
-   `(->> (queries/query ~(str n) ~filename)
-         (query-fn)
-         (create-root-var ~(str n))))
+   `(let [q-fn# (-> (queries/query ~(str n) ~filename)
+                    (assoc :ns *ns*)
+                    (query-fn))]
+      (create-root-var ~(str n) q-fn#)))
   ([filename]
    `(query-fns ~filename)))
 

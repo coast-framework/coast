@@ -61,3 +61,17 @@
 
 (defn long-str [& s]
   (string/join "\n" s))
+
+(defn underline [s]
+  (->> (map (fn [_] "-") s)
+       (clojure.string/join)))
+
+(def pattern #":([\w-]+):")
+
+(defn replacement [match m]
+  (let [default (first match)
+        k (-> match last keyword)]
+    (str (get m k default))))
+
+(defn fill [m s]
+  (string/replace s pattern #(replacement % m)))

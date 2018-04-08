@@ -23,6 +23,7 @@ The current version is under construction, but you can use it anyway 😅
 - [Views](#views)
 - [Controllers](#controllers)
 - [Helpers](#helpers)
+- [Errors](#errors)
 
 ## Quickstart without a template
 

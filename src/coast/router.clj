@@ -3,8 +3,11 @@
             [clojure.edn :as edn]
             [coast.responses :as responses]
             [coast.utils :as utils]
-            [clojure.repl :as repl])
-  (:refer-clojure :exclude [get]))
+            [clojure.repl :as repl]
+            [clojure.pprint :refer [pprint]]
+            [coast.env :as env])
+  (:refer-clojure :exclude [get])
+  (:import (java.time Duration)))
 
 (def param-re #":([\w-_]+)")
 
@@ -144,6 +147,33 @@
       (middleware f))
     (resolve-route-fn val not-found-fn)))
 
+(defn diff [start end]
+  (let [duration (Duration/between start end)]
+    (.toMillis duration)))
+
+(defn req-method [request]
+  (or (-> request :params :_method keyword) (:request-method request)))
+
+(defn log-string [request]
+  (let [{:keys [uri]} request
+        uri (or uri "N/A")
+        ;status (or (-> response :status) "N/A")
+        method (-> (req-method request) name string/upper-case)]
+    (utils/fill {:uri uri
+                 :method method}
+                (utils/long-str
+                 ""
+                 ""
+                 "Request made to :method: :uri:"
+                 (when (not (empty? (:params request)))
+                   (utils/long-str ""
+                                   "Parameters"
+                                   (with-out-str (pprint (:params request)))))))))
+
+(defn log [request]
+  (when (= "dev" (env/env :coast-env))
+    (println (log-string request))))
+
 (defn match-routes [routes not-found-fn]
   "Turns routes into a ring handler"
   (fn [request]
@@ -157,7 +187,8 @@
           handler (resolve-route f not-found-fn)
           coerced-params (utils/map-vals coerce-params params)
           request (assoc request :params coerced-params
-                                 ::params params)]
+                                 ::params params)
+          _ (log request)]
       (handler request))))
 
 (defn resolve-keyword [k]

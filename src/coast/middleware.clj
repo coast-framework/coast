@@ -7,7 +7,8 @@
             [coast.time :as time]
             [coast.utils :as utils]
             [coast.responses :as responses]
-            [coast.env :as env])
+            [coast.env :as env]
+            [coast.errors :as errors])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
 
@@ -29,17 +30,13 @@
 
 (defn wrap-not-found [handler not-found-page]
   (if (nil? not-found-page)
+    handler
     (fn [request]
-      (handler request))
-    (fn [request]
-      (try
-        (handler request)
-        (catch ExceptionInfo e
-          (let [m (ex-data e)
-                type (get m :coast/error)]
-            (if (= type :not-found)
-              (not-found-page request)
-              (throw e))))))))
+      (let [response (-> (handler request)
+                         (errors/catch+))]
+        (if (errors/not-found? response)
+          (not-found-page request)
+          response)))))
 
 (defn layout? [response layout]
   (and (not (nil? layout))
@@ -72,22 +69,42 @@
 (defn req-method [request]
   (or (-> request :params :_method keyword) (:request-method request)))
 
-(defn log-string [request response start-time]
+(defn response-log-string [request response start-time]
   (let [ms (diff start-time (time/now))
         {:keys [uri]} request
         uri (or uri "N/A")
         status (or (-> response :status) "N/A")
-        method (-> (req-method request) name string/upper-case)]
-    (format "%s %s %s %sms" method uri status ms)))
+        method (-> (req-method request) name string/upper-case)
+        log-str (utils/fill {:uri uri
+                             :ms ms
+                             :status status
+                             :method method}
+                            "Response to :method: :uri: with status :status: completed in :ms:ms")]
+    (utils/long-str
+      log-str
+      (utils/underline log-str))))
 
-(defn log [request response start-time]
-  (println (log-string request response start-time)))
+(defn compact-log-string [request response start-time]
+  (let [ms (diff start-time (time/now))
+        uri (:uri request)
+        status (:status response)
+        method (-> (req-method request) name string/upper-case)]
+    (utils/fill {:uri uri
+                 :ms ms
+                 :status status
+                 :method method}
+                ":method: :uri: :status: :ms:ms")))
+
+(defn log-response [request response start-time]
+  (if (= "dev" (env/env :coast-env))
+    (println (response-log-string request response start-time))
+    (println (compact-log-string request response start-time))))
 
 (defn wrap-with-logger [handler]
   (fn [request]
-    (let [start-time (time/now)
+    (let [then (time/now)
           response (handler request)]
-      (log request response start-time)
+      (log-response request response then)
       response)))
 
 (defn wrap-reload [handler]
