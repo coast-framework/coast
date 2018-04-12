@@ -29,14 +29,16 @@ The current version is under construction, but you can use it anyway 😅
 
 ```bash
 brew install clojure
-curl -o /usr/local/bin/coast https://raw.githubusercontent.com/swlkr/coast/master/coast
-chmod a+x /usr/local/bin/coast
 
 mkdir -p blog blog/src
-touch blog/src/server.clj
+cd blog
+touch deps.edn
+echo '{:paths ["src"] :deps {coast.gamma {:git/url "https://github.com/swlkr/coast" :sha "5242b6dcf6ca77b57de5b77f4dd47516ce459eff"}}}' >> deps.edn
+
+touch src/server.clj
 ```
 
-It only takes a few lines to get up and running
+It only takes a few lines to get up and running, add this to `src/server.clj`
 
 ```clojure
 (ns server
@@ -44,6 +46,7 @@ It only takes a few lines to get up and running
 
 (defn hello [req]
   {:status 200
+   :headers {"Content-Type" "text/html"}
    :body (format "hello %s" (-> req :params :name))})
 
 (def routes [[:get "/hello/:name" hello]])
@@ -51,6 +54,14 @@ It only takes a few lines to get up and running
 (def app (coast/app routes))
 
 (coast/start-server app) ; => starts listening on port 1337 by default
+```
+
+Usually you would use a REPL from your editor to start the server
+but you can start it from your terminal with clj
+
+```bash
+clj src/server.clj
+# => Server is listening on port 1337
 ```
 
 Now head to your terminal and hit `http://localhost:1337/hello/world`
