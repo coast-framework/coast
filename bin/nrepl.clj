@@ -4,6 +4,9 @@
 
 (let [port (or (some-> (first *command-line-args*)
                        (java.lang.Long/parseLong))
+               (some-> (slurp ".nrepl-port")
+                       (clojure.string/trim)
+                       (java.lang.Long/parseLong))
                7888)]
   (start-server :port port :handler cider-nrepl-handler)
   (println "Started nREPL on port" port)
