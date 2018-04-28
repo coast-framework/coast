@@ -11,8 +11,7 @@
         hiccup {:mvn/version "1.0.5"}
         jkkramer/verily {:mvn/version "0.6.0"}
         ring/ring-core {:mvn/version "1.6.2"}
-        com.jakemccrary/reload {:mvn/version "0.1.0"}
-        venantius/pyro {:mvn/version "0.1.2"}}
+        com.jakemccrary/reload {:mvn/version "0.1.0"}}
 
  :aliases {:nrepl {:extra-deps {org.clojure/tools.nrepl {:mvn/version "0.2.12"}}}
            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.15.1"}}}}}
