@@ -7,7 +7,7 @@
 
 (def name-regex #"^--\s*name\s*:\s*(.+)$")
 (def fn-regex #"^--\s*fn\s*:\s*(.+)$")
-(def qualified-keyword-pattern #":([\w-\.]+/?[\w-\.]+)Z?")
+(def qualified-keyword-pattern #"[\s*,\"'&;()|=+\-*%/\\<>^\[\]]:([\w-\.]+/?[\w-\.]+)Z?")
 
 (defn name-line? [s]
   (not (nil? (re-matches name-regex s))))
@@ -59,26 +59,30 @@
   (every? #(contains? m %) keys))
 
 (defn sql-ks [sql]
-  (->> (mapv #(-> % second keyword) (re-seq qualified-keyword-pattern sql))
-       (map utils/snake)))
+  (->> (re-seq qualified-keyword-pattern sql)
+       (map string/trim)
+       (map second)
+       (map keyword)
+       (vec)))
 
-(defn sql-params [sql m]
+(defn sql-tuples [sql m]
   (let [m (utils/map-keys utils/snake m)]
     (->> (sql-ks sql)
-         (mapv (fn [k] [k (get m k)]))
-         (into {}))))
+         (map (fn [k] [k (get m k)])))))
 
 (defn sql-vec [sql m]
   (when (string? sql)
     (let [m (->> (or m {})
                  (utils/map-keys utils/snake))
-          params (sql-params sql m)
+          tuples (sql-tuples sql m)
+          params (reduce conj {} tuples)
           f-sql (parameterize sql params)
-          s-vec (vec (concat [f-sql] (->> (map (fn [[_ v]] (if (coll? v) (flatten v) v)) params)
-                                          (flatten))))]
-      (if (has-keys? m (keys params))
-        s-vec
-        (->> (set/difference (set (keys params)) (set (keys m)))
+          values (mapv second tuples)
+          ks (map first tuples)
+          v (apply conj [f-sql] values)]
+      (if (has-keys? m ks)
+        v
+        (->> (set/difference (set ks) (set (keys m)))
              (string/join ", ")
              (format "Missing keys: %s")
              (Exception.)
