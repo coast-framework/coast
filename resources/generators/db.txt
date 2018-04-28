@@ -2,8 +2,4 @@
   (:require [coast.db :refer [defq first!]])
   (:refer-clojure :exclude [update list find]))
 
-(defq list "sql/__table.db.sql")
-(defq find "sql/__table.db.sql")
-(defq insert "sql/__table.db.sql")
-(defq update "sql/__table.db.sql")
-(defq delete "sql/__table.db.sql")
+(defq "sql/__table.db.sql")

@@ -1,5 +1,5 @@
 (ns models.__table
-  (:require [db.__table :as db.__table])
+  (:require [db.__table])
   (:refer-clojure :exclude [list find update]))
 
 (defn params [request]
