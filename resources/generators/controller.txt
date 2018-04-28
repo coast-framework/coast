@@ -18,11 +18,11 @@
 
 (defn create [request]
   (let [response (-> (m.__table/create request)
-                     (errors/catch+ :invalid))]
-    (if (empty? (:errors response))
+                     (errors/catch!))]
+    (if (errors/error? response)
+      (v.__table/new (merge request response))
       (-> (res/redirect "/__table")
-          (res/flash "__singular created successfully"))
-      (v.__table/new (merge request response)))))
+          (res/flash "__singular created successfully")))))
 
 (defn edit [request]
   (-> (m.__table/find request)
@@ -31,18 +31,18 @@
 (defn update [request]
   (let [response (-> (m.__table/find request)
                      (m.__table/update)
-                     (errors/catch+ :invalid))]
-    (if (empty? (:errors response))
+                     (errors/catch!))]
+    (if (errors/error? response)
+      (edit (merge request response))
       (-> (res/redirect "/__table")
-          (res/flash "__singular updated successfully"))
-      (edit (merge request response)))))
+          (res/flash "__singular updated successfully")))))
 
 (defn delete [request]
   (let [response (-> (m.__table/find request)
                      (m.__table/delete)
-                     (errors/catch+ :invalid))]
-    (if (empty? (:errors response))
+                     (errors/catch!))]
+    (if (errors/error? response)
       (-> (res/redirect "/__table")
-          (res/flash "__singular deleted successfully"))
+          (res/flash "__singular could not be deleted"))
       (-> (res/redirect "/__table")
-          (res/flash "__singular could not be deleted")))))
+          (res/flash "__singular deleted successfully")))))
