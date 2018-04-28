@@ -16,7 +16,7 @@
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-fn)
          (middleware/wrap-reload)
-         (middleware/wrap-if #(= "prod" (env/env :coast-env)) middleware/wrap-errors error-fn))))
+         (middleware/wrap-errors error-fn))))
   ([routes]
    (app routes {})))
 

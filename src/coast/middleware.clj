@@ -20,13 +20,16 @@
      [:h1 "500 Internal server error"]]])
 
 (defn wrap-errors [handler error-fn]
-  (fn [request]
-    (try
-      (handler request)
-      (catch Exception e
-        (println (st/print-stack-trace e))
-        (or (error-fn (assoc request :exception e))
-            (internal-server-error))))))
+  (if (= "prod" (env/env :coast-env))
+    (fn [request]
+      (try
+        (handler request)
+        (catch Exception e
+          (st/print-stack-trace e)
+          (or (error-fn (assoc request :exception e
+                                       :stacktrace (with-out-str (st/print-stack-trace e))))
+              (internal-server-error)))))
+    handler))
 
 (defn wrap-not-found [handler not-found-page]
   (if (nil? not-found-page)
