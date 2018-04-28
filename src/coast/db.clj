@@ -89,8 +89,10 @@
 (defn query-fn [{:keys [sql f] :as query-map}]
   (fn [& [m]]
     (when (and (= "dev" (env/env :coast-env))
-               (not= (str (:ns query-map)) "coast.migrations"))
-      (log (assoc query-map :params (queries/sql-params sql m))))
+               (not= "coast.db" (str (:ns query-map)))
+               (not= "coast.migrations" (str (:ns query-map)))
+               (not= "coast.jobs" (str (:ns query-map))))
+      (log (assoc query-map :params (utils/map-keys utils/snake m))))
     (->> (queries/sql-vec sql m)
          (query (connection))
          (f))))
