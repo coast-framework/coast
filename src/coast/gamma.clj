@@ -3,10 +3,7 @@
             [coast.router :as router]
             [coast.env :as env]
             [ring.middleware.defaults :as middleware.defaults]
-            [coast.server :as server]
-            [pyro.printer :as printer]))
-
-(printer/swap-stacktrace-engine!)
+            [coast.server :as server]))
 
 (defn app
   ([routes opts]

@@ -519,4 +519,3 @@ of open source projects that coast uses:
 - [org.clojure/tools.namespace](https://github.com/clojure/tools.namespace)
 - [verily](https://github.com/jkk/verily)
 - [reload](https://github.com/jakemcc/reload)
-- [pyro](https://github.com/venantius/pyro)
