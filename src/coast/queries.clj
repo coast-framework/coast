@@ -60,8 +60,8 @@
 
 (defn sql-ks [sql]
   (->> (re-seq qualified-keyword-pattern sql)
-       (map string/trim)
        (map second)
+       (map string/trim)
        (map keyword)
        (vec)))
 
