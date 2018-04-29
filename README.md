@@ -132,7 +132,7 @@ make server
 
 ## Routing
 
-Routing in the Clojure world has seen its fair share of implementations. Coast’s implementation is based loosely on [nav](https://github.com/taylorlapeyre/nav/blob/master/README.md)  and to some extent [pedestal[(http://pedestal.io) and [compojure](https://github.com/weavejester/compojure).
+Routing in the Clojure world has seen its fair share of implementations. Coast’s implementation is based loosely on [nav](https://github.com/taylorlapeyre/nav/blob/master/README.md)  and to some extent [pedestal](http://pedestal.io) and [compojure](https://github.com/weavejester/compojure).
 
 Here’s a few examples of routes in coast
 ```clojure
