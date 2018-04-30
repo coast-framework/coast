@@ -30,7 +30,7 @@
   (contains? verbs value))
 
 (defn method-verb? [value]
-  (-> (disj verbs :get)
+  (-> (disj verbs :get :post)
       (contains? value)))
 
 (defn param-method [method]
