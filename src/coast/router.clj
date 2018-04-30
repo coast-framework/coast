@@ -96,7 +96,7 @@
   ([method routes uri f]
    (conj routes [method uri f]))
   ([method uri f]
-   (route method [] uri f)))
+   (route method #{} uri f)))
 
 (def get (partial route :get))
 (def post (partial route :post))
