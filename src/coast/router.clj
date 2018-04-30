@@ -165,7 +165,6 @@
 (defn log-string [request]
   (let [{:keys [uri]} request
         uri (or uri "N/A")
-        ;status (or (-> response :status) "N/A")
         method (-> (req-method request) name string/upper-case)]
     (utils/fill {:uri uri
                  :method method}
