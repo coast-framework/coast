@@ -17,7 +17,12 @@
     (str (clojure.core/get m k fallback))))
 
 (defn route-str [s m]
-  (string/replace s param-re #(replacement % m)))
+  (when (and (string? s)
+             (or (nil? m) (map? m)))
+    (let [result (string/replace s param-re #(replacement % m))]
+      (if (re-find #":" result)
+        (throw (Exception. (str "The map given for route " s " is missing a parameter")))
+        result))))
 
 (def verbs #{:get :post :put :patch :delete})
 
