@@ -92,7 +92,7 @@
            (= request-uri (route-str route-uri params))))))
 
 (defn route
-  "Sugar for making a trail vector"
+  "Sugar for making a route vector"
   ([method routes uri f]
    (conj routes [method uri f]))
   ([method uri f]
