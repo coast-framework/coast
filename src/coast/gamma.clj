@@ -1,7 +1,6 @@
 (ns coast.gamma
   (:require [coast.middleware :as middleware]
             [coast.router :as router]
-            [coast.env :as env]
             [ring.middleware.defaults :as middleware.defaults]
             [coast.server :as server]))
 
