@@ -4,6 +4,7 @@
             [com.jakemccrary.middleware.reload :as reload]
             [clojure.stacktrace :as st]
             [clojure.string :as string]
+            [clojure.pprint :refer [pprint]]
             [coast.time :as time]
             [coast.utils :as utils]
             [coast.responses :as responses]
@@ -77,31 +78,30 @@
         {:keys [uri]} request
         uri (or uri "N/A")
         status (or (-> response :status) "N/A")
-        method (-> (req-method request) name string/upper-case)
-        log-str (utils/fill {:uri uri
-                             :ms ms
-                             :status status
-                             :method method}
-                            "Response to :method: :uri: with status :status: completed in :ms:ms")]
-    (utils/long-str
-      log-str
-      (utils/underline log-str))))
+        method (-> (req-method request) name string/upper-case)]
+    (utils/fill {:uri uri
+                 :ms ms
+                 :status status
+                 :method method}
+                "Response to :method: :uri: with status :status: completed in :ms:ms")))
 
 (defn compact-log-string [request response start-time]
   (let [ms (diff start-time (time/now))
         uri (:uri request)
         status (:status response)
         method (-> (req-method request) name string/upper-case)]
-    (utils/fill {:uri uri
-                 :ms ms
-                 :status status
-                 :method method}
-                ":method: :uri: :status: :ms:ms")))
+    (utils/long-str
+      (utils/fill {:uri uri
+                   :ms ms
+                   :status status
+                   :method method}
+                  ":method: :uri: :status: :ms:ms")
+      (when (and (= "dev" (env/env :coast-env))
+                 (not (empty? (:params request))))
+        (with-out-str (pprint (:params request)))))))
 
 (defn log-response [request response start-time]
-  (if (= "dev" (env/env :coast-env))
-    (println (response-log-string request response start-time))
-    (println (compact-log-string request response start-time))))
+  (println (compact-log-string request response start-time)))
 
 (defn wrap-with-logger [handler]
   (fn [request]
