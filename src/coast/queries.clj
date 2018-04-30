@@ -7,7 +7,7 @@
 
 (def name-regex #"^--\s*name\s*:\s*(.+)$")
 (def fn-regex #"^--\s*fn\s*:\s*(.+)$")
-(def qualified-keyword-pattern #"[\s*,\"'&;()|=+\-*%/\\<>^\[\]]:([\w-\.]+/?[\w-\.]+)Z?")
+(def qualified-keyword-regex #"[^:]:([\w-\.]+/?[\w-\.]+)Z?")
 
 (defn name-line? [s]
   (not (nil? (re-matches name-regex s))))
@@ -47,19 +47,20 @@
     (filter #(not (nil? %)) (map parse-query-string query-lines))))
 
 (defn parameterize [s m]
-  (string/replace s qualified-keyword-pattern (fn [[_ s]]
-                                                (let [k (keyword s)
-                                                      v (get m k)]
-                                                  (if (coll? v)
-                                                    (->> (map (fn [_] (str "?")) v)
-                                                         (string/join ","))
-                                                    "?")))))
+  (string/replace s qualified-keyword-regex (fn [[_ arg]]
+                                              (let [k (keyword arg)
+                                                    v (get m k)]
+                                                (if (coll? v)
+                                                 (->> (map (fn [_] (str "?")) v)
+                                                      (string/join ",")
+                                                      (str (first _))) ; dirty hack for ::
+                                                 (str (first _) "?")))))) ; same
 
 (defn has-keys? [m keys]
   (every? #(contains? m %) keys))
 
 (defn sql-ks [sql]
-  (->> (re-seq qualified-keyword-pattern sql)
+  (->> (re-seq qualified-keyword-regex sql)
        (map second)
        (map string/trim)
        (map keyword)
@@ -76,10 +77,10 @@
                  (utils/map-keys utils/snake))
           tuples (sql-tuples sql m)
           params (reduce conj {} tuples)
-          f-sql (parameterize sql params)
+          p-sql (parameterize sql params)
           values (mapv second tuples)
           ks (map first tuples)
-          v (apply conj [f-sql] values)]
+          v (apply conj [p-sql] values)]
       (if (has-keys? m ks)
         v
         (->> (set/difference (set ks) (set (keys m)))
