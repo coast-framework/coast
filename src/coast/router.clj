@@ -169,13 +169,9 @@
     (utils/fill {:uri uri
                  :method method}
                 (utils/long-str
-                 ""
-                 ""
                  "Request made to :method: :uri:"
                  (when (not (empty? (:params request)))
-                   (utils/long-str ""
-                                   "Parameters"
-                                   (with-out-str (pprint (:params request)))))))))
+                   (utils/long-str (with-out-str (pprint (:params request)))))))))
 
 (defn log [request]
   (when (= "dev" (env/env :coast-env))
