@@ -10,6 +10,7 @@
          not-found-fn (get opts :404)
          error-fn (get opts :500)]
      (-> (router/match-routes routes not-found-fn)
+         (router/wrap-coerce-params)
          (middleware/wrap-layout layout)
          (middleware/wrap-with-logger)
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
