@@ -12,9 +12,9 @@
 (def param-re #":([\w-_]+)")
 
 (defn replacement [match m]
-  (let [default (first match)
+  (let [fallback (first match)
         k (-> match last keyword)]
-    (str (clojure.core/get m k default))))
+    (str (clojure.core/get m k fallback))))
 
 (defn route-str [s m]
   (string/replace s param-re #(replacement % m)))
