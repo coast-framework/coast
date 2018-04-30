@@ -25,6 +25,11 @@
        [:input {:type "hidden" :name "_method" :value (name method)}])
      content]))
 
+(defn form [params & body]
+  [:form params
+   (csrf)
+   body])
+
 (defn link-to
   ([s v params]
    (let [href (router/url v)]
