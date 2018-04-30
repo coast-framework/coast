@@ -24,7 +24,7 @@
         (throw (Exception. (str "The map given for route " s " is missing a parameter")))
         result))))
 
-(def verbs #{:get :post :put :patch :delete})
+(def verbs #{:get :post :put :patch :delete :head})
 
 (defn verb? [value]
   (contains? verbs value))
