@@ -188,11 +188,18 @@
           route-params (route-params uri route-uri)
           params (merge params route-params)
           handler (resolve-route f not-found-fn)
-          coerced-params (utils/map-vals coerce-params params)
-          request (assoc request :params coerced-params
-                                 ::params params)
-          _ (log request)]
+          request (assoc request :params params)]
       (handler request))))
+
+(defn wrap-coerce-params
+  ([f coerce-params-fn]
+   (fn [request]
+     (let [coerce-params-fn (or coerce-params-fn coerce-params)
+           params (:params request)
+           req (assoc request :params (utils/map-vals coerce-params-fn params))]
+       (f req))))
+  ([f]
+   (wrap-coerce-params f nil)))
 
 (defn resolve-keyword [k]
   (when (qualified-keyword? k)
