@@ -132,7 +132,7 @@
     (list? val) (map coerce-params val)
     :else val))
 
-(defn default-not-found-fn [_]
+(defn fallback-not-found-fn [_]
   (responses/not-found
     [:html
       [:head
@@ -141,7 +141,10 @@
        [:h1 "404 Page not found"]]]))
 
 (defn resolve-route-fn [f not-found-fn]
-  (or f not-found-fn default-not-found-fn))
+  (let [func (if (symbol? f)
+               (resolve f)
+               f)]
+    (or func not-found-fn fallback-not-found-fn)))
 
 (defn resolve-route [val not-found-fn]
   (if (vector? val)
