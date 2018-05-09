@@ -1,36 +1,18 @@
 (ns models.__table
   (:require [db.__table])
-  (:refer-clojure :exclude [list find update]))
+  (:refer-clojure :exclude [find update]))
 
-(defn params [request]
-  (:params request))
+(defn all []
+  (db.__table/query))
 
-(defn list [request]
-  (->> (params request)
-       (merge {:offset 0 :limit 10})
-       (db.__table/list)
-       (assoc request :__table)))
+(defn find [m]
+  (db.__table/find m))
 
-(defn find [request]
-  (->> (params request)
-       (db.__table/find)
-       (assoc request :__singular)))
+(defn create [m]
+  (db.__table/insert m))
 
-(defn create [request]
-  (->> (params request)
-       (db.__table/insert)
-       (assoc request :__singular)))
+(defn update [m]
+  (db.__table/update m))
 
-(defn update [request]
-  (let [{:keys [__singular]} request]
-    (->> (params request)
-         (merge __singular)
-         (db.__table/update)
-         (assoc request :__singular))))
-
-(defn delete [request]
-  (let [{:keys [__singular]} request]
-    (->> (params request)
-         (merge __singular)
-         (db.__table/delete)
-         (assoc request :__singular))))
+(defn delete [m]
+  (db.__table/delete m))

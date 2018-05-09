@@ -1,48 +1,60 @@
 (ns controllers.__table
   (:require [coast.responses :as res]
-            [coast.errors :as errors]
-            [models.__table :as m.__table]
-            [views.__table :as v.__table])
+            [coast.utils :refer [try+]]
+            [models.__table]
+            [views.__table])
+            [routes]
   (:refer-clojure :exclude [update new]))
 
+(defn params [request]
+  (:params request))
+
 (defn index [request]
-  (-> (m.__table/list request)
-      (v.__table/index)))
+  (let [__table (models.__table/all)
+        request (assoc request :__table table)]
+    (views.__table/index request)))
 
 (defn show [request]
-  (-> (m.__table/find request)
-      (v.__table/show)))
+  (let [params (params request)
+        __singular (models.__table/find params)]
+        request (assoc request :__singular __singular)
+    (views.__table/show request)))
 
 (defn new [request]
-  (v.__table/new request))
+  (views.__table/new request))
 
 (defn create [request]
-  (let [response (-> (m.__table/create request)
-                     (errors/catch!))]
-    (if (errors/error? response)
-      (v.__table/new (merge request response))
-      (-> (res/redirect "/__table")
-          (res/flash "__singular created successfully")))))
+  (try+
+    (let [__singular (models.__table/create request)]
+      (-> (res/redirect (routes/url-for :__table/index))
+          (res/flash "__singular created successfully")))
+    (fn [ex]
+      (views.__table/new (assoc request :errors (:errors ex))))))
 
 (defn edit [request]
-  (-> (m.__table/find request)
-      (v.__table/edit)))
+  (let [params (params request)
+        __singular (models.__table/find params)
+        request (assoc request :__singular singular)]
+    (views.__table/edit request)))
 
 (defn update [request]
-  (let [response (-> (m.__table/find request)
-                     (m.__table/update)
-                     (errors/catch!))]
-    (if (errors/error? response)
-      (edit (merge request response))
-      (-> (res/redirect "/__table")
-          (res/flash "__singular updated successfully")))))
+  (try+
+    (let [params (params request)
+          __singular (models.__table/find params)
+          __singular (merge __singular params)
+          _ (models.__table/update __singular)]
+      (-> (res/redirect (routes/url-for :__table/index))
+          (res/flash "__singular updated successfully")))
+    (fn [ex]
+      (edit (assoc request :errors (:errors ex))))))
 
 (defn delete [request]
-  (let [response (-> (m.__table/find request)
-                     (m.__table/delete)
-                     (errors/catch!))]
-    (if (errors/error? response)
-      (-> (res/redirect "/__table")
-          (res/flash "__singular could not be deleted"))
-      (-> (res/redirect "/__table")
-          (res/flash "__singular deleted successfully")))))
+  (try+
+    (let [params (params request)
+          {:keys [id]} (models.__table/find params)
+          _ (models.__table/delete {:id id})]
+      (-> (res/redirect (routes/url-for :__table/index))
+          (res/flash "__singular deleted successfully")))
+    (fn [ex]
+      (-> (res/redirect (routes/url-for :__table/index))
+          (res/flash "__singular could not be deleted")))))

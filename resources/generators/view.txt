@@ -1,21 +1,18 @@
 (ns views.__table
-  (:require [coast.components :as comp]
-            [coast.router :refer [url]])
+  (:require [coast.components :refer [form]]
+            [routes :refer [url-for action-for]])
   (:refer-clojure :exclude [new]))
 
 (defn table-row [m]
-  (let [{:keys [__columns]} m
-        edit (url ["/__table/:id/edit" m])
-        delete (url ["/__table/:id" m])
-        show (url ["/__table/:id" m])]
+  (let [{:keys [__columns]} m]
     [:tr
       __td-columns
       [:td
-        [:a {:href edit} "Edit"]]
+        [:a {:href (url-for :members/edit m)} "Edit"]]
       [:td
-        [:a {:href delete} "Delete"]]
+        [:a {:href (url-for :members/delete m)} "Delete"]]
       [:td
-        [:a {:href show} "Show"]]]))
+        [:a {:href (url-for :members/show m)} "Show"]]]))
 
 (defn index [request]
   (let [{:keys [__table]} request]
@@ -28,24 +25,23 @@
           (for [m __table]
             (table-row m))]]
       [:div
-        [:a {:href "/__table/new"} "New __singular"]]]))
+        [:a {:href (url-for :members/new)} "New __singular"]]]))
 
 (defn show [request]
   (let [{:keys [__singular]} request
-        {:keys [__columns]} __singular
-        delete-href (url [:delete "/__table/:id" __singular])]
+        {:keys [__columns]} __singular]
     [:div
       __div-columns
       [:div
-       [:a {:href delete-href} "Delete"]]
+       [:a {:href (url-for :members/delete __singular)} "Delete"]]
       [:div
-        [:a {:href "/__table"} "Back"]]]))
+        [:a {:href (url-for :members/index)} "Back"]]]))
 
 (defn new [request]
   (let [{:keys [__singular]} request
         {:keys [__columns]} __singular]
     [:div
-     (comp/form-for [:post "/__table"]
+     (form (action-for :members/create)
        __form-columns
        [:input {:type "submit" :value "Create"}])]))
 
@@ -53,6 +49,6 @@
   (let [{:keys [__singular]} request
         {:keys [__columns]} __singular]
     [:div
-     (comp/form-for [:put "/__table/:id" __singular]
+     (form (action-for :members/update __singular)
        __form-columns
        [:input {:type "submit" :value "Save"}])]))

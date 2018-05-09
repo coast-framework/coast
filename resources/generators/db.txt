@@ -1,5 +1,6 @@
 (ns db.__table
-  (:require [coast.db :refer [defq first!]])
-  (:refer-clojure :exclude [update list find]))
+  (:require [coast.db :refer [defq defm first!]])
+  (:refer-clojure :exclude [update find]))
 
+(defm "__table")
 (defq "sql/__table.db.sql")
