@@ -1,22 +1,13 @@
-(ns coast.responses
-  (:require [hiccup.core :as h]))
+(ns coast.responses.json
+  (:require [clojure.data.json :as json]))
 
 (defn response
   ([status body headers]
    {:status status
-    :body (h/html body)
-    :headers (merge {"Content-Type" "text/html; charset=utf-8"} headers)})
+    :body (json/write-str body)
+    :headers (merge {"Content-Type" "application/json"} headers)})
   ([status body]
    (response status body {})))
-
-(defn flash [response s]
-  (assoc response :flash s))
-
-(defn redirect [url]
-  {:status 302
-   :body ""
-   :headers {"Location" url
-             "Turbolinks-Location" url}})
 
 (def ok (partial response 200))
 (def created (partial response 201))
