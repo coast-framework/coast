@@ -49,11 +49,6 @@
       (throw (Exception. "Your admin database connection string is blank. Set the ADMIN_DB_SPEC_OR_URL environment variable"))
       {:connection (jdbc/get-connection db-url)})))
 
-(defn sql-vec? [v]
-  (and (vector? v)
-       (string? (first v))
-       (not (string/blank? (first v)))))
-
 (defn execute! [db sql]
   (jdbc/execute! db sql))
 
@@ -62,6 +57,11 @@
     (with-open [s (.createStatement (jdbc/db-connection conn))]
       (.addBatch s sql)
       (seq (.executeBatch s)))))
+
+(defn sql-vec? [v]
+  (and (vector? v)
+       (string? (first v))
+       (not (string/blank? (first v)))))
 
 (defn query
   ([conn v opts]
