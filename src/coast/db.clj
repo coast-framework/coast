@@ -4,8 +4,8 @@
             [coast.env :as env]
             [coast.queries :as queries]
             [coast.utils :as utils]
-            [clojure.pprint :refer [pprint]])
-  (:refer-clojure :exclude [drop]))
+            [coast.sql :as sql])
+  (:refer-clojure :exclude [drop update]))
 
 (defn not-null-constraint [s]
   (let [col (-> (re-find #"null value in column \"(\w+)\" violates not-null constraint" s)
@@ -118,3 +118,27 @@
         sql (format "drop database %s" db-name)]
     (exec (admin-connection) sql)
     (println "Database" db-name "dropped successfully")))
+
+(defn defm [table]
+  (create-root-var "insert" (fn [m]
+                              (jdbc/insert! (connection) table m)))
+  (create-root-var "update" (fn update-fn
+                              ([m where-clause]
+                               (jdbc/update! (connection) table m where-clause))
+                              ([m]
+                               (update-fn m ["id = ?" (:id m)]))))
+  (create-root-var "delete" (fn [arg]
+                              (let [where-clause (if (map? arg)
+                                                   ["id = ?" (:id arg)]
+                                                  arg)]
+                                (jdbc/delete! (connection) table where-clause))))
+  (create-root-var "find-by" (fn [m]
+                               (let [v (sql/v (sql/find-by table m) m)]
+                                 (first (query (connection) v)))))
+  (create-root-var "find" (fn [val]
+                            (let [v (sql/v (sql/find table {:id val}) {:id val})]
+                              (first! (query (connection) v)))))
+  (create-root-var "query" (fn [& [m]]
+                             (query (connection) (sql/v (sql/query table m)
+                                                        (:where m)))))
+  nil)
