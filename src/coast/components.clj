@@ -1,6 +1,5 @@
 (ns coast.components
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [coast.router :as router]))
+  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
 
 (defn csrf
   ([attrs]
@@ -10,30 +9,7 @@
   ([]
    (csrf {})))
 
-(defn hidden-method? [method]
-  (or (= :put method)
-      (= :patch method)
-      (= :delete method)))
-
-(defn form-for [v & content]
-  (let [[method _ _ params] v
-        action (router/action v)
-        method-str (if (= :get method) "get" "post")]
-    [:form (merge params {:method method-str :action action})
-     (csrf)
-     (when (hidden-method? method)
-       [:input {:type "hidden" :name "_method" :value (name method)}])
-     content]))
-
 (defn form [params & body]
   [:form params
    (csrf)
    body])
-
-(defn link-to
-  ([s v params]
-   (let [href (router/url v)]
-     [:a (merge {:href href} params)
-      s]))
-  ([s v]
-   (link-to s v {})))
