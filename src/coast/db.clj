@@ -80,19 +80,8 @@
                      (meta value))
           value))
 
-(defn log [m]
-  (println (utils/long-str
-            (str (:ns m) "/" (:name m))
-            (:sql m)
-            (with-out-str (pprint (:params m))))))
-
-(defn query-fn [{:keys [sql f] :as query-map}]
+(defn query-fn [{:keys [sql f]}]
   (fn [& [m]]
-    (when (and (= "dev" (env/env :coast-env))
-               (not= "coast.db" (str (:ns query-map)))
-               (not= "coast.migrations" (str (:ns query-map)))
-               (not= "coast.jobs" (str (:ns query-map))))
-      (log (assoc query-map :params (utils/map-keys utils/snake m))))
     (->> (queries/sql-vec sql m)
          (query (connection))
          (f))))
