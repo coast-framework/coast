@@ -60,7 +60,10 @@
 (def snake (partial convert-case #"-" "_"))
 
 (defn long-str [& s]
-  (string/join "\n" s))
+  (let [s (filter some? s)]
+    (if (= 1 (count s))
+      (first s)
+      (string/join "\n" s))))
 
 (defn underline [s]
   (->> (map (fn [_] "-") s)
