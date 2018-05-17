@@ -1,7 +1,7 @@
 (ns coast.sql
   (:require [coast.utils :as utils]
             [clojure.string :as string])
-  (:refer-clojure :exclude [find]))
+  (:refer-clojure :exclude [find update]))
 
 (defn col [table val]
   (when (not (nil? val))
@@ -80,3 +80,35 @@
          (offset (:offset m))]
         (filter #(not (string/blank? %)))
         (string/join "\n")))
+
+(defn update
+  ([table m where-clause]
+   (let [sql (str "update " table " set " (->> (map #(str (col nil %) " = ?") (keys m))
+                                               (string/join ", "))
+                  " where " (first where-clause) " returning *")]
+    (apply conj [sql] (apply conj (rest where-clause) (reverse (vals m))))))
+  ([table m]
+   (update table (dissoc m :id) ["id = ?" (:id m)])))
+
+(defn delete [table where-clause]
+  (let [s (if (map? where-clause)
+            (where table where-clause)
+            (str "where " (first where-clause)))
+        params (if (map? where-clause)
+                 (values where-clause)
+                 (rest where-clause))
+        sql (str "delete from " table " " s " returning *")]
+    (apply conj [sql] params)))
+
+(defn insert [table m]
+  (let [sql (str "insert into " table
+                 " ("
+                 (->> (keys m)
+                      (map #(col nil %))
+                      (string/join ", "))
+                 ") values ("
+                 (->> (keys m)
+                      (map (fn [_] (str "?")))
+                      (string/join ", "))
+                 ") returning *")]
+    (v sql m)))

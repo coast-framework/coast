@@ -121,17 +121,14 @@
 
 (defn defm [table]
   (create-root-var "insert" (fn [m]
-                              (jdbc/insert! (connection) table m)))
+                              (query (connection) (sql/insert table m))))
   (create-root-var "update" (fn update-fn
                               ([m where-clause]
-                               (jdbc/update! (connection) table m where-clause))
+                               (query (connection) (sql/update table m where-clause)))
                               ([m]
-                               (update-fn m ["id = ?" (:id m)]))))
-  (create-root-var "delete" (fn [arg]
-                              (let [where-clause (if (map? arg)
-                                                   ["id = ?" (:id arg)]
-                                                  arg)]
-                                (jdbc/delete! (connection) table where-clause))))
+                               (query (connection) (sql/update table m)))))
+  (create-root-var "delete" (fn [m]
+                              (query (connection) (sql/delete table m))))
   (create-root-var "find-by" (fn [m]
                                (let [v (sql/v (sql/find-by table m) m)]
                                  (first (query (connection) v)))))

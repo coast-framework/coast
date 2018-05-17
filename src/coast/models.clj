@@ -12,7 +12,7 @@
          (flatten)
          (into {}))))
 
-(defn validate [m validations]
+(defn validate [validations m]
   (let [errors (-> (v/validate m validations)
                    (fmt-validations))]
     (if (empty? errors)
