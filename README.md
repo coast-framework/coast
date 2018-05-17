@@ -33,7 +33,7 @@ brew install clojure
 mkdir -p blog blog/src
 cd blog
 touch deps.edn
-echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "f983f6b344337c468c679a7b70aed4a7e5ef7e29"}}}' >> deps.edn
+echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "bdca95f8a95cf67b7cf819b195fcc7b789397694"}}}' >> deps.edn
 
 touch src/server.clj
 ```
