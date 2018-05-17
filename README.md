@@ -43,12 +43,10 @@ It only takes a few lines to get up and running, add this to `src/server.clj`
 ```clojure
 (ns server
   (:require [coast.delta :as coast]
-            [coast.responses :as res]
             [coast.prod.server :as prod.server]))
 
 (defn hello [req]
-  (res/ok
-    (str "hello " (-> req :params :name))))
+  (str "hello " (-> req :params :name)))
 
 (def routes [[:get "/hello/:name" `hello]])
 
@@ -71,7 +69,7 @@ you should see "hello world" printed out
 ```bash
 curl http://localhost:1337/hello/world # => hello world
 curl http://localhost:1337/hello/you # => hello you
-curl http://localhost:1337/hello/goodbye # => hello you
+curl http://localhost:1337/hello/goodbye # => hello goodbye
 ```
 
 ## Quickstart
@@ -101,10 +99,11 @@ Can't forget the routes
 ```clojure
 ; src/routes.clj
 (ns routes
-  (:require [coast.router]))
+  (:require [coast.router :refer [get resource]])
+  (:refer-clojure :exclude [get]))
 
-(def routes (-> [[:get "/" `controllers.home/index]]
-                (coast.router/resource :controllers.posts)))
+(def routes (-> (get "/" `controllers.home/index)
+                (resource :controllers.posts)))
 
 (def url-for (coast.router/url-for-routes routes))
 (def action-for (coast.router/action-for-routes routes))
@@ -124,7 +123,7 @@ Then in your editor, send this to your repl on port 7888
 
 You should be greeted with the text "You're coasting on clojure!"
 when you visit `http://localhost:1337` and when you visit `http://localhost:1337/posts`
-you should be able to add, edit, view and delete the rows from the post table!
+you should be able to add, edit, view and delete the rows from the `posts` table!
 
 ## Shipping
 
