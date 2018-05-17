@@ -126,9 +126,9 @@
         sql (str "create table " table " (\n")
         columns (map column args)
         columns (-> columns
-                    (conj "  id serial primary key")
+                    (conj "id serial primary key")
                     vec
-                    (conj "created_at timestamp with time zone default now()"))
+                    (conj "created_at timestamptz default now()"))
         column-string (string/join ",\n  " columns)]
     (str sql column-string "\n)")))
 
