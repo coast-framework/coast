@@ -1,6 +1,5 @@
 (ns controllers.__table
-  (:require [coast.responses :as res]
-            [coast.utils :refer [try+]]
+  (:require [coast.controllers :refer [try+ redirect flash]]
             [models.__table]
             [views.__table])
             [routes]
@@ -26,8 +25,8 @@
 (defn create [request]
   (try+
     (let [__singular (models.__table/create request)]
-      (-> (res/redirect (routes/url-for :__table/index))
-          (res/flash "__singular created successfully")))
+      (-> (redirect (routes/url-for :__table/index))
+          (flash "__singular created successfully")))
     (fn [ex]
       (views.__table/new (assoc request :errors (:errors ex))))))
 
@@ -43,8 +42,8 @@
           __singular (models.__table/find params)
           __singular (merge __singular params)
           _ (models.__table/update __singular)]
-      (-> (res/redirect (routes/url-for :__table/index))
-          (res/flash "__singular updated successfully")))
+      (-> (redirect (routes/url-for :__table/index))
+          (flash "__singular updated successfully")))
     (fn [ex]
       (edit (assoc request :errors (:errors ex))))))
 
@@ -53,8 +52,8 @@
     (let [params (params request)
           {:keys [id]} (models.__table/find params)
           _ (models.__table/delete {:id id})]
-      (-> (res/redirect (routes/url-for :__table/index))
-          (res/flash "__singular deleted successfully")))
+      (-> (redirect (routes/url-for :__table/index))
+          (flash "__singular deleted successfully")))
     (fn [ex]
-      (-> (res/redirect (routes/url-for :__table/index))
-          (res/flash "__singular could not be deleted")))))
+      (-> (redirect (routes/url-for :__table/index))
+          (flash "__singular could not be deleted")))))
