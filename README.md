@@ -4,7 +4,7 @@ The easy way to make websites with clojure
 
 ```clojure
 coast.delta {:git/url "https://github.com/swlkr/coast"
-             :sha "bdca95f8a95cf67b7cf819b195fcc7b789397694"}}
+             :sha "9cd39ebabd40e3c94d9aa2c7fd9b7b374bc68eaa"}}
 ```
 
 Previously: [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea), [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
@@ -33,7 +33,7 @@ brew install clojure
 mkdir -p blog blog/src
 cd blog
 touch deps.edn
-echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "bdca95f8a95cf67b7cf819b195fcc7b789397694"}}}' >> deps.edn
+echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "9cd39ebabd40e3c94d9aa2c7fd9b7b374bc68eaa"}}}' >> deps.edn
 
 touch src/server.clj
 ```
@@ -44,7 +44,7 @@ It only takes a few lines to get up and running, add this to `src/server.clj`
 (ns server
   (:require [coast.delta :as coast]
             [coast.responses :as res]
-            [coast.dev.server :as dev.server]))
+            [coast.prod.server :as prod.server]))
 
 (defn hello [req]
   (res/ok
@@ -55,15 +55,14 @@ It only takes a few lines to get up and running, add this to `src/server.clj`
 (def app (coast/app routes))
 
 (defn -main [& args]
-  (dev.server/start app)) ; => starts listening on port 1337 by default
+  (prod.server/start app)) ; => starts listening on port 1337 by default
 ```
 
 Usually you would use a REPL from your editor to start the server
 but you can start it from your terminal with clj
 
 ```bash
-clj src/server.clj
-# => Server is listening on port 1337
+clj -m server # => Server is listening on port 1337
 ```
 
 If you visit `http://localhost:1337/hello/world`
