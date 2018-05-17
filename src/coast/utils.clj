@@ -78,10 +78,3 @@
 
 (defn fill [m s]
   (string/replace s pattern #(replacement % m)))
-
-(defmacro try+ [f error-fn]
-  `(try
-     ~f
-    (catch clojure.lang.ExceptionInfo e#
-      (let [ex# (ex-data e#)]
-        (~error-fn (ex-data e#))))))
