@@ -50,7 +50,7 @@ It only takes a few lines to get up and running, add this to `src/server.clj`
   (res/ok
     (str "hello " (-> req :params :name))))
 
-(def routes [[:get "/hello/:name" `hello]})
+(def routes [[:get "/hello/:name" `hello]])
 
 (def app (coast/app routes))
 
