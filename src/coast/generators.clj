@@ -44,35 +44,14 @@
     (= (prompt (str filename " already exists. Overwrite? [y/n] ")) "y")
     true))
 
-(defn sql [table]
-  (let [cols (->> (db/columns {:table-name table})
-                  (map :column-name)
-                  (filter excluded-cols))
-        insert-columns (string/join ",\n  " cols)
-        insert-values (->> (map #(str ":" %) cols)
-                           (string/join ",\n  "))
-        update-columns (->> (map #(format "%s = %s" % (str ":" %)) cols)
-                            (string/join ",\n  "))
-        output (format "%s/%s.db.sql" (sql-dir) table)]
-    (if (overwrite? output)
-      (do
-        (->> (io/resource "generators/db.sql")
-             (slurp)
-             (fill {:table table
-                    :insert-columns insert-columns
-                    :insert-values insert-values
-                    :update-columns update-columns})
-             (spit output))
-        (println output "created successfully"))
-      (println "sql file skipped"))))
-
 (defn db [table]
   (let [output (format "%s/%s.clj" (db-dir) table)]
     (if (overwrite? output)
       (do
         (->> (io/resource "generators/db.txt")
              (slurp)
-             (fill {:table (utils/kebab table)})
+             (fill {:ns (utils/kebab table)
+                    :table (utils/snake table)})
              (spit output))
         (println output "created successfully"))
       (println "db file skipped"))))
@@ -145,7 +124,6 @@ Examples:
 
   coast gen migration                                          # Creates a new migration
   coast gen migration create-<table> column1:text column2:text # Creates a new migration with a create table statement along with columns/types specified
-  coast gen sql <table>                                        # Creates a new db.sql file in resources/sql with default sql queries/statement
   coast gen db <table>                                         # Creates a new db.clj file in src/db with default database functions
   coast gen model <table>                                      # Creates a new model.clj file in src/models
   coast gen controller <table>                                 # Creates a new controller.clj file in src/controllers
@@ -155,16 +133,13 @@ Examples:
   (let [[_ kind table] args]
     (case kind
       "migration" (apply migrations/create (drop 2 args))
-      "sql" (sql table)
       "db" (db table)
       "model" (do
-                (sql table)
                 (db table)
                 (model table))
       "controller" (controller table)
       "view" (view table)
       "mvc" (do
-              (sql table)
               (db table)
               (model table)
               (controller table)
