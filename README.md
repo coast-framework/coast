@@ -3,18 +3,18 @@
 The easy way to make websites with clojure
 
 ```clojure
-coast.gamma {:git/url "https://github.com/swlkr/coast"
-             :sha "5242b6dcf6ca77b57de5b77f4dd47516ce459eff"}}
+coast.delta {:git/url "https://github.com/swlkr/coast"
+             :sha "bdca95f8a95cf67b7cf819b195fcc7b789397694"}}
 ```
 
-Previously: [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
+Previously: [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea), [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
 
 ### Warning
 The current version is under construction, but you can use it anyway 😅
 
 ## Table of Contents
 
-- [Simple Quickstart](#simple-quickstart)
+- [Simple Quickstart](#quickstart-without-a-template)
 - [Quickstart](#quickstart)
 - [Shipping](#shipping)
 - [Routing](#routing)
@@ -33,7 +33,7 @@ brew install clojure
 mkdir -p blog blog/src
 cd blog
 touch deps.edn
-echo '{:paths ["src"] :deps {coast.gamma {:git/url "https://github.com/swlkr/coast" :sha "5242b6dcf6ca77b57de5b77f4dd47516ce459eff"}}}' >> deps.edn
+echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "f983f6b344337c468c679a7b70aed4a7e5ef7e29"}}}' >> deps.edn
 
 touch src/server.clj
 ```
@@ -42,18 +42,20 @@ It only takes a few lines to get up and running, add this to `src/server.clj`
 
 ```clojure
 (ns server
-  (:require [coast.gamma :as coast]))
+  (:require [coast.delta :as coast]
+            [coast.responses :as res]
+            [coast.dev.server :as dev.server]))
 
 (defn hello [req]
-  {:status 200
-   :headers {"Content-Type" "text/html"}
-   :body (format "hello %s" (-> req :params :name))})
+  (res/ok
+    (str "hello " (-> req :params :name))))
 
-(def routes [[:get "/hello/:name" hello]])
+(def routes [[:get "/hello/:name" `hello]})
 
 (def app (coast/app routes))
 
-(coast/start-server app) ; => starts listening on port 1337 by default
+(defn -main [& args]
+  (dev.server/start app)) ; => starts listening on port 1337 by default
 ```
 
 Usually you would use a REPL from your editor to start the server
@@ -64,11 +66,13 @@ clj src/server.clj
 # => Server is listening on port 1337
 ```
 
-Now head to your terminal and hit `http://localhost:1337/hello/world`
+If you visit `http://localhost:1337/hello/world`
 you should see "hello world" printed out
 
 ```bash
 curl http://localhost:1337/hello/world # => hello world
+curl http://localhost:1337/hello/you # => hello you
+curl http://localhost:1337/hello/goodbye # => hello you
 ```
 
 ## Quickstart
@@ -86,7 +90,7 @@ Let's set up the database!
 make db/create # assumes a running postgres server. creates a new db called blog_dev
 ```
 
-Let's create a table to store posts and generate some code to so we can interact with that table!
+Let's create a table to store blog posts and generate some code so we can create, read, update and delete things in that table!
 ```bash
 coast gen migration create-posts title:text body:text
 make db/migrate
@@ -98,12 +102,13 @@ Can't forget the routes
 ```clojure
 ; src/routes.clj
 (ns routes
-  (:require [coast.router :refer [get post put delete]]
-            [controllers.home :as c.home]
-            [controllers.posts :as c.posts]]))
+  (:require [coast.router]))
 
-(def routes (-> (get "/" c.home/index)
-                (resource :c.posts)))
+(def routes (-> [[:get "/" `controllers.home/index]]
+                (coast.router/resource :controllers.posts)))
+
+(def url-for (coast.router/url-for-routes routes))
+(def action-for (coast.router/action-for-routes routes))
 ```
 
 Let's see our masterpiece so far
@@ -132,66 +137,76 @@ make server
 
 ## Routing
 
-Routing in the Clojure world has seen its fair share of implementations. Coast’s implementation is based loosely on [nav](https://github.com/taylorlapeyre/nav/blob/master/README.md)  and to some extent [pedestal](http://pedestal.io) and [compojure](https://github.com/weavejester/compojure).
+Routing in the Clojure world has seen its fair share of implementations. Coast’s implementation is based loosely on [nav](https://github.com/taylorlapeyre/nav/blob/master/README.md) and to some extent [pedestal](http://pedestal.io) and [compojure](https://github.com/weavejester/compojure).
 
 Here’s a few examples of routes in coast
 ```clojure
-[:get “/“ home]
+[:get "/" `home]
 
-[:put “/posts/:id” posts/update]
+[:put "/posts/:id" `posts/update]
 
-[:delete “/posts/:post-id/comments/:id” comments/delete]
+[:delete "/posts/:post-id/comments/:id" `comments/delete]
 
-; generally: [method route-string function]
+; you can override the route name if you'd like
+; otherwise the route name will be :posts/create
+[:post "/posts" `posts/create :create-post]
+
+; here's a more realistic "coast-y" example
+[:post "/posts" `controllers.posts/create] ; => route name is :controllers.posts/create
+
+; generally: [method route-string `function route-name]
 ```
 
 If you don’t care to write vectors all day you can also use the helper functions in coast.router
 
 ```clojure
 (ns routes
-  (:require [coast.router :refer [get post put delete])
-            [controllers.home :as home]
-            [controllers.posts :as posts]
-  (:refer-clojure :exclude [get]))
+  (:require [coast.router :refer [get post put delete]))
 
-(def routes (-> (get "/" home/index)
-                (get "/posts" posts/index)
-                (get "/posts/:id" posts/show)
-                (post "/posts" posts/create)))
+(def routes (-> (get "/" `home/index)
+                (get "/posts" `posts/index)
+                (get "/posts/:id" `posts/show)
+                (post "/posts" `posts/create)))
 ```
 
-The thread first macro is used to conj everything into one big vector so the result is this:
+The thread first macro is used to conj everything into a set so the result is this:
 
 ```clojure
-[[:get "/" home/index]
- [:get "/posts" posts/index]
- [:get "/posts/:id" posts/show]
- [:post "/posts" posts/create]]
-```
-
-In the case where routes conflict, the first route gets picked
-
-```clojure
-[[:get "/posts/new" posts/new]
- [:get "/posts/:id" posts/show]]
+[[:get "/" `home/index]
+ [:get "/posts" `posts/index]
+ [:get "/posts/:id" `posts/show]
+ [:post "/posts" `posts/create]}
 ```
 
 Resource routing works like this:
 
 ```clojure
 (def routes (-> (resource :posts)
-                (resource comments/index comments/show)))
+                (resource `comments/index `comments/show)))
 ```
 
-The last line there would be to indicate you don’t want every single route (all 7 crud routes, but just a few). Routing works with existing ring middleware like so
+The first line there indicates you want all 7 crud routes, the second line says you only want index and show. Here are list of the crud routes available:
 
 ```clojure
-(def routes (-> (get "/" home/index)
+[[:get    "/resources"          `resources/index]
+ [:get    "/resources/new"      `resources/new]
+ [:get    "/resources/:id"      `resources/show]
+ [:get    "/resources/:id/edit" `resources/edit]
+ [:post   "/resources"          `resources/create]
+ [:put    "/resources/:id"      `resources/update]
+ [:delete "/resources/:id"      `resources/delete]
+```
+
+You can wrap your routes in standard ring middleware if you need
+to interact with the request map before the route functions get called
+
+```clojure
+(def routes (-> (get "/" `home/index)
                 (middleware/wrap-auth)
                 (middleware/coerce-params)))
 ```
 
-So that’s how routing works in coast on clojure. Pretty straightforward, not a lot of surprises, which is kind of the whole point of coast
+So that’s how routing works in coast on clojure
 
 ## Database
 
@@ -245,7 +260,7 @@ columns of id and created_at.
 -- up
 create table posts (
   id serial primary key,
-  created_at timestamp without time zone default (now() at time zone 'utc')
+  created_at timestamptz default now()
 )
 
 -- down
@@ -263,7 +278,7 @@ create table posts (
   id serial primary key,
   title text,
   body text,
-  created_at timestamp without time zone default (now() at time zone 'utc')
+  created_at timestamptz default now()
 )
 
 -- down
@@ -276,224 +291,222 @@ This performs the migration
 
 ## Models
 
-Models are clojure functions that call external sql files in `resources/sql` There's a generator for the basic crud operations:
+Models are clojure functions that do one of two things, either call a `.sql` file in `resources` with the `defq` macro or they call one of the five
+functions generated by the `defm` function. You can generate model functions just like migrations.
 
 #### `coast gen model posts`
 
-This requires that the posts table already exists and it creates three files:
+This requires that the posts table already exists and it creates two files that work together to make your life easier, `src/db/posts.clj` and `src/models/posts.clj`.
 
-1. A sql file named `resources/sql/posts.db.sql`
-3. A clojure file named `src/db/posts.clj`
-2. Another clojure file named `src/models/posts.clj`
-
-The model file, the db file and the sql file all work together to make your life better:
-
-Here's `posts.db.sql`. Each query is separated by a newline and `-- name`.
-They all have a `-- name` which comes after the colon. These values can be any string that can be resolved to a clojure function.
-They also optionally have a function which runs after the results are received from the database, and this functions operates on all rows
-at once, not just row by row, luckily, clojure still works and you can use `map` for row by row function application.
-
-```sql
--- name: list
-select *
-from posts
-order by created_at
-limit :limit
-offset :offset
-
--- name: find
--- fn: first
-select *
-from posts
-where id = :id
-
--- name: insert
--- fn: first
-insert into posts (
-  title,
-  body
-)
-values (
-  :title,
-  :body
-)
-returning *
-
--- name: update
--- fn: first
-update posts
-set
-  title = :title,
-  body = :body
-where id = :id
-returning *
-
--- name: delete
--- fn: first
-delete from posts
-where id = :id
-returning *
-
-```
-
-Here is where the `db.clj` file comes in and references the `posts.db.sql` file
+Here's what the `db/posts.clj` file looks like
 
 ```clojure
 (ns db.posts
-  (:require [coast.gamma :refer [defq]])
-  (:refer-clojure :exclude [update list find]))
+  (:require [coast.delta :refer [defm]])
+  (:refer-clojure :exclude [update find]))
 
-(defq list "sql/posts.db.sql")
-(defq find "sql/posts.db.sql")
-(defq insert "sql/posts.db.sql")
-(defq update "sql/posts.db.sql")
-(defq delete "sql/posts.db.sql")
+(defm "posts")
 ```
 
-`defq` is a macro that reads the sql resource at compile time and generates functions
-with the symbols of the names in the sql resource. If you try to specify a name that doesn't have a corresponding `-- name:`
-in the sql resource, you'll get a compile exception, so that's kind of cool. I know this part is kind of boilerplate-y but luckily
-this gets generated for you.
+`defm` is a function that generates a few sql helper functions in the current namespace. Here's what they're called and how to use them:
 
-The idea behind the `.db.sql` naming is that this sql file is special and not manually edited, so it can be regenerated at any time with
-new schema changes for insert/update queries. You can of course create any number of .sql files you want, so if you needed to customize
-posts with comment counts or something similar, you could do this in `posts.sql`, not `posts.db.sql`:
+#### `defm`
+
+```clojure
+(defn find [id]) ; takes an id, outputs a map representing a table row or throws a 404
+(defn find-by [m]) ; takes a map that represents an ANDed together where clause and outputs a list of maps
+(defn insert [m]) ; takes a map and returns the inserted map
+(defn update
+ ([m])
+ ([m where-clause])) ; takes either a map or a map and a sql vec where clause returns a list of updated maps
+(defn delete
+ ([m])
+ ([m where-clause])) ; takes either a map or a map and a sql vec where clause returns a list of deleted maps
+
+(defn query [m]) ; takes a map representing a very simple sql expression, similar to honeysql and returns the list of maps from that query
+```
+
+```clojure
+(ns db.posts
+  (:require [coast.db :refer [defm]]))
+
+; this function generates 5 functions that operate on the given table name
+(defm "posts")
+
+; elsewhere referencing db.posts
+; here are few examples of how to use the 5 generated db helper functions
+
+(db.posts/find 1) ; returns a map based on this table's id
+(db.posts/find-by {:category "fun" :tag-count 0}) ; returns a map based on a custom where clause with each key ANDed together
+
+(db.posts/insert {:title "title" :body "body"}) ; => inserts and returns the inserted map
+
+(db.posts/update {:id 1 :title "new title"}) ; => updates and returns the number of rows affected
+(db.posts/update {:title "newest title"} ["title = ?" "new title"]) ; update with a custom where clause
+
+(db.posts/delete {:id 1}) ; deletes by id, returns number of rows effected
+(db.posts/delete ["title = ?" "new title"]) ; deletes with a custom where clause
+
+(db.posts/query {:where {:title "newest title"}
+                 :order [:created-at :desc]}) ; a very basic ad-hoc query builder, don't expect the world
+
+(db.posts/query) ; => select * from posts
+(db.posts/query {:order [:created-at :desc]}) ; => select * from posts order by created_at desc
+(db.posts/query {:select [:title]}) ; => select posts.title from posts
+
+(db.posts/query {:select [:id :title :published-at :created-at]
+                 :where {:published-at nil}
+                 :order [:created-at :desc]}) ; select posts.id, posts.title, posts.published_at, posts.created_at from posts where posts.published_at is null order by created_at desc
+```
+
+So those cover basic sql things that you really don't want to have to type out *every* time. For more complex sql things,
+why not just use the real deal? I'm talking about SQL. I'm a firm believer in having an escape hatch when an abstraction gets too leaky, thank goodness there's `defq`.
+
+`defq` is a macro that reads a sql file located in `resources` at compile time and generates functions
+with the symbols of the names in the sql file. If you try to specify a name that doesn't have a corresponding `-- name:`
+in the sql resource, you'll get a compile exception, so that's kind of cool.
+
+You can create any number of .sql files you want, so if you needed to customize
+posts and join with comment counts or something similar, you could do this in `posts.sql`
 
 ```sql
 -- name: posts-with-count
 select
   posts.*,
-  p.comments
+  c.comment_count
 from
   posts
 join
   (
     select
       comments.post_id,
-      count(comments.id) as comments
+      count(comments.id) as comment_count
     from
       comments
     where
-      comments.post_id = :id
+      comments.post_id = :post_id
     group by
       comments.post_id
- ) p on p.post_id = posts.id
+ ) c on c.post_id = posts.id
  ```
 
  Then in the db file:
 
 ```clojure
 (defq posts-with-count "sql/posts.sql")
+
+(posts-with-count {:post-id 1}) ; => [{:id 1 ... :comment-count 12}]
 ```
 
 And now you have a new function wired to a bit of custom sql.
 
-The last part of the this three part process is the model file in a different namespace so the function names can be reused and called from the controllers:
+The last part of the this process is the model file in a different namespace so the function names can be reused and called from the controllers:
 
 ```clojure
 (ns models.posts
-  (:require [db.posts :as db.posts])
-  (:refer-clojure :exclude [list find update]))
+  (:require [db.posts]
+            [coast.models])
+  (:refer-clojure :exclude [find update]))
 
-(defn params [request]
-  (:params request))
+(defn validate [m]
+  (let [validations []]
+    (if (empty? validations)
+      m
+      (coast.models/validate validations m))))
 
-(defn list [request]
-  (->> (params request)
-       (merge {:offset 10 :limit 0})
-       (db.posts/list)
-       (assoc request :posts)))
 
-(defn find [request]
-  (->> (params request)
-       (db.posts/find)
-       (assoc request :post)))
+(defn all []
+  (db.posts/query))
 
-(defn insert [request]
-  (->> (params request)
-       (db.posts/insert)
-       (assoc request :post)))
+(defn find [id]
+  (db.posts/find id))
 
-(defn update [request]
-  (let [{:keys [post]} request]
-    (->> (params request)
-         (merge post)
-         (db.posts/update)
-         (assoc request :post))))
+(defn create [m]
+  (-> (validate m)
+      (db.posts/insert)))
 
-(defn delete [request]
-  (let [{:keys [post]} request]
-    (->> (params request)
-         (db.posts/delete)
-         (assoc request :post))))
+(defn update [m]
+  (-> (validate m)
+      (db.posts/update)))
+
+(defn delete [m]
+  (db.posts/delete))
 ```
 
-There's a lot to the models. Oh and as a bonus for statically writing out the sql queries
-in db.sql, the params are known ahead of time and will automatically look for the keys
-required for the query.
+Of course you don't even have to use these functions until you need them, it's perfectly ok to just call functions from the `db` namespace
+and then insert validation and custom business logic in the model file when you need it.
 
 ## Views
 
-Views are clojure functions the emit hiccup with a few implicit things related to re-usable layouts
+Views are clojure functions the emit [hiccup](https://github.com/weavejester/hiccup) with a few implicit things related to re-usable layouts
 When starting up a coast app, you call `coast/app` and you can pass in a few options, one of which
 is a function that represents a persistent set of html elements you want to see across all pages
 of your site
 
 ```clojure
 (ns server
-  (:require [coast.gamma :as coast]
-            [coast.components :as c]))
+  (:require [coast.delta :as coast]))
 
-(def routes [[:get "/" (fn [request])]])
+(defn home [request]
+  [:h1 "Welcome!"])
 
-(def app (coast/app routes {:layout c/layout}))
-```
-
-When you return a vector from any view function, it automatically gets rendered as html and rendered inside
-of the layout function where you tell it to, the default layout function looks like this:
-
-```clojure
-(ns components
-  (:require [coast.gamma :as coast]))
+(def routes [[:get "/" `home]})
 
 (defn layout [request body]
   [:html
     [:head
-     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-     [:link {:href "/css/app.css" :type "text/css" :rel "stylesheet"}]
+      [:title "Hello!"]
     [:body
-     body
-     [:script {:src "/js/app.js" :type "text/javascript"}]
+      body]]])
+
+(def app (coast/app routes {:layout layout}))
+
+(app {:request-method :get :uri "/"}) ; => <html><head><title>Hello!</title></head><body><h1>Welcome!</h1></body></html>
 ```
 
-So this returns a vector and then there's the coast middleware that turns a hiccup vector and string responses into ring response maps:
+If you want to return something else other than [hiccup](https://github.com/weavejester/hiccup), like a string or json, you can override coast's regular behavior of rendering html like this:
 
 ```clojure
-(defn layout? [response layout]
-  (and (not (nil? layout))
-       (or (vector? response)
-           (string? response))))
+(ns server
+  (:require [coast.delta :as coast]
+            [coast.responses.json :as res]))
 
-(defn wrap-layout [handler layout]
-  (fn [request]
-    (let [response (handler request)]
-      (cond
-        (map? response) response
-        (layout? response layout) (responses/ok (layout request response))
-        :else (responses/ok response)))))
+(defn home [request]
+  (res/ok {:message "Welcome!"}))
+
+(def routes [[:get "/" `home]])
+
+(def app (coast/app routes))
+
+(app {:request-method :get :uri "/"}) ; => {:message "Welcome!"}
 ```
 
-which you can override by returning your own response map, that's pretty much all there is to views. The goal
-is to do a clojure-y thing by combining small functions in the components namespace into the components of your app,
-text fields, select fields, forms, lists, headers, "cards", "panels", similar to bootstrap but hopefully re-usable.
-I also recommend functional css or atomic css libraries like [tachyons](http://tachyons.io) or basscss.
+## Errors
+
+There are two types of errors. Exceptions and "coast errors" which are just `clojure.lang.ExceptionInfo`'s: `(throw (ex-info "" {:type :invalid}))`
+
+Here's a good example of why coast separates these two: missing records from the database. The first thing that happens after a missing database record? A 404 page! That's exactly what coast does if you call either of these two functions:
+
+```clojure
+(db.posts/find 1) ; 404 is thrown, 404 page is shown
+```
+
+or
+
+```sql
+-- name: find
+-- fn: first!
+select *
+from your_table
+where your_table.id = :id
+limit 1
+```
 
 ## TODO
 
+- Better error documentation
+- Document validations
 - Document controllers
-- Document routes
-- Document auth
-- Document logging?
 - Document ... just more documentation
 
 ## Why did I do this?
@@ -506,8 +519,9 @@ to put the two together.
 
 This framework is only possible because of the hard work of
 a ton of great clojure devs who graciously open sourced their
-projects that took a metric ton of hard work. Here's the list
-of open source projects that coast uses:
+projects.
+
+Here's the list of open source projects that coast uses:
 
 - [http-kit](https://github.com/http-kit/http-kit)
 - [hiccup](https://github.com/weavejester/hiccup)
