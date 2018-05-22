@@ -16,6 +16,7 @@
          (router/wrap-route-info routes)
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-page)
-         (middleware/wrap-errors error-page))))
+         (middleware/wrap-errors error-page)
+         (coast.middleware/wrap-reload))))
   ([routes]
    (app routes {})))
