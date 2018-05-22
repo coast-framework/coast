@@ -138,4 +138,10 @@
   (create-root-var "query" (fn [& [m]]
                              (query (connection) (sql/v (sql/query table m)
                                                         (:where m)))))
+  (create-root-var "find-or-create-by" (fn [m]
+                                        (let [v (sql/v (sql/find-by table m) m)
+                                              row (first (query (connection) v))]
+                                          (if (nil? row)
+                                            (query (connection) (sql/insert table m))
+                                            row))))
   nil)
