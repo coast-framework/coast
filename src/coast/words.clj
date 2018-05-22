@@ -45,6 +45,13 @@
          (first))
     s))
 
+(defn pluralize [num s]
+  (if (and (number? num)
+           (not= 1 num))
+    (plural s)
+    s))
+
+
 (def singular-patterns
   [[#"(?i)ies$" "y"]
    [#"(?i)(\w)\1(es)$" "$1"]
