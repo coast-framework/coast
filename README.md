@@ -4,7 +4,7 @@ The easy way to make websites with clojure
 
 ```clojure
 coast.delta {:git/url "https://github.com/swlkr/coast"
-             :sha "9cd39ebabd40e3c94d9aa2c7fd9b7b374bc68eaa"}}
+             :sha "0e9913f1c609bfb8b391300810f742390e9b6028"}}
 ```
 
 Previously: [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea), [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
@@ -31,16 +31,14 @@ The current version is under construction, but you can use it anyway 😅
 brew install clojure
 
 mkdir -p blog blog/src
-cd blog
-touch deps.edn
-echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "9cd39ebabd40e3c94d9aa2c7fd9b7b374bc68eaa"}}}' >> deps.edn
-
-touch src/server.clj
+touch blog/deps.edn blog/src/server.clj
+echo '{:paths ["src"] :deps {coast.delta {:git/url "https://github.com/swlkr/coast" :sha "0e9913f1c609bfb8b391300810f742390e9b6028"}}}' >> blog/deps.edn
 ```
 
 It only takes a few lines to get up and running, add this to `src/server.clj`
 
 ```clojure
+; blog/src/server.clj
 (ns server
   (:require [coast.delta :as coast]
             [coast.prod.server :as prod.server]))
