@@ -1,5 +1,6 @@
 (ns coast.time
   (:import (java.time LocalDateTime)
+           (java.time ZoneOffset)
            (java.time.format DateTimeFormatter)))
 
 (defn fmt [d pattern]
@@ -9,6 +10,13 @@
 
 (defn now []
   (LocalDateTime/now))
+
+(defn local
+  ([d tz]
+   (when (instance? java.util.Date d)
+     (java.time.LocalDateTime/ofInstant (.toInstant d) tz)))
+  ([d]
+   (local d ZoneOffset/UTC)))
 
 (defn at [val k]
   (when (and (integer? val)
