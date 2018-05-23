@@ -143,6 +143,6 @@
                                         (let [v (sql/v (sql/find-by table m) m)
                                               row (first (query (connection) v))]
                                           (if (nil? row)
-                                            (query (connection) (sql/insert table m))
+                                            (first (query (connection) (sql/insert table m)))
                                             row))))
   nil)
