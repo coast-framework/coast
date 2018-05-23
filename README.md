@@ -304,59 +304,99 @@ Here's what the `db/posts.clj` file looks like
 (defm "posts")
 ```
 
-`defm` is a function that generates a few sql helper functions in the current namespace. Here's what they're called and how to use them:
-
 #### `defm`
 
-```clojure
-(defn find [id]) ; takes an id, outputs a map representing a table row or throws a 404
-(defn find-by [m]) ; takes a map that represents an ANDed together where clause and outputs a list of maps
-(defn insert [m]) ; takes a map and returns the inserted map
-(defn update
- ([m])
- ([m where-clause])) ; takes either a map or a map and a sql vec where clause returns a list of updated maps
-(defn delete
- ([m])
- ([m where-clause])) ; takes either a map or a map and a sql vec where clause returns a list of deleted maps
+`defm` is a function that generates a few sql helper functions in the current namespace:
 
-(defn query [m]) ; takes a map representing a very simple sql expression, similar to honeysql and returns the list of maps from that query
+- `find`
+- `find-by`
+- `find-or-create-by`
+- `insert`
+- `update`
+- `delete`
+- `query`
+
+Here's an example of how each function created by `defm` can be used
+
+#### `find`
+
+```clojure
+(db.posts/find 1)
+; (-> ["select * from posts where id = ? limit 1" 1] first)
 ```
 
+#### `find-by`
+
 ```clojure
-(ns db.posts
-  (:require [coast.db :refer [defm]]))
+(db.posts/find-by {:category "fun" :tag-count 0})
+; (-> ["select * from posts where category = ? and tag_count = ?" "fun" 0] first)
+```
 
-; this function generates 5 functions that operate on the given table name
-(defm "posts")
+#### `find-or-create-by`
 
-; elsewhere referencing db.posts
-; here are few examples of how to use the 5 generated db helper functions
+```clojure
+(db.posts/find-or-create-by {:category "fun" :tag-count 0})
+; (-> ["select * from posts where category = ? and tag_count = ?" "fun" 0] first)
+; or
+; ["insert into posts (category, tag_count) values (?, ?) returning *" "fun" 0]
+```
 
-(db.posts/find 1) ; returns a map based on this table's id
-(db.posts/find-by {:category "fun" :tag-count 0}) ; returns a map based on a custom where clause with each key ANDed together
+#### `insert`
 
-(db.posts/insert {:title "title" :body "body"}) ; => inserts and returns the inserted map
+```clojure
+(db.posts/insert {:title "title" :body "body"})
+; => ["insert into posts (title, body) values (?, ?) returning *" "title" "body"]
+```
 
-(db.posts/update {:id 1 :title "new title"}) ; => updates and returns the number of rows affected
-(db.posts/update {:title "newest title"} ["title = ?" "new title"]) ; update with a custom where clause
+#### `update`
 
-(db.posts/delete {:id 1}) ; deletes by id, returns number of rows effected
-(db.posts/delete ["title = ?" "new title"]) ; deletes with a custom where clause
+```clojure
+(db.posts/update {:id 1 :title "new title"})
+; => ["update posts set title = ? where id = ? returning *" "new title" 1]
 
+(db.posts/update {:title "newest title"} ["title = ?" "new title"])
+; => ["update posts set title = ? where title = ? returning *" "newest title" "new title"]
+```
+
+#### `delete`
+
+```clojure
+(db.posts/delete {:id 1})
+; => ["delete from posts where id = ? returning *" 1]
+
+(db.posts/delete ["title = ?" "new title"])
+; => ["delete from posts where title = ? returning *" "new title"]
+```
+
+#### `query`
+
+```clojure
 (db.posts/query {:where {:title "newest title"}
-                 :order [:created-at :desc]}) ; a very basic ad-hoc query builder, don't expect the world
+                 :order [:created-at :desc]})
+; => ["select * from posts where title = ? order by created_at desc" "newest title"]
 
-(db.posts/query) ; => select * from posts
-(db.posts/query {:order [:created-at :desc]}) ; => select * from posts order by created_at desc
-(db.posts/query {:select [:title]}) ; => select posts.title from posts
+(db.posts/query)
+; => ["select * from posts"]
+
+(db.posts/query {:order [:created-at :desc]})
+; => ["select * from posts order by created_at desc"]
+
+(db.posts/query {:select [:title]})
+; => ["select posts.title from posts"]
 
 (db.posts/query {:select [:id :title :published-at :created-at]
                  :where {:published-at nil}
-                 :order [:created-at :desc]}) ; select posts.id, posts.title, posts.published_at, posts.created_at from posts where posts.published_at is null order by created_at desc
+                 :order [:created-at :desc]})
+; ["select posts.id, posts.title, posts.published_at, posts.created_at
+;   from posts
+;   where posts.published_at is null
+;   order by created_at desc"]
 ```
 
 So those cover basic sql things that you really don't want to have to type out *every* time. For more complex sql things,
 why not just use the real deal? I'm talking about SQL. I'm a firm believer in having an escape hatch when an abstraction gets too leaky, thank goodness there's `defq`.
+
+#### `defq`
 
 `defq` is a macro that reads a sql file located in `resources` at compile time and generates functions
 with the symbols of the names in the sql file. If you try to specify a name that doesn't have a corresponding `-- name:`
