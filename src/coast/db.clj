@@ -19,7 +19,8 @@
                 (second))]
     (if (nil? col)
       {}
-      {(keyword col) (str (utils/humanize col) " is already taken")})))
+      {(keyword col) (str (utils/humanize col) " is already taken")
+       :type :unique-constraint-violation})))
 
 (defmacro transact! [f]
   `(try
