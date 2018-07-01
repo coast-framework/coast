@@ -10,7 +10,7 @@
         org.clojure/java.jdbc {:mvn/version "0.7.5"}
         hiccup {:mvn/version "1.0.5"}
         jkkramer/verily {:mvn/version "0.6.0"}
-        ring/ring-core {:mvn/version "1.6.2"}
+        ring/ring-core {:mvn/version "1.7.0-RC1"}
         com.jakemccrary/reload {:mvn/version "0.1.0"}}
 
  :aliases {:nrepl {:extra-deps {org.clojure/tools.nrepl {:mvn/version "0.2.12"}}}
