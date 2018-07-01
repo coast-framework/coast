@@ -1,7 +1,8 @@
 (ns coast.delta
   (:require [coast.middleware :as middleware]
             [coast.router :as router]
-            [ring.middleware.defaults :as middleware.defaults]))
+            [ring.middleware.defaults :as middleware.defaults]
+            [ring.middleware.keyword-params]))
 
 (defn app
   ([routes opts]
@@ -14,6 +15,8 @@
          (middleware/wrap-route-middleware)
          (middleware/wrap-coerce-params)
          (router/wrap-route-info routes)
+         (ring.middleware.keyword-params/wrap-keyword-params {:keywordize? true
+                                                              :parse-namespaces? true})
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-page)
          (middleware/wrap-errors error-page)

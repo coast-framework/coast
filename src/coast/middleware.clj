@@ -62,7 +62,8 @@
 (defn coast-defaults [opts]
   (let [secret (env/env :secret)
         default-opts {:session {:cookie-name "id"
-                                :store (cookie/cookie-store {:key secret})}}]
+                                :store (cookie/cookie-store {:key secret})}
+                      :params {:keywordize? false}}]
     (utils/deep-merge defaults/site-defaults default-opts opts)))
 
 (defn wrap-with-logger [handler]
