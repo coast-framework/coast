@@ -7,7 +7,7 @@ coast.epsilon {:git/url "https://github.com/swlkr/coast"
                :sha "462709ac7baf9ec74ef5d3912c449ab4ceb147cb"}}
 ```
 
-Previously: [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea), [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
+Previously: [delta](https://github.com/swlkr/coast/tree/0e9913f1c609bfb8b391300810f742390e9b6028), [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea), [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
 
 ### Warning
 The current version is under construction, but you can use it anyway 😅
