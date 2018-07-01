@@ -101,3 +101,21 @@
                    " where " (->> ident first (col table)) " = ?"
                    " limit 1")]
       [sql (second ident)])))
+
+(defn upsert [schema m ident]
+  (if (update? schema m ident)
+    (let [table (-> m keys first namespace)
+          m (into (sorted-map) m)
+          sql (str "insert into " table
+                   " ("
+                   (->> (keys m)
+                        (map #(col nil %))
+                        (string/join ", "))
+                   ") values " (insert-value m)
+                   " on conflict (" (-> ident first name) ")"
+                   " do update set "
+                   (->> (map #(str (col nil %) " = " (col "excluded" %)) (-> m (dissoc (first ident)) (keys)))
+                        (string/join ", "))
+                   " returning *")]
+      (apply conj [sql] (vals m)))
+    {}))

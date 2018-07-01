@@ -211,14 +211,6 @@
         (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
              (single))))))
 
-(defn fetch [ident]
-  (jdbc/with-db-connection [db-conn (connection)]
-    (jdbc/with-db-transaction [db-tran db-conn]
-      (let [schema (db.schema/fetch)
-            sql-vec (db.sql/fetch schema ident)
-            row (first (query db-tran sql-vec))]
-        (qualify-map (-> ident first namespace) row)))))
-
 (defn update [m ident]
   (jdbc/with-db-connection [db-conn (connection)]
     (jdbc/with-db-transaction [db-tran db-conn]
@@ -228,6 +220,17 @@
             sql-vec (db.sql/update schema m ident)
             rows (query db-tran sql-vec)]
         (map #(qualify-map (-> ident first namespace) %) rows)))))
+
+(defn upsert [m ident]
+  (jdbc/with-db-connection [db-conn (connection)]
+    (jdbc/with-db-transaction [db-tran db-conn]
+      (let [schema (db.schema/fetch)
+            k-ns (-> m keys first namespace)
+            m (assoc m (keyword k-ns "updated-at") (time/now))
+            sql-vec (db.sql/upsert schema m ident)
+            rows (query db-tran sql-vec)]
+        (->> (map #(qualify-map (-> ident first namespace) %) rows)
+             (single))))))
 
 (defn delete [ident]
   (jdbc/with-db-connection [db-conn (connection)]
