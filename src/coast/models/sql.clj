@@ -1,4 +1,4 @@
-(ns coast.sql
+(ns coast.models.sql
   (:require [coast.utils :as utils]
             [clojure.string :as string])
   (:refer-clojure :exclude [find update]))

@@ -1,11 +1,15 @@
 (ns coast.db
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
+            [clojure.set]
             [coast.env :as env]
-            [coast.queries :as queries]
+            [coast.db.queries :as queries]
+            [coast.db.sql :as db.sql]
+            [coast.db.schema :as db.schema]
             [coast.utils :as utils]
-            [coast.sql :as sql]
-            [coast.time :as time])
+            [coast.time :as time]
+            [coast.models.sql :as models.sql])
+  (:import (java.io File))
   (:refer-clojure :exclude [drop update]))
 
 (defn not-null-constraint [s]
@@ -127,27 +131,109 @@
 
 (defn defm [table]
   (create-root-var "insert" (fn [m]
-                              (query (connection) (sql/insert table m))))
+                              (query (connection) (models.sql/insert table m))))
   (create-root-var "update" (fn update-fn
                               ([m where-clause]
-                               (query (connection) (sql/update table m where-clause)))
+                               (query (connection) (models.sql/update table m where-clause)))
                               ([m]
-                               (query (connection) (sql/update table m)))))
+                               (first (query (connection) (models.sql/update table m))))))
   (create-root-var "delete" (fn [m]
-                              (query (connection) (sql/delete table m))))
+                              (let [rows (query (connection) (models.sql/delete table m))]
+                                (if (map? m)
+                                  (first rows)
+                                  rows))))
   (create-root-var "find-by" (fn [m]
-                               (let [v (sql/v (sql/find-by table m) m)]
+                               (let [v (models.sql/v (models.sql/find-by table m) m)]
                                  (first (query (connection) v)))))
   (create-root-var "find" (fn [val]
-                            (let [v (sql/v (sql/find table {:id val}) {:id val})]
+                            (let [v (models.sql/v (models.sql/find table {:id val}) {:id val})]
                               (first! (query (connection) v)))))
   (create-root-var "query" (fn [& [m]]
-                             (query (connection) (sql/v (sql/query table m)
+                             (query (connection) (models.sql/v (models.sql/query table m)
                                                         (:where m)))))
   (create-root-var "find-or-create-by" (fn [m]
-                                        (let [v (sql/v (sql/find-by table m) m)
+                                        (let [v (models.sql/v (models.sql/find-by table m) m)
                                               row (first (query (connection) v))]
                                           (if (nil? row)
-                                            (first (query (connection) (sql/insert table m)))
+                                            (first (query (connection) (models.sql/insert table m)))
                                             row))))
   nil)
+
+(defn validate-map [schema m]
+  (let [ident-ks (clojure.set/intersection (-> m keys set)
+                                           (:idents schema))
+        col-ks (clojure.set/intersection (-> m keys set)
+                                         (:cols schema))
+        join-ks (clojure.set/intersection (-> m keys set)
+                                          (->> (vals schema)
+                                               (filter map?)
+                                               (map :db/joins)
+                                               (filter some?)
+                                               (set)))]
+    (merge (select-keys m col-ks) (select-keys m ident-ks)
+           (select-keys m join-ks))))
+
+(defn id [conn schema ident]
+  (let [sql-vec (db.sql/id schema ident)
+        row (-> (query conn sql-vec)
+                (first))]
+    (get row "id")))
+
+(defn identify-kv [conn schema [k v]]
+  (if (db.sql/ident? schema v)
+    [(keyword (namespace k) (str (name k) "_id")) (id conn schema v)]
+    [k v]))
+
+(defn identify-map [conn schema m]
+  (->> (map (fn [[k v]] (identify-kv conn schema [k v])) m)
+       (into (empty m))))
+
+(defn qualify-map [k-ns m]
+  (->> (map (fn [[k v]] [(keyword k-ns (name k)) v]) m)
+       (into (empty m))))
+
+(defn single [coll]
+  (if (and (= 1 (count coll))
+           (coll? coll))
+    (first coll)
+    coll))
+
+(defn insert [val]
+  (jdbc/with-db-connection [db-conn (connection)]
+    (jdbc/with-db-transaction [db-tran db-conn]
+      (let [schema (db.schema/fetch)
+            v (if (map? val) [val] val)
+            v (map #(validate-map schema %) v)
+            v (map #(assoc % (keyword (-> v first keys first namespace) "updated-at") (time/now)) v)
+            v (map #(identify-map db-tran schema %) v)
+            sql-vec (db.sql/insert schema v)
+            rows (query db-tran sql-vec)]
+        (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
+             (single))))))
+
+(defn fetch [ident]
+  (jdbc/with-db-connection [db-conn (connection)]
+    (jdbc/with-db-transaction [db-tran db-conn]
+      (let [schema (db.schema/fetch)
+            sql-vec (db.sql/fetch schema ident)
+            row (first (query db-tran sql-vec))]
+        (qualify-map (-> ident first namespace) row)))))
+
+(defn update [m ident]
+  (jdbc/with-db-connection [db-conn (connection)]
+    (jdbc/with-db-transaction [db-tran db-conn]
+      (let [schema (db.schema/fetch)
+            k-ns (-> m keys first namespace)
+            m (assoc m (keyword k-ns "updated-at") (time/now))
+            sql-vec (db.sql/update schema m ident)
+            rows (query db-tran sql-vec)]
+        (map #(qualify-map (-> ident first namespace) %) rows)))))
+
+(defn delete [ident]
+  (jdbc/with-db-connection [db-conn (connection)]
+    (jdbc/with-db-transaction [db-tran db-conn]
+      (let [schema (db.schema/fetch)
+            sql-vec (db.sql/delete schema ident)
+            row (-> (query db-tran sql-vec)
+                    (first))]
+        (qualify-map (-> ident first namespace) row)))))
