@@ -1,4 +1,4 @@
-(ns coast.models
+(ns coast.models.validations
   (:require [jkkramer.verily :as v]
             [coast.utils :as utils]))
 
