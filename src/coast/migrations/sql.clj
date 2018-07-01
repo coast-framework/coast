@@ -1,9 +1,9 @@
-(ns coast.migrations
+(ns coast.migrations.sql
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [clojure.set :as set]
             [coast.db :refer [defq] :as db]
-            [coast.queries :as queries]
+            [coast.db.queries :as queries]
             [coast.time :as time])
   (:import (java.io File))
   (:refer-clojure :exclude [read]))

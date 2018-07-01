@@ -4,7 +4,8 @@
             [coast.utils :as utils]
             [coast.words :as words]
             [clojure.java.io :as io]
-            [coast.migrations :as migrations])
+            [coast.migrations.sql :as migrations.sql]
+            [coast.migrations.edn :as migrations.edn])
   (:import (java.io File)))
 
 (def pattern #"__([\w-]+)")
@@ -122,8 +123,9 @@ Examples:
   coast new foo
   coast new another-foo
 
-  coast gen migration                                          # Creates a new migration
+  coast gen migration <name>                                   # Creates a new migration
   coast gen migration create-<table> column1:text column2:text # Creates a new migration with a create table statement along with columns/types specified
+  coast gen schema <name>                                      # Creates a new edn migration
   coast gen db <table>                                         # Creates a new db.clj file in src/db with default database functions
   coast gen model <table>                                      # Creates a new model.clj file in src/models
   coast gen controller <table>                                 # Creates a new controller.clj file in src/controllers
@@ -132,7 +134,8 @@ Examples:
 (defn gen [args]
   (let [[_ kind table] args]
     (case kind
-      "migration" (apply migrations/create (drop 2 args))
+      "migration" (apply migrations.sql/create (drop 2 args))
+      "schema" (apply migrations.edn/create (drop 2 args))
       "db" (db table)
       "model" (do
                 (db table)
@@ -146,7 +149,7 @@ Examples:
               (view table))
       "jobs" (->> (io/resource "migrations/create_jobs.sql")
                   (slurp)
-                  (spit (str "resources/migrations/" (migrations/filename "create-jobs"))))
+                  (spit (str "resources/migrations/" (migrations.sql/filename "create-jobs"))))
       (usage))))
 
 (defn -main [& args]

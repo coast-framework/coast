@@ -1,7 +1,8 @@
 (ns coast.cli
   (:require [coast.db :as db]
             [coast.utils :as utils]
-            [coast.migrations :as migrations]))
+            [coast.migrations.sql :as migrations.sql]
+            [coast.migrations.edn :as migrations.edn]))
 
 (defn -main [& args]
   (let [[action db-name] args
@@ -9,6 +10,7 @@
     (case action
       "db:create" (db/create db-name)
       "db:drop" (db/drop db-name)
-      "db:migrate" (migrations/migrate)
-      "db:rollback" (migrations/rollback)
+      "db:migrate" (do (migrations.sql/migrate)
+                       (migrations.edn/migrate))
+      "db:rollback" (migrations.sql/rollback)
       "")))
