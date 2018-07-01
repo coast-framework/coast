@@ -73,7 +73,8 @@
    (if (and (sql-vec? v) (map? opts))
      (transact!
        (jdbc/with-db-connection [db-conn conn]
-         (jdbc/query db-conn v {:row-fn (partial utils/map-keys utils/kebab)})))
+         (jdbc/query db-conn v {:keywordize? true
+                                :identifiers utils/kebab})))
      '()))
   ([conn v]
    (query conn v {})))
