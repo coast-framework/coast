@@ -1,4 +1,4 @@
-(ns coast.delta
+(ns coast.epsilon
   (:require [coast.middleware :as middleware]
             [coast.router :as router]
             [ring.middleware.defaults :as middleware.defaults]
