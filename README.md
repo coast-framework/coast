@@ -97,14 +97,14 @@ Can't forget the routes
 ```clojure
 ; src/routes.clj
 (ns routes
-  (:require [coast.router :refer [get resource url-for-routes action-for-routes]])
+  (:require [coast.router :as router])
   (:refer-clojure :exclude [get]))
 
-(def routes (-> (get "/" `controllers.home/index)
-                (resource :controllers.posts)))
+(def routes (-> (router/get "/" `controllers.home/index)
+                (router/resource :posts)))
 
-(def url-for (url-for-routes routes))
-(def action-for (action-for-routes routes))
+(def url-for (router/url-for-routes routes))
+(def action-for (router/action-for-routes routes))
 ```
 
 Let's see our masterpiece so far
