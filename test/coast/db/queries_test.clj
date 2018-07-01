@@ -1,5 +1,5 @@
-(ns coast.queries-test
-  (:require [coast.queries :as queries]
+(ns coast.db.queries-test
+  (:require [coast.db.queries :as queries]
             [clojure.test :refer [deftest testing is]]))
 
 (deftest sql-ks-test

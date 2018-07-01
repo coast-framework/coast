@@ -1,4 +1,4 @@
-(ns coast.queries
+(ns coast.db.queries
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [coast.utils :as utils]
