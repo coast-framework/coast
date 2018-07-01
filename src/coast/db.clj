@@ -33,8 +33,11 @@
              errors# (merge err1# err2#)]
          (if (empty? errors#)
            (throw e#)
-           (throw (ex-info "Invalid data" {:type :invalid
-                                           :errors errors#})))))))
+           (throw
+            (ex-info
+             (str "Invalid data: "
+                  (string/join " " (vals errors#)))
+             {:type :invalid :errors errors#})))))))
 
 (defn connection []
   (let [db-url (or (env/env :database-url)
