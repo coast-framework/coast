@@ -1,5 +1,6 @@
 (ns controllers.__table
-  (:require [coast.controllers :refer [try+ redirect flash]]
+  (:require [coast.utils :refer [try+]]
+            [coast.responses :refer [flash redirect]]
             [models.__table]
             [views.__table])
             [routes]

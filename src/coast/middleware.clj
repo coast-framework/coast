@@ -8,7 +8,6 @@
             [coast.time :as time]
             [coast.utils :as utils]
             [coast.responses :as responses]
-            [coast.controllers :refer [try+]]
             [coast.env :as env]
             [coast.dev.middleware :as dev.middleware]
             [coast.logger :as logger])
@@ -39,7 +38,7 @@
   (if (nil? not-found-page)
     handler
     (fn [request]
-      (try+
+      (utils/try+
         (handler request)
         (fn [ex]
           (when (= 404 (:type ex))
