@@ -85,6 +85,70 @@
        :select-ks args}
       (throw (Exception. (str "select needs at least one argument. You typed  : (select)"))))))
 
+(defn join-col [k]
+  (let [namespace (-> k namespace utils/snake)
+        name (-> k name utils/snake)]
+    (str namespace "." name "_id")))
+
+(defn join-statement [k]
+  (str (-> k namespace utils/snake)
+       " on "
+       (join-col k)
+       " = "
+       (str (-> k name utils/snake) ".id")))
+
+(defn pull-col [k]
+  (str (-> k namespace utils/snake) "_" (-> k name utils/snake)))
+
+(defn json-build-object [k]
+  (str "'" (pull-col k) "', " (col k)))
+
+(defn rel-col [k]
+  (str "'" (pull-col k) "', " (pull-col k)))
+
+(defn pull-join [schema m]
+  (let [k (-> m keys first)
+        val (-> m vals first)
+        v (filter qualified-keyword? val)
+        maps (filter map? val)
+        child-cols (map #(-> % keys first rel-col) maps)
+        {:keys [db/joins]} (get schema k)]
+    (str "left outer join (
+           select " (join-col joins) ",
+            json_agg(json_build_object(" (->> (map json-build-object v)
+                                              (concat child-cols)
+                                              (string/join ",")) ")) as " (pull-col k) "
+            from " (-> joins namespace utils/snake)"
+            " (->> (map (partial pull-join schema) maps)
+                   (string/join "\n")) "
+            group by " (join-col joins) "
+         ) " (join-statement joins))))
+
+(defn safe-namespace [k]
+  (when (qualified-keyword? k)
+    (namespace k)))
+
+(defn pull-joins [schema acc v]
+  (let [maps (filter map? v)
+        joins (map #(pull-join schema %) maps)
+        acc (concat acc joins)]
+    (if (empty? maps)
+     acc
+     (recur (pull-joins schema acc maps)))))
+
+(defn pull [v]
+  (let [schema (coast.db.schema/fetch)
+        cols (filter qualified-keyword? v)
+        maps (filter map? v)
+        child-cols (map #(-> % keys first pull-col) maps)
+        col-sql (string/join ", " (concat (map select-col cols)
+                                          child-cols))
+        joins (pull-joins schema [] v)]
+    {:select (str "select " col-sql)
+     :from (str "from " (clojure.core/or (-> cols first safe-namespace utils/snake)
+                                         (-> maps first keys first safe-namespace utils/snake)))
+     :joins (string/join "\n" joins)}))
+
 (defn limit [i]
   (if (pos-int? i)
     {:limit (str "limit " i)}
@@ -96,11 +160,7 @@
     (throw (Exception. (str "offset needs a positive integer. You typed: (offset " i ")")))))
 
 (defn join [k]
-  (let [namespace (namespace k)
-        name (name k)
-        join-left (str namespace "." name "_id")
-        join-right (str name ".id")]
-    (str "join " namespace " on " join-left " = " join-right)))
+  (str "join " (join-statement k)))
 
 (defn joins [& args]
   (let [schema (coast.db.schema/fetch)]
@@ -133,7 +193,8 @@
 (defn sql-vec [& params]
   (let [m (apply merge params)
         {:keys [select select-ks join-ks joins where order offset limit args]} m
-        sql (->> (filter some? [select (from select-ks join-ks) joins where order offset limit])
+        from-clause (from select-ks join-ks)
+        sql (->> (filter some? [select (clojure.core/or (:from m) from-clause) joins where order offset limit])
                  (string/join "\n"))]
     (apply conj [sql] (filter some? args))))
 
