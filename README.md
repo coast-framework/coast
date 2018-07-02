@@ -1,21 +1,13 @@
-# coast on clojure
+# Welcome to Coast
 
-The easy way to make websites with clojure
-
-```clojure
-coast.epsilon {:git/url "https://github.com/swlkr/coast"
-               :sha "b8b94e4be0482dbfa138da13412dd1e18d418b99"}}
-```
-
-Previously: [delta](https://github.com/swlkr/coast/tree/0e9913f1c609bfb8b391300810f742390e9b6028), [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea), [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4), [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8), [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
+__The easy way to make websites with Clojure__
 
 ### Warning
 The current version is under construction, but you can use it anyway 😅
 
 ## Table of Contents
 
-- [Simple Quickstart](#quickstart-without-a-template)
-- [Quickstart](#quickstart)
+- [Getting Started](#getting-started)
 - [Shipping](#shipping)
 - [Routing](#routing)
 - [Database](#database)
@@ -24,118 +16,35 @@ The current version is under construction, but you can use it anyway 😅
 - [Controllers](#controllers)
 - [Helpers](#helpers)
 - [Errors](#errors)
+- [Older Versions](#older-versions)
 
-## Quickstart without a template
+## Getting Started
 
-```bash
-brew install clojure
+Create a new coast website from your terminal
 
-mkdir -p blog blog/src
-touch blog/deps.edn blog/src/server.clj
-echo '{:paths ["src"] :deps {coast.epsilon {:git/url "https://github.com/swlkr/coast" :sha "b8b94e4be0482dbfa138da13412dd1e18d418b99"}}}' >> blog/deps.edn
-```
-
-It only takes a few lines to get up and running, add this to `src/server.clj`
-
-```clojure
-; blog/src/server.clj
-(ns server
-  (:require [coast.epsilon :as coast]
-            [coast.prod.server :as prod.server]))
-
-(defn hello [req]
-  (str "hello " (-> req :params :name)))
-
-(def routes [[:get "/hello/:name" `hello]])
-
-(def app (coast/app routes))
-
-(defn -main [& args]
-  (prod.server/start app)) ; => starts listening on port 1337 by default
-```
-
-Usually you would use a REPL from your editor to start the server
-but you can start it from your terminal with clj
-
-```bash
-clj -m server # => Server is listening on port 1337
-```
-
-If you visit `http://localhost:1337/hello/world`
-you should see "hello world" printed out
-
-```bash
-curl http://localhost:1337/hello/world # => hello world
-curl http://localhost:1337/hello/you # => hello you
-curl http://localhost:1337/hello/goodbye # => hello goodbye
-```
-
-## Quickstart
-
-Create a new coast project like this
 ```bash
 brew install clojure
 curl -o /usr/local/bin/coast https://raw.githubusercontent.com/swlkr/coast/master/coast
 chmod a+x /usr/local/bin/coast
-coast new blog
-```
-
-Let's set up the database!
-```bash
-make db/create # assumes a running postgres server. creates a new db called blog_dev
-```
-
-Let's create a table to store blog posts and generate some code so we can create, read, update and delete things in that table!
-```bash
-coast gen migration create-posts title:text body:text
-make db/migrate
-coast gen mvc posts
-```
-
-Can't forget the routes
-
-```clojure
-; src/routes.clj
-(ns routes
-  (:require [coast.router :as router])
-  (:refer-clojure :exclude [get]))
-
-(def routes (-> (router/get "/" `controllers.home/index)
-                (router/resource :posts)))
-
-(def url-for (router/url-for-routes routes))
-(def action-for (router/action-for-routes routes))
-```
-
-Let's see our masterpiece so far
-
-```bash
-make nrepl
-```
-
-Then in your editor, send this to your repl on port 7888
-
-```clojure
-(coast) ; => Listening on port 1337
+coast new myapp
+cd myapp
+make server
 ```
 
 You should be greeted with the text "You're coasting on clojure!"
-when you visit `http://localhost:1337` and when you visit `http://localhost:1337/posts`
-you should be able to add, edit, view and delete the rows from the `posts` table!
+when you visit `http://localhost:1337`
 
 ## Shipping
 
 ```bash
-make uberjar
 make db/migrate
 make server
 ```
 
 ## Routing
 
-Routing in the Clojure world has seen its fair share of implementations. Coast’s implementation is based loosely on [nav](https://github.com/taylorlapeyre/nav/blob/master/README.md) and to some extent [pedestal](http://pedestal.io) and [compojure](https://github.com/weavejester/compojure).
-
 Here’s a few examples of routes in coast
+
 ```clojure
 [:get "/" `home]
 
@@ -569,3 +478,11 @@ Here's the list of open source projects that coast uses:
 - [org.clojure/tools.namespace](https://github.com/clojure/tools.namespace)
 - [verily](https://github.com/jkk/verily)
 - [reload](https://github.com/jakemcc/reload)
+
+## Older Versions
+
+- [delta](https://github.com/swlkr/coast/tree/0e9913f1c609bfb8b391300810f742390e9b6028)
+- [gamma](https://github.com/swlkr/coast/tree/e2a0cacf25dd05b041d7b098e5db0a93592d3dea)
+- [beta](https://github.com/swlkr/coast/tree/8a92be4a4efd5d4ed419b39ba747780f2de44fe4)
+- [alpha](https://github.com/swlkr/coast/tree/4539e148bea1212c403418ec9dfbb2d68a0db3d8)
+- [0.6.9](https://github.com/swlkr/coast/tree/0.6.9)
