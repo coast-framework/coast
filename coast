@@ -72,7 +72,7 @@ then
     secret=$(random)
     echo Downloading a fresh copy of coast...
     mkdir $2
-    curl -fsSkL https://github.com/swlkr/coast-template/archive/master.tar.gz > master.tar.gz
+    curl -fsSkL https://github.com/coast-framework/template/archive/master.tar.gz > master.tar.gz
     tar xzf master.tar.gz -C $2 --strip-components 1
     rm master.tar.gz
     cd $2
