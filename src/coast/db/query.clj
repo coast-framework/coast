@@ -134,7 +134,7 @@
         acc (concat acc joins)]
     (if (empty? maps)
      acc
-     (recur (pull-joins schema acc maps)))))
+     (pull-joins schema acc (map #(-> % vals first) maps)))))
 
 (defn pull [v]
   (let [schema (coast.db.schema/fetch)
