@@ -200,16 +200,15 @@
 
 (defn insert [val]
   (jdbc/with-db-connection [db-conn (connection)]
-    (jdbc/with-db-transaction [db-tran db-conn]
-      (let [schema (db.schema/fetch)
-            v (if (map? val) [val] val)
-            v (map #(validate-map schema %) v)
-            v (map #(assoc % (keyword (-> v first keys first namespace) "updated-at") (time/now)) v)
-            v (map #(identify-map db-tran schema %) v)
-            sql-vec (db.sql/insert schema v)
-            rows (query db-tran sql-vec)]
-        (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
-             (single))))))
+    (let [schema (db.schema/fetch)
+          v (if (map? val) [val] val)
+          v (map #(validate-map schema %) v)
+          v (map #(assoc % (keyword (-> v first keys first namespace) "updated-at") (time/now)) v)
+          v (map #(identify-map db-conn schema %) v)
+          sql-vec (db.sql/insert schema v)
+          rows (query db-conn sql-vec)]
+      (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
+           (single)))))
 
 (defn update [m ident]
   (jdbc/with-db-connection [db-conn (connection)]
