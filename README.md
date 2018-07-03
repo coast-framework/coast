@@ -24,7 +24,7 @@ Create a new coast website from your terminal
 
 ```bash
 brew install clojure
-curl -o /usr/local/bin/coast https://raw.githubusercontent.com/swlkr/coast/master/coast
+curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast
 chmod a+x /usr/local/bin/coast
 coast new myapp
 cd myapp
