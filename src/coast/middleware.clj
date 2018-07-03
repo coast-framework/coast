@@ -1,7 +1,7 @@
 (ns coast.middleware
   (:require [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
-            [com.jakemccrary.middleware.reload :as reload]
+            [ring.middleware.reload :as reload]
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [clojure.edn :as edn]
