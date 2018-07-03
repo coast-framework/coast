@@ -6,12 +6,14 @@
 
 (def server (atom nil))
 
-(defn start []
-  (let [opts (->> (or (env/env :port) "1337")
-                  (utils/parse-int)
-                  (hash-map :port))]
-    (println "Server is listening on port" (:port opts))
-    (reset! server (httpkit/run-server (resolve (symbol "app")) opts))))
+(defn start
+  ([app]
+   (start app nil))
+  ([app opts]
+   (let [port (-> (or (:port opts) (env/env :port) 1337)
+                  (utils/parse-int))]
+     (println "Server is listening on port" port)
+     (reset! server (httpkit/run-server app {:port port})))))
 
 (defn stop []
   (when (not (nil? @server))
@@ -19,7 +21,6 @@
     (reset! server nil)
     (println "Resetting dev server")))
 
-(defn restart [app]
-  (def app app)
+(defn restart [app opts]
   (stop)
-  (repl/refresh :after `start))
+  (repl/refresh :after `start :after-args [app opts]))

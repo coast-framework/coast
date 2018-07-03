@@ -4,11 +4,10 @@
             [coast.utils :as utils]))
 
 (defn start
-  ([app port]
-   (let [opts (->> (or port (env/env :port) "1337")
-                   (utils/parse-int)
-                   (hash-map :port))]
-     (println "Server is listening on port" (:port opts))
-     (httpkit/run-server app opts)))
+  ([app opts]
+   (let [port (-> (or (:port opts) (env/env :port) 1337)
+                  (utils/parse-int))]
+     (println "Server is listening on port")
+     (httpkit/run-server app {:port port})))
   ([app]
    (start app nil)))

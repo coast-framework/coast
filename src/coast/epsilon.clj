@@ -1,6 +1,9 @@
 (ns coast.epsilon
   (:require [coast.middleware :as middleware]
             [coast.router :as router]
+            [coast.dev.server :as dev.server]
+            [coast.prod.server :as prod.server]
+            [coast.env :refer [env]]
             [ring.middleware.defaults :as middleware.defaults]
             [ring.middleware.keyword-params]))
 
@@ -23,3 +26,11 @@
          (coast.middleware/wrap-reload))))
   ([routes]
    (app routes {})))
+
+(defn server
+  ([app]
+   (server app nil))
+  ([app opts]
+   (if (= "prod" (env :coast-env))
+     (prod.server/start app opts)
+     (dev.server/restart app opts))))
