@@ -3,6 +3,7 @@
 * [README](../README.md)
 * [Why](Why.md)
 * [Routing](Routing.md)
+* [Schema](Schema.md)
 * [Database](Database.md)
 * [Models](Models.md)
 * [Views](Views.md)

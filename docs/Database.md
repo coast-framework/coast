@@ -10,7 +10,6 @@ make db/drop
 make db/migrate
 make db/rollback
 coast gen migration
-coast gen schema
 ```
 
 Those all do what you think they do. Except that last one, we'll get to that later.
