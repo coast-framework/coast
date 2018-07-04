@@ -74,7 +74,7 @@
   (str "create table if not exists " table " ("
        " id serial primary key,"
        " updated_at timestamptz,"
-       " created_at timestamptz default now()"
+       " created_at timestamptz not null default now()"
        " )"))
 
 (defn create-tables-if-not-exists [v]
