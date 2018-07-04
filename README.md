@@ -1,7 +1,5 @@
 # Welcome to Coast
 
-__The full stack web framework for indie hackers__
-
 ## What is this?
 
 Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the sever without javascript which allows you to ship your web applications faster.
