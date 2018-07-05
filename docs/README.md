@@ -3,9 +3,12 @@
 * [README](../README.md)
 * [Why](Why.md)
 * [Routing](Routing.md)
-* [Schema](Schema.md)
-* [Database](Database.md)
-* [Models](Models.md)
+* Automatic Database Driving
+  * [Schema](Schema.md)
+  * [Queries](Queries.md)
+* Manual Database Driving
+  * [Database](Database.md)
+  * [Models](Models.md)
 * [Views](Views.md)
 * [Controllers](Controllers.md)
 * [Errors](Errors.md)
