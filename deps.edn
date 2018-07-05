@@ -5,7 +5,7 @@
         ring/ring-devel {:mvn/version "1.5.0"}
         ring/ring-defaults {:mvn/version "0.2.3"}
         org.postgresql/postgresql {:mvn/version "42.2.1"}
-        coast-framework/tools.namespace {:mvn/version "0.3.1"}
+        coast-framework/tools.namespace {:mvn/version "0.3.1" :exclusions [org.clojure/tools.namespace]}
         http-kit {:mvn/version "2.3.0"}
         org.clojure/java.jdbc {:mvn/version "0.7.5"}
         hiccup {:mvn/version "1.0.5"}
