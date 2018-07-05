@@ -1,5 +1,5 @@
 (ns coast.dev.server
-  (:require [clojure.tools.namespace.repl :as repl]
+  (:require [coast.repl :as repl]
             [org.httpkit.server :as httpkit]
             [coast.env :as env]
             [coast.utils :as utils]))
