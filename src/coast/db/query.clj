@@ -35,13 +35,12 @@
     (nil? val) "is"
     :else "="))
 
+(defn flat [val]
+  (mapcat #(if (sequential? %) % [%]) val))
+
 (defn where-clause [s & args]
-  (let [ex-s (if (= "where" s)
-               "where"
-               s)
-        s (if (= "where" s)
-            "and"
-            s)]
+  (let [ex-s (if (= "where" s) "where" s)
+        s (if (= "where" s) "and" s)]
     (if (even? (count args))
       (apply conj [] (string/join (str " " s " ") (->> (partition 2 args)
                                                        (filter (fn [[_ v]] (clojure.core/not (clojure.core/and (coll? v) (empty? v)))))
@@ -49,7 +48,8 @@
                                                        (map #(string/join " " %))))
                      (->> (partition 2 args)
                           (map second)
-                          (filter #(clojure.core/not (clojure.core/and (coll? %) (empty? %))))))
+                          (filter #(clojure.core/not (clojure.core/and (coll? %) (empty? %))))
+                          (flat)))
       (throw (Exception. (str ex-s " requires an even number of args. You passed in " (count args) " args: " (string/join " " args)))))))
 
 (def and (partial where-clause "and"))
