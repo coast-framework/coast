@@ -1,8 +1,8 @@
 (ns coast.db.query
   (:require [clojure.string :as string]
             [clojure.java.jdbc :as jdbc]
-            [coast.env :refer [env]]
             [coast.db.schema :as db.schema]
+            [coast.db.connection :refer [connection]]
             [coast.utils :as utils])
   (:refer-clojure :exclude [and or not]))
 
@@ -198,13 +198,6 @@
                  (string/join "\n"))]
     (apply conj [sql] (filter some? args))))
 
-(defn connection []
-  (let [db-url (clojure.core/or (env :database-url)
-                   (env :db-spec-or-url))]
-    (if (string/blank? db-url)
-      (throw (Exception. "Your database connection string is blank. Set the DATABASE_URL or DB_SPEC_OR_URL environment variable"))
-      {:connection (jdbc/get-connection db-url)})))
-
 (defn qualify-col [s]
   (let [parts (string/split s #"_")
         k-ns (first parts)
@@ -214,6 +207,5 @@
 
 (defn query [& params]
   (let [v (apply sql-vec params)]
-    (jdbc/with-db-connection [conn (connection)]
-      (jdbc/query conn v {:keywordize? false
-                          :identifiers qualify-col}))))
+    (jdbc/query (connection) v {:keywordize? false
+                                :identifiers qualify-col})))

@@ -2,12 +2,13 @@
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [clojure.set :as set]
+            [clojure.edn]
+            [clojure.java.jdbc :as jdbc]
             [coast.db :refer [defq] :as db]
             [coast.db.queries :as queries]
-            [coast.time :as time]
-            [clojure.edn]
+            [coast.db.connection :refer [connection]]
             [coast.db.schema :as schema]
-            [clojure.java.jdbc :as jdbc])
+            [coast.time :as time])
   (:import (java.io File))
   (:refer-clojure :exclude [read]))
 
@@ -22,7 +23,7 @@
 (defn create-table []
   (->> (queries/query "create-table" "sql/migrations.sql")
        :sql
-       (db/execute! (db/connection))))
+       (jdbc/execute! (connection))))
 
 (defn completed-migrations []
   (let [_ (create-table)]
@@ -52,30 +53,27 @@
   (when (string? s)
     (clojure.edn/read-string s)))
 
-(defn migrate-schema [connection schema]
-  (jdbc/with-db-connection [conn connection]
-    (jdbc/with-db-transaction [t conn]
-      (let [create-statements (schema/create-tables-if-not-exists schema)
-            col-statements (schema/add-columns schema)
-            ident-statements (schema/add-idents schema)
-            rel-statements (schema/add-rels schema)
-            _ (doall
-                (for [s create-statements]
-                  (db/execute! t s)))
-            _ (doall
-                (for [s ident-statements]
-                  (db/execute! t s)))
-            _ (doall
-                (for [s col-statements]
-                  (db/execute! t s)))
-            _ (doall
-                (for [s rel-statements]
-                  (db/execute! t s)))]
-          (schema/save schema)))))
+(defn migrate-schema [conn schema]
+  (let [create-statements (schema/create-tables-if-not-exists schema)
+        col-statements (schema/add-columns schema)
+        ident-statements (schema/add-idents schema)
+        rel-statements (schema/add-rels schema)
+        _ (doall
+            (for [s create-statements]
+              (jdbc/execute! conn s)))
+        _ (doall
+            (for [s ident-statements]
+              (jdbc/execute! conn s)))
+        _ (doall
+            (for [s col-statements]
+              (jdbc/execute! conn s)))
+        _ (doall
+            (for [s rel-statements]
+              (jdbc/execute! conn s)))]
+      (schema/save schema)))
 
 (defn migrate []
-  (let [migrations (pending)
-        conn (db/connection)]
+  (let [migrations (pending)]
     (doseq [migration migrations]
       (let [contents (-> migration read parse)
             friendly-name (string/replace migration #"\.edn" "")]
@@ -89,7 +87,7 @@
             (println "")
             (println "--" friendly-name "---------------------")
             (println "")
-            (migrate-schema conn contents)
+            (migrate-schema (connection) contents)
             (insert {:id migration})
             (println friendly-name "migrated successfully")))))))
 

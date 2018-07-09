@@ -8,6 +8,7 @@
             [coast.db.schema :as db.schema]
             [coast.utils :as utils]
             [coast.time :as time]
+            [coast.db.connection :refer [connection admin-db-url]]
             [coast.models.sql :as models.sql])
   (:import (java.io File))
   (:refer-clojure :exclude [drop update]))
@@ -43,24 +44,6 @@
                   (string/join " " (vals errors#)))
              {:type :invalid :errors errors#})))))))
 
-(defn connection []
-  (let [db-url (or (env/env :database-url)
-                   (env/env :db-spec-or-url))]
-    (if (string/blank? db-url)
-      (throw (Exception. "Your database connection string is blank. Set the DATABASE_URL or DB_SPEC_OR_URL environment variable"))
-      {:connection (jdbc/get-connection db-url)})))
-
-(defn admin-connection []
-  (let [db-url (or (env/env :admin-db-spec-or-url)
-                   (env/env :admin-database-url)
-                   "postgres://localhost:5432/postgres")]
-    (if (string/blank? db-url)
-      (throw (Exception. "Your admin database connection string is blank. Set the ADMIN_DB_SPEC_OR_URL environment variable"))
-      {:connection (jdbc/get-connection db-url)})))
-
-(defn execute! [db sql]
-  (jdbc/execute! db sql))
-
 (defn exec [db sql]
   (jdbc/with-db-connection [conn db]
     (with-open [s (.createStatement (jdbc/db-connection conn))]
@@ -76,9 +59,8 @@
   ([conn v opts]
    (if (and (sql-vec? v) (map? opts))
      (transact!
-       (jdbc/with-db-connection [db-conn conn]
-         (jdbc/query db-conn v {:keywordize? true
-                                :identifiers utils/kebab})))
+        (jdbc/query (connection) v {:keywordize? true
+                                    :identifiers utils/kebab}))
      '()))
   ([conn v]
    (query conn v {})))
@@ -116,6 +98,9 @@
       (throw (ex-info "Record not found" {:type :404}))))
 
 (defq "sql/schema.sql")
+
+(defn admin-connection []
+  {:connection (jdbc/get-connection (admin-db-url))})
 
 (defn create [db-name]
   (let [db-name (format "%s_%s" db-name (env/env :coast-env))
@@ -199,43 +184,35 @@
     coll))
 
 (defn insert [val]
-  (jdbc/with-db-connection [db-conn (connection)]
-    (let [schema (db.schema/fetch)
-          v (if (map? val) [val] val)
-          v (map #(validate-map schema %) v)
-          v (map #(assoc % (keyword (-> v first keys first namespace) "updated-at") (time/now)) v)
-          v (map #(identify-map db-conn schema %) v)
-          sql-vec (db.sql/insert schema v)
-          rows (query db-conn sql-vec)]
-      (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
-           (single)))))
+  (let [schema (db.schema/fetch)
+        v (if (map? val) [val] val)
+        v (map #(validate-map schema %) v)
+        v (map #(identify-map (connection) schema %) v)
+        sql-vec (db.sql/insert schema v)
+        rows (query (connection) sql-vec)]
+    (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
+         (single))))
 
 (defn update [m ident]
-  (jdbc/with-db-connection [db-conn (connection)]
-    (jdbc/with-db-transaction [db-tran db-conn]
-      (let [schema (db.schema/fetch)
-            k-ns (-> m keys first namespace)
-            m (assoc m (keyword k-ns "updated-at") (time/now))
-            sql-vec (db.sql/update schema m ident)
-            rows (query db-tran sql-vec)]
-        (map #(qualify-map (-> ident first namespace) %) rows)))))
+  (let [schema (db.schema/fetch)
+        k-ns (-> m keys first namespace)
+        m (assoc m (keyword k-ns "updated-at") (time/now))
+        sql-vec (db.sql/update schema m ident)
+        rows (query (connection) sql-vec)]
+    (map #(qualify-map (-> ident first namespace) %) rows)))
 
 (defn upsert [m ident]
-  (jdbc/with-db-connection [db-conn (connection)]
-    (jdbc/with-db-transaction [db-tran db-conn]
-      (let [schema (db.schema/fetch)
-            k-ns (-> m keys first namespace)
-            m (assoc m (keyword k-ns "updated-at") (time/now))
-            sql-vec (db.sql/upsert schema m ident)
-            rows (query db-tran sql-vec)]
-        (->> (map #(qualify-map (-> ident first namespace) %) rows)
-             (single))))))
+  (let [schema (db.schema/fetch)
+        k-ns (-> m keys first namespace)
+        m (assoc m (keyword k-ns "updated-at") (time/now))
+        sql-vec (db.sql/upsert schema m ident)
+        rows (query (connection) sql-vec)]
+    (->> (map #(qualify-map (-> ident first namespace) %) rows)
+         (single))))
 
 (defn delete [ident]
-  (jdbc/with-db-connection [db-conn (connection)]
-    (jdbc/with-db-transaction [db-tran db-conn]
-      (let [schema (db.schema/fetch)
-            sql-vec (db.sql/delete schema ident)
-            row (-> (query db-tran sql-vec)
-                    (first))]
-        (qualify-map (-> ident first namespace) row)))))
+  (let [schema (db.schema/fetch)
+        sql-vec (db.sql/delete schema ident)
+        row (-> (query (connection) sql-vec)
+                (first))]
+    (qualify-map (-> ident first namespace) row)))

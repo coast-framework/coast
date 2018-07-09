@@ -2,8 +2,10 @@
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [clojure.set :as set]
+            [clojure.java.jdbc :as jdbc]
             [coast.db :refer [defq] :as db]
             [coast.db.queries :as queries]
+            [coast.db.connection :refer [connection]]
             [coast.time :as time])
   (:import (java.io File))
   (:refer-clojure :exclude [read]))
@@ -22,7 +24,7 @@
 (defn create-table []
   (->> (queries/query "create-table" "sql/migrations.sql")
        :sql
-       (db/execute! (db/connection))))
+       (jdbc/execute! (connection))))
 
 (defn completed-migrations []
   (let [_ (create-table)]
@@ -55,8 +57,7 @@
        :down down})))
 
 (defn migrate []
-  (let [migrations (pending)
-        conn (db/connection)]
+  (let [migrations (pending)]
     (doseq [migration migrations]
       (let [contents (-> migration read parse :up)
             friendly-name (string/replace migration #"\.sql" "")]
@@ -71,15 +72,14 @@
             (println "")
             (println "--" friendly-name "---------------------")
             (println "")
-            (db/execute! conn contents)
+            (jdbc/execute! (connection) contents)
             (insert {:id migration})
             (println friendly-name "migrated successfully")))))))
 
 (defn rollback []
   (let [migration (-> (completed-migrations) (last))]
     (when (not (nil? migration))
-        (let [conn (db/connection)
-              contents (-> migration read parse :down)
+        (let [contents (-> migration read parse :down)
               friendly-name (string/replace migration #"\.sql" "")]
           (if (or (string/blank? contents)
                   (nil? contents))
@@ -92,7 +92,7 @@
               (println "")
               (println "--" friendly-name "---------------------")
               (println "")
-              (db/execute! conn contents)
+              (jdbc/execute! (connection) contents)
               (delete {:id migration})
               (println friendly-name "rolled back successfully")))))))
 
