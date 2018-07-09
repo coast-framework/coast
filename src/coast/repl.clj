@@ -90,7 +90,6 @@
         current-ns-aliases (aliased *ns*)]
     (alter-var-root #'refresh-tracker dir/scan-dirs refresh-dirs scan-opts)
     (alter-var-root #'refresh-tracker remove-disabled)
-    (print-pending-reloads refresh-tracker)
     (alter-var-root #'refresh-tracker reload/track-reload)
     (in-ns current-ns-name)
     (let [result (print-and-return refresh-tracker)]
