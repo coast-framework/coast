@@ -1,4 +1,4 @@
-<p align="left"><img src="logo/horizontal.png" alt="coast" height="120px"></p>
+![](logo/horizontal.png)
 
 # Welcome to Coast
 
