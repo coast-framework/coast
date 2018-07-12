@@ -2,11 +2,11 @@
 
 ## What is it
 
-The main advantage of putting your schema in the framework's hands is that one, you don't need to declare things twice, like writing out a rails schema and then having to say "belongs_to" or "has_many" in a model somewhere. Two, you can get away with really short query building vs SQL, which, I love-hate SQL, but I love making web apps faster more than SQL.
+The main advantage of putting your schema in the framework's hands is that one, you don't need to declare things twice, like writing out a rails schema and then having to say "belongs_to" or "has_many" in a model somewhere. Two, you can get away with really short query building vs SQL, which, I love-hate SQL, but I love making web apps faster more than writing a lot of SQL.
 
 ## The goal
 
-Remove the O and the M in ORM. Data in, data out. Everything transparent and  declarative, hopefully.
+Remove the O and the M in ORM. Data in, data out. Everything transparent and declarative.
 
 ## CRUD in Coast
 
@@ -16,12 +16,12 @@ Not sure if it's any better than CRUD anywhere else, but the R in there is defin
 
 ```clojure
 (ns r-in-crud
-  (:require [coast.query :as q]))
+  (:require [coast.db :as db]))
 
-(q/query
-  (q/select :author/name :author/email :post/title :post/body)
-  (q/joins :author/posts)
-  (q/where :author/name "Johnny"))
+(db/q '[:select author/name author/email post/title post/body]
+        :joins author/posts
+        :where [author/name ?author/name]
+      {:author/name "Cody Coast"})
 ```
 
 The following query looks pretty basic and it is, it uses this SQL to query the database
@@ -30,23 +30,24 @@ The following query looks pretty basic and it is, it uses this SQL to query the 
 select author.name, author.email, post.title, post.body
 from author
 join post on post.author_id = author.id
-where author.name = 'Johnny'
+where author.name = ?
+-- queries are parameterized
 ```
 
 Which assuming some data, would output this in your Clojure code
 
 ```clojure
-[{:author/name "Johnny" :author/email "johnny@appleseed.com" :post/title "First!" :post/body "Post!"}
- {:author/name "Johnny" :author/email "johnny@appleseed.com" :post/title "Second!" :post/body "Post!"}
- {:author/name "Johnny" :author/email "johnny@appleseed.com" :post/title "Third!" :post/body "Post!"}]
+[{:author/name "Cody Coast" :author/email "cody@coastonclojure.com" :post/title "First!" :post/body "Post!"}
+ {:author/name "Cody Coast" :author/email "cody@coastonclojure.com" :post/title "Second!" :post/body "Post!"}
+ {:author/name "Cody Coast" :author/email "cody@coastonclojure.com" :post/title "Third!" :post/body "Post!"}]
 ```
 
 This isn't bad, but you can imagine a few more joins and a few more columns and things might get out of hand.
 Even if they didn't get out of hand, you want something like this anyway
 
 ```clojure
-[{:author/name "Johnny"
-  :author/email "johnny@appleseed.com"
+[{:author/name "Cody Coast"
+  :author/email "cody@coastonclojure.com"
   :author/posts [{:post/title "First"
                   :post/body "Post!"}
                  {:post/title "Second!"
@@ -59,50 +60,77 @@ Well you're in luck, thanks to letting Coast handle your schema, you can do just
 it's shamelessly stolen from datomic. This is how it looks.
 
 ```clojure
-(q/query
- (q/pull [:author/email
-          :author/name
-          {:author/posts [:post/title :post/body]}])
- (q/where :author/name "Johnny"))
+(db/q '[:pull [author/email
+               author/name
+               {author/posts [post/title
+                              post/body]}]
+        :where [author/name ?author/name]]
+      {:author/name "Cody Coast"})
 ```
 
-Which will output what you saw earlier. It uses the relationship names and data from the schema earlier to build the select and join parts of the query. Applying `limit`, `order by` and `where` parts to the relationships is under construction.
+Which will output what you saw earlier. It uses the relationship names and data from the schema earlier to build the select and join parts of the query.
 
-## Insert
+## Limitations of pull
 
-Given the schema from the [Schema](../Schema.md) section
+But wait a minute, how do you control the order they get returned in that fancy pull query? Here's how
 
 ```clojure
-(ns insert-example
-  (:require [coast.db :as db]))
-
-(db/insert {:author/name "Johnny"
-            :author/email "johnny@appleseed.com"})
+(db/q '[:pull [author/email
+               author/name
+               {(:author/posts :order post/id desc) [post/title
+                                                               post/body]}]
+        :where [author/name ?author/name]
+               [author/name != nil]
+        :limit 10
+        :order author/id desc]
+      {:author/name "Cody Coast"})
 ```
 
-## Update
+Unfortunately limit isn't working on nested queries yet, but it will be soon.
+
+## Transactions
+
+Here's two examples of inserting
 
 ```clojure
-(ns update-example
-  (:require [coast.db :as db]))
+(db/transact {:post/title "3 things you should know about Coast on Clojure"
+              :post/body "1. It's great. 2. It's tremendous. 3. It's making web development fun again."
+              :post/author [:author/name "Cody Coast"]})
+```
 
-(db/update {:author/email "new@email.com"} [:author/name "Johnny"])
+In cases where you already know the primary key, you can just pass that in place of the ident
+
+```clojure
+(db/transact {:post/title "3 things you should know about Coast on Clojure"
+              :post/body "1. It's great. 2. It's tremendous. 3. It's making web development fun again."
+              :post/author 2})
+```
+
+Here's two examples using postgresql upserts to update records
+
+```clojure
+(db/transact {:post/title "5 things you should know about Coast on Clojure"
+              :post/id 1})
+
+;  or with an ident
+
+(db/transact {:post/title "5 things you should know about Coast on Clojure"
+              :post/slug "07-10-2018-3-things-you-should-know"})
 ```
 
 ## Delete
 
-```clojure
-(ns update-example
-  (:require [coast.db :as db]))
-
-(db/delete [:author/name "Johnny"])
-```
-
-## Upsert
+You can delete rows by any table/col pair, multiple column delete is still under construction...
 
 ```clojure
-(ns update-example
-  (:require [coast.db :as db]))
-
-(db/upsert {:author/email "new@email.com"} [:author/name "Johnny"])
+(db/delete {:author/name "Cody Coast"])
 ```
+
+you can also delete multiple rows at a time with the same key
+
+```clojure
+(db/delete [{:author/name "Cody Coast"}
+            {:author/name "Carol Coast"}])
+```
+
+and since Coast is managing your schema, you get on delete cascade without even thinking about it!
