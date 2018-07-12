@@ -1,4 +1,4 @@
-(ns coast.epsilon
+(ns coast.zeta
   (:require [coast.middleware :as middleware]
             [coast.router :as router]
             [coast.dev.server :as dev.server]

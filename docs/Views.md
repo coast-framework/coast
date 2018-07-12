@@ -7,7 +7,7 @@ of your site
 
 ```clojure
 (ns server
-  (:require [coast.epsilon :as coast]))
+  (:require [coast.zeta :as coast]))
 
 (defn home [request]
   [:h1 "Welcome!"])
@@ -30,7 +30,7 @@ If you want to return something else other than [hiccup](https://github.com/weav
 
 ```clojure
 (ns server
-  (:require [coast.epsilon :as coast]
+  (:require [coast.zeta :as coast]
             [coast.responses.json :as res]))
 
 (defn home [request]
