@@ -1,48 +1,15 @@
 (ns coast.db
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
-            [clojure.set]
             [coast.env :as env]
             [coast.db.queries :as queries]
-            [coast.db.sql :as db.sql]
+            [coast.db.transact :as db.transact]
             [coast.db.schema :as db.schema]
-            [coast.utils :as utils]
-            [coast.time :as time]
             [coast.db.connection :refer [connection admin-db-url]]
-            [coast.models.sql :as models.sql])
+            [coast.db.query :as db.query]
+            [coast.utils :as utils])
   (:import (java.io File))
   (:refer-clojure :exclude [drop update]))
-
-(defn not-null-constraint [s]
-  (let [col (-> (re-find #"null value in column \"(\w+)\" violates not-null constraint" s)
-                (second))]
-    (if (nil? col)
-      {}
-      {(keyword col) (str (utils/humanize col) " cannot be blank")})))
-
-(defn unique-constraint [s]
-  (let [col (-> (re-find #"(?s)duplicate key value violates unique constraint.*Detail: Key \((.*)\)=\((.*)\)" s)
-                (second))]
-    (if (nil? col)
-      {}
-      {(keyword col) (str (utils/humanize col) " is already taken")
-       :type :unique-constraint-violation})))
-
-(defmacro transact! [f]
-  `(try
-     ~f
-     (catch org.postgresql.util.PSQLException e#
-       (let [msg# (.getMessage e#)
-             err1# (not-null-constraint msg#)
-             err2# (unique-constraint msg#)
-             errors# (merge err1# err2#)]
-         (if (empty? errors#)
-           (throw e#)
-           (throw
-            (ex-info
-             (str "Invalid data: "
-                  (string/join " " (vals errors#)))
-             {:type :invalid :errors errors#})))))))
 
 (defn exec [db sql]
   (jdbc/with-db-connection [conn db]
@@ -58,10 +25,9 @@
 (defn query
   ([conn v opts]
    (if (and (sql-vec? v) (map? opts))
-     (transact!
-        (jdbc/query (connection) v {:keywordize? true
-                                    :identifiers utils/kebab}))
-     '()))
+     (jdbc/query (connection) v (merge {:keywordize? true
+                                        :identifiers utils/kebab} opts))
+     (empty list)))
   ([conn v]
    (query conn v {})))
 
@@ -114,105 +80,41 @@
     (exec (admin-connection) sql)
     (println "Database" db-name "dropped successfully")))
 
-(defn defm [table]
-  (create-root-var "insert" (fn [m]
-                              (query (connection) (models.sql/insert table m))))
-  (create-root-var "update" (fn update-fn
-                              ([m where-clause]
-                               (query (connection) (models.sql/update table m where-clause)))
-                              ([m]
-                               (first (query (connection) (models.sql/update table m))))))
-  (create-root-var "delete" (fn [m]
-                              (let [rows (query (connection) (models.sql/delete table m))]
-                                (if (map? m)
-                                  (first rows)
-                                  rows))))
-  (create-root-var "find-by" (fn [m]
-                               (let [v (models.sql/v (models.sql/find-by table m) m)]
-                                 (first (query (connection) v)))))
-  (create-root-var "find" (fn [val]
-                            (let [v (models.sql/v (models.sql/find table {:id val}) {:id val})]
-                              (first! (query (connection) v)))))
-  (create-root-var "query" (fn [& [m]]
-                             (query (connection) (models.sql/v (models.sql/query table m)
-                                                        (:where m)))))
-  (create-root-var "find-or-create-by" (fn [m]
-                                        (let [v (models.sql/v (models.sql/find-by table m) m)
-                                              row (first (query (connection) v))]
-                                          (if (nil? row)
-                                            (first (query (connection) (models.sql/insert table m)))
-                                            row))))
-  nil)
-
-(defn validate-map [schema m]
-  (let [ident-ks (clojure.set/intersection (-> m keys set)
-                                           (:idents schema))
-        col-ks (clojure.set/intersection (-> m keys set)
-                                         (:cols schema))
-        join-ks (clojure.set/intersection (-> m keys set)
-                                          (->> (vals schema)
-                                               (filter map?)
-                                               (map :db/joins)
-                                               (filter some?)
-                                               (set)))]
-    (merge (select-keys m col-ks) (select-keys m ident-ks)
-           (select-keys m join-ks))))
-
-(defn id [conn schema ident]
-  (let [sql-vec (db.sql/id schema ident)
-        row (-> (query conn sql-vec)
-                (first))]
-    (get row "id")))
-
-(defn identify-kv [conn schema [k v]]
-  (if (db.sql/ident? schema v)
-    [(keyword (namespace k) (str (name k) "_id")) (id conn schema v)]
-    [k v]))
-
-(defn identify-map [conn schema m]
-  (->> (map (fn [[k v]] (identify-kv conn schema [k v])) m)
-       (into (empty m))))
-
-(defn qualify-map [k-ns m]
-  (->> (map (fn [[k v]] [(keyword k-ns (name k)) v]) m)
-       (into (empty m))))
-
 (defn single [coll]
   (if (and (= 1 (count coll))
            (coll? coll))
     (first coll)
     coll))
 
-(defn insert [val]
-  (let [schema (db.schema/fetch)
-        v (if (map? val) [val] val)
-        v (map #(validate-map schema %) v)
-        v (map #(identify-map (connection) schema %) v)
-        sql-vec (db.sql/insert schema v)
-        rows (query (connection) sql-vec)]
-    (->> (map #(qualify-map (-> v first keys first namespace) %) rows)
+(defn qualify-col [s]
+  (let [parts (string/split s #"_")
+        k-ns (first parts)
+        k-n (->> (rest parts)
+                 (string/join "-"))]
+    (keyword k-ns k-n)))
+
+(defn qualify-map [k-ns m]
+  (->> (map (fn [[k v]] [(keyword k-ns (name k)) v]) m)
+       (into (empty m))))
+
+(defn q
+  ([v params]
+   (query (connection)
+          (db.query/sql-vec v params)
+          {:keywordize? false
+           :identifiers qualify-col}))
+  ([v]
+   (q v nil)))
+
+(defn transact [m]
+  (let [k-ns (-> m keys first namespace)
+        schema (coast.db.schema/fetch)
+        v (db.transact/sql-vec schema m)]
+    (->> (query (connection) v)
+         (map #(qualify-map k-ns %))
          (single))))
 
-(defn update [m ident]
-  (let [schema (db.schema/fetch)
-        k-ns (-> m keys first namespace)
-        m (assoc m (keyword k-ns "updated-at") (time/now))
-        sql-vec (db.sql/update schema m ident)
-        rows (query (connection) sql-vec)]
-    (map #(qualify-map (-> ident first namespace) %) rows)))
-
-(defn upsert [m ident]
-  (let [schema (db.schema/fetch)
-        k-ns (-> m keys first namespace)
-        m (assoc m (keyword k-ns "updated-at") (time/now))
-        sql-vec (db.sql/upsert schema m ident)
-        rows (query (connection) sql-vec)]
-    (->> (map #(qualify-map (-> ident first namespace) %) rows)
+(defn delete [arg]
+  (let [v (db.transact/delete-vec arg)]
+    (->> (query (connection) v)
          (single))))
-
-(defn delete [ident]
-  (let [schema (db.schema/fetch)
-        sql-vec (db.sql/delete schema ident)
-        row (-> (query (connection) sql-vec)
-                (first))]
-    (qualify-map (-> ident first namespace) row)))
