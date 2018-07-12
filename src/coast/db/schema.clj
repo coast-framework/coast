@@ -27,11 +27,15 @@
         "not null"]
        (string/join " ")))
 
+(defn col-default [m]
+  (when (contains? m :db/default)
+    (str "default " (get m :db/default))))
+
 (defn col [m]
-  (->> [(-> m :db/col name utils/snake)
+  (->> [(str "\"" (-> m :db/col name utils/snake) "\"")
         (:db/type m)
         (not-null m)
-        (:db/default m)]
+        (col-default m)]
        (string/join " ")))
 
 (defn rel [m]
@@ -107,6 +111,27 @@
     (binding [*out* w]
       (pprint/write val))))
 
+(defn join-col [k]
+  (let [namespace (-> k namespace utils/snake)
+        name (-> k name utils/snake)]
+    (str namespace "." name "_id")))
+
+(defn join-statement [k]
+  (str "join "
+       (-> k namespace utils/snake)
+       " on "
+       (join-col k)
+       " = "
+       (str (-> k name utils/snake) ".id")))
+
+(defn joins [schema]
+  (let [many-to-one (->> (map #(vector % (join-statement (get-in schema [% :db/joins]))) (:rels schema))
+                         (into {}))
+        one-to-many (->> (map #(get-in schema [% :db/joins]) (:rels schema))
+                         (map #(vector % (keyword (namespace %) (str (name %) "-id"))))
+                         (into {}))]
+    (merge many-to-one one-to-many)))
+
 (defn save
   "This saves a schema.edn file for easier reading when it comes time to query the db"
   [schema]
@@ -140,7 +165,8 @@
         schema-map (-> (merge current-schema new-schema)
                        (assoc :rels (set all-rels)
                               :cols (set all-cols)
-                              :idents (set all-idents)))]
+                              :idents (set all-idents)))
+        schema-map (assoc schema-map :joins (joins schema-map))]
     (pprint-write "resources/schema.edn" schema-map)))
 
 (defn fetch []
