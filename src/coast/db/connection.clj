@@ -24,16 +24,13 @@
       (throw (Exception. "Your admin database connection string is blank. Set the ADMIN_DB_SPEC_OR_URL environment variable"))
       url)))
 
-(defn db-uri []
-  (java.net.URI. (db-url)))
-
 (defn user-info [db-uri]
   (when (string? (.getUserInfo db-uri))
     (let [[user password] (clojure.string/split (.getUserInfo db-uri) #":")]
       {:user user :password password})))
 
 (defn db-spec []
-  (let [uri (db-uri)
+  (let [uri (java.net.URI. (db-url))
         user (user-info uri)]
     {:classname   "org.postgresql.Driver"
      :subprotocol "postgresql"
