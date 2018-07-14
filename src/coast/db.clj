@@ -7,6 +7,7 @@
             [coast.db.schema :as db.schema]
             [coast.db.connection :refer [connection admin-db-url]]
             [coast.db.query :as db.query]
+            [coast.db.errors :as db.errors]
             [coast.utils :as utils])
   (:import (java.io File))
   (:refer-clojure :exclude [drop update]))
@@ -125,3 +126,12 @@
 
 (defn pull [v ident]
   (first (q [:pull v :where ident])))
+
+(defmacro maybe [f]
+  `(try
+     [~f nil]
+    (catch org.postgresql.util.PSQLException e#
+      (let [error-map# (db.errors/error-map e#)]
+        (if (empty? error-map#)
+          (throw e#)
+          [nil error-map#])))))
