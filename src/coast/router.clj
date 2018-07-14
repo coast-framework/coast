@@ -29,6 +29,26 @@
   (when (method-verb? method)
     (str "?_method=" (name (or method "")))))
 
+(defn url-encode [s]
+  (when (string? s)
+    (-> (java.net.URLEncoder/encode s "UTF-8")
+        (.replace "+" "%20")
+        (.replace "*" "%2A")
+        (.replace "%7E" "~"))))
+
+(defn unqualified-keyword? [k]
+  (and (keyword? k)
+       (nil? (namespace k))))
+
+(defn query-string [m]
+  (when (and (map? m)
+             (every? string? (vals m))
+             (every? unqualified-keyword? (keys m)))
+    (let [s (->> (map (fn [[k v]] (str (-> k name url-encode) "=" (url-encode v))) m)
+                 (string/join "&"))]
+      (when (not (string/blank? s))
+        (str "?" s)))))
+
 (defn params [s]
   (->> (re-seq param-re s)
        (map last)
@@ -111,7 +131,7 @@
 
 (defn handler [not-found-page]
   (fn [request]
-    (let [route-handler (::route-handler request)]
+    (let [route-handler (:route/handler request)]
       (if (nil? route-handler)
         (responses/not-found
           ((or not-found-page fallback-not-found-page) request))
@@ -127,7 +147,7 @@
           [_ route-uri f] route
           route-params (route-params uri route-uri)
           route-handler (resolve-route f)
-          request (assoc request ::route-handler route-handler
+          request (assoc request :route/handler route-handler
                                  :route/middleware (route-middleware-fn f)
                                  :route/name (if (vector? f) (first f) f)
                                  :params (merge params route-params))]
@@ -162,18 +182,18 @@
 (defn resource
   "Creates a set of seven functions that map to a conventional set of named functions.
    Generates routes that look like this:
-   [[:get    \"/resources\"          `resources/index]
-    [:get    \"/resources/:id\"      `resources/show]
-    [:get    \"/resources/new\"      `resources/new]
-    [:get    \"/resources/:id/edit\" `resources/edit]
-    [:post   \"/resources\"          `resources/create]
-    [:put    \"/resources/:id\"      `resources/update]
-    [:delete \"/resources/:id\"      `resources/delete]]
+   [[:get    \"/resources\"          'resources/index]
+    [:get    \"/resources/:id\"      'resources/show]
+    [:get    \"/resources/new\"      'resources/new]
+    [:get    \"/resources/:id/edit\" 'resources/edit]
+    [:post   \"/resources\"          'resources/create]
+    [:put    \"/resources/:id\"      'resources/update]
+    [:delete \"/resources/:id\"      'resources/delete]]
    Examples:
-   (resource `items/show `items/index)
-   (resource `items/create `items/delete)
-   (resource `items/index `items/create)
-   (resource `items/index)
+   (resource 'items/show   'items/index)
+   (resource 'items/create 'items/delete)
+   (resource 'items/index  'items/create)
+   (resource 'items/index)
    (resource :items)"
   [& args]
   (let [all-routes (first args)
@@ -205,12 +225,17 @@
   (fn [k & [m]]
     (if (url-for-routes-args? k m)
       (let [[method route-url] (find-by-route-name routes k)
-            url (route-str route-url m)]
+            url (route-str route-url m)
+            r-params (route-params url route-url)
+            q-params (apply dissoc m (keys r-params))
+            q-params (if (method-verb? method)
+                       (assoc q-params :method method)
+                       q-params)]
         (when (nil? url)
           (throw (Exception. (str "The route with name " k " doesn't exist. Try adding it to your routes"))))
         (when (re-find #":" url)
-          (throw (Exception. (str "The map given for route " k " is missing a parameter"))))
-        (str url (param-method method)))
+          (throw (Exception. (str "The map " m " used for route " k " (" url ") is missing parameters"))))
+        (str url (query-string q-params)))
       (throw (Exception. "url-for takes a keyword and a map as arguments")))))
 
 (defn action-for-routes [routes]
