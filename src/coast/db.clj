@@ -115,6 +115,13 @@
          (single))))
 
 (defn delete [arg]
-  (let [v (db.transact/delete-vec arg)]
+  (let [v (db.transact/delete-vec arg)
+        k-ns (if (sequential? arg)
+               (-> arg first keys first namespace utils/snake)
+               (-> arg keys first namespace utils/snake))]
     (->> (query (connection) v)
+         (map #(qualify-map k-ns %))
          (single))))
+
+(defn pull [v ident]
+  (first (q [:pull v :where ident])))
