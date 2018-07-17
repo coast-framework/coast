@@ -137,7 +137,9 @@
   (str "'" (pull-col k) "', " (col k)))
 
 (defn rel-col [k]
-  (str "'" (pull-col k) "', " (pull-col k)))
+  (if (qualified-ident? k)
+    (str "'" (pull-col k) "', " (pull-col k))
+    (str "'" (-> k first pull-col) "', " (-> k first pull-col))))
 
 (defn namespace* [k]
   (when (qualified-ident? k)
@@ -168,15 +170,30 @@
       (sql-map (drop 1 k))
       {})))
 
+(defn pull-limit [[i]]
+  (when (pos-int? i)
+    {:limit (str "where rn <= " i)}))
+
 (defn pull-sql-part [[k v]]
   (condp = k
-    :order (order v)))
+    :order (order v)
+    :limit (pull-limit v)
+    :else {}))
+
+(defn pull-from [order table]
+  (let [order (or order "order by id")]
+    (string/join "\n" ["("
+                       "select"
+                       (str "  " table ".*, ")
+                       (str "   row_number() over (" order ") as rn")
+                       (str "from " table)
+                       (str ") as " table)])))
 
 (defn pull-join [schema m]
   (let [k (rel-key m)
-        {:keys [order]} (->> (rel-opts m)
-                             (map pull-sql-part)
-                             (apply merge))
+        {:keys [order limit]} (->> (rel-opts m)
+                                   (map pull-sql-part)
+                                   (apply merge))
         val (-> m vals first)
         v (filter qualified-ident? val)
         maps (filter map? val)
@@ -190,9 +207,10 @@
                (concat child-cols)
                (string/join ","))
           (str ") " order ") as " (pull-col k))
-          (str "from " (-> joins namespace utils/snake))
-          (->> (map (partial pull-join schema) maps)
+          (str "from " (->> joins namespace utils/snake (pull-from order)))
+          (->> (map #(pull-join schema %) maps)
                (string/join "\n"))
+          limit
           (str "group by " (join-col joins))
           (str ")" (join-statement joins))]
          (filter some?)
