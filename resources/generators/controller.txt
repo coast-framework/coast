@@ -16,7 +16,7 @@
 
 (defn show [request]
   (let [params (params request)
-        __singular (models.__table/find params)]
+        __singular (models.__table/fetch params)]
         request (assoc request :__singular __singular)
     (views.__table/show request)))
 
@@ -33,14 +33,14 @@
 
 (defn edit [request]
   (let [params (params request)
-        __singular (models.__table/find params)
+        __singular (models.__table/fetch params)
         request (assoc request :__singular singular)]
     (views.__table/edit request)))
 
 (defn update [request]
   (try+
     (let [params (params request)
-          __singular (models.__table/find params)
+          __singular (models.__table/fetch params)
           __singular (merge __singular params)
           _ (models.__table/update __singular)]
       (-> (redirect (routes/url-for :__table/index))
@@ -51,7 +51,7 @@
 (defn delete [request]
   (try+
     (let [params (params request)
-          {:keys [id]} (models.__table/find params)
+          {:keys [id]} (models.__table/fetch params)
           _ (models.__table/delete {:id id})]
       (-> (redirect (routes/url-for :__table/index))
           (flash "__singular deleted successfully")))

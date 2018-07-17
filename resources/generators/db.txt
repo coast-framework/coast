@@ -1,5 +1,5 @@
 (ns db.__ns
-  (:require [coast.db :refer [defm]])
-  (:refer-clojure :exclude [update find]))
+  (:require [coast.db :refer [defq]])
+  (:refer-clojure :exclude [update]))
 
-(defm "__table")
+(defq "sql/__table.generated.sql")

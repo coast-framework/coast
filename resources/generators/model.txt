@@ -1,19 +1,19 @@
 (ns models.__table
-  (:require [db.__table])
-            [coast.models.validations :as models.validations]
-  (:refer-clojure :exclude [find update]))
+  (:require [db.__table]
+            [coast.validator :as v])
+  (:refer-clojure :exclude [update]))
 
 (defn validate [m]
   (let [validations []]
     (if (empty? validations)
       m
-      (models.validations/validate validations m))))
+      (v/validate validations m))))
 
 (defn all []
-  (db.__table/query))
+  (db.__table/all))
 
-(defn find [m]
-  (db.__table/find m))
+(defn fetch [m]
+  (db.__table/fetch m))
 
 (defn create [m]
   (-> (validate m)
