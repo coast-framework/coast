@@ -4,7 +4,7 @@
 
 ## What is this?
 
-Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the sever without javascript which allows you to ship your web applications faster.
+Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the server without javascript which allows you to ship your web applications faster.
 
 ## Getting Started
 
