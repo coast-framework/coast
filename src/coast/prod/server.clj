@@ -7,7 +7,7 @@
   ([app opts]
    (let [port (-> (or (:port opts) (env/env :port) 1337)
                   (utils/parse-int))]
-     (println "Server is listening on port")
+     (println "Server is listening on port" port)
      (httpkit/run-server app {:port port})))
   ([app]
    (start app nil)))
