@@ -8,15 +8,22 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 
 ## Getting Started
 
-Create a new coast website from your terminal
+1. Make sure clojure is installed first
 
 ```bash
 brew install clojure
-curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast
-chmod a+x /usr/local/bin/coast
-coast new myapp
-cd myapp
-make server
+```
+
+2. Install the coast cli script
+
+```bash
+curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast && chmod a+x /usr/local/bin/coast
+```
+
+3. Create a new coast project
+
+```bash
+coast new myapp && cd myapp && make server
 ```
 
 You should be greeted with the text "You're coasting on clojure!"
