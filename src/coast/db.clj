@@ -64,6 +64,7 @@
 (defn first! [coll]
   (or (first coll)
       (raise "Record not found" {:coast.router/error :404
+                                 :type :404
                                  ::error :not-found})))
 
 (defq "sql/schema.sql")
