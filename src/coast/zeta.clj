@@ -11,6 +11,7 @@
   "This requires route namespaces for uberjar"
   [routes]
   (->> (map #(nth % 2) routes)
+       (map #(if (vector? %) (first %) %))
        (map namespace)
        (distinct)
        (filter some?)
