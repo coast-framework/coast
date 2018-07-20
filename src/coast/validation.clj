@@ -11,7 +11,7 @@
 (defn fmt-validations [results]
   (when (some? results)
     (->> (map fmt-validation results)
-         (first)
+         (mapcat identity)
          (into {}))))
 
 (defn validate [m validations]
