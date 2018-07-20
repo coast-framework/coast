@@ -8,7 +8,8 @@
             [coast.db.connection :refer [connection admin-db-url]]
             [coast.db.query :as db.query]
             [coast.db.errors :as db.errors]
-            [coast.utils :as utils])
+            [coast.utils :as utils]
+            [coast.error :refer [raise rescue]])
   (:import (java.io File))
   (:refer-clojure :exclude [drop update]))
 
@@ -62,7 +63,8 @@
 
 (defn first! [coll]
   (or (first coll)
-      (throw (ex-info "Record not found" {:type :404}))))
+      (raise "Record not found" {:coast.router/error :404
+                                 ::error :not-found})))
 
 (defq "sql/schema.sql")
 

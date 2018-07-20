@@ -8,6 +8,7 @@
     (if (nil? col)
       {}
       {(keyword col) (str (utils/humanize col) " cannot be blank")
+       ::error :not-null
        :db.constraints/not-null (keyword col)})))
 
 (defn unique-constraint [s]
@@ -16,6 +17,7 @@
     (if (nil? col)
       {}
       {(keyword col) (str (utils/humanize col) " is already taken")
+       ::error :unique-contraint
        :db.constraints/unique (keyword col)})))
 
 (defn error-map [ex]
