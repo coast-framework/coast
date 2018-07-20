@@ -10,7 +10,8 @@
             [coast.responses :as responses]
             [coast.env :as env]
             [coast.dev.middleware :as dev.middleware]
-            [coast.logger :as logger])
+            [coast.logger :as logger]
+            [coast.error :refer [rescue]])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
 
@@ -38,12 +39,13 @@
   (if (nil? not-found-page)
     handler
     (fn [request]
-      (utils/try+
-        (handler request)
-        (fn [ex]
-          (when (= 404 (:type ex))
-            (responses/not-found
-             (not-found-page request))))))))
+      (let [[response errors] (rescue
+                               (handler request)
+                               :404)]
+        (if (nil? errors)
+          response
+          (responses/not-found
+            (not-found-page request)))))))
 
 (defn layout? [response layout]
   (and (not (nil? layout))
