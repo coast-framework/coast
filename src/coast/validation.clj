@@ -1,5 +1,4 @@
-; TODO this namespace has moved to validation. Delete in the next version (eta)
-(ns coast.validator
+(ns coast.validation
   (:require [jkkramer.verily :as v]
             [coast.utils :as utils]
             [clojure.string :as string]
@@ -7,15 +6,15 @@
 
 (defn fmt-validation [result]
   (let [{:keys [keys msg]} result]
-    (map #(hash-map % (str (utils/humanize %) " " msg)) keys)))
+    (map #(vector % (str (utils/humanize %) " " msg)) keys)))
 
 (defn fmt-validations [results]
   (when (some? results)
     (->> (map fmt-validation results)
-         (flatten)
+         (first)
          (into {}))))
 
-(defn validate [validations m]
+(defn validate [m validations]
   (let [errors (-> (v/validate m validations)
                    (fmt-validations))]
     (if (empty? errors)
