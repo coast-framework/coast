@@ -7,8 +7,22 @@
             [ring.middleware.defaults :as middleware.defaults]
             [ring.middleware.keyword-params]))
 
+(defn resolve-routes
+  "This requires route namespaces for uberjar"
+  [routes]
+  (->> (map #(nth % 2) routes)
+       (map namespace)
+       (distinct)
+       (filter some?)
+       (map symbol)
+       (apply require)))
+
 (defn app
+  "The coast app function. This function is responsible for taking a request map
+   and calling the functions defined in routes"
   ([routes opts]
+   ; hack for uberjar route resolution
+   (resolve-routes routes)
    (let [layout (get opts :layout)
          not-found-page (get opts :404)
          error-page (get opts :500)]
