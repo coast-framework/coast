@@ -132,11 +132,16 @@
                          (into {}))]
     (merge many-to-one one-to-many)))
 
+(defn fetch []
+  (let [resource (io/resource "schema.edn")]
+    (if (nil? resource)
+      {}
+      (-> resource slurp edn/read-string))))
+
 (defn save
   "This saves a schema.edn file for easier reading when it comes time to query the db"
   [schema]
-  (let [current-schema (or (-> "resources/schema.edn" slurp* edn/read-string)
-                           {})
+  (let [current-schema (fetch)
         current-rels (:rels current-schema)
         current-cols (:cols current-schema)
         current-idents (:idents current-schema)
@@ -168,7 +173,3 @@
                               :idents (set all-idents)))
         schema-map (assoc schema-map :joins (joins schema-map))]
     (pprint-write "resources/schema.edn" schema-map)))
-
-(defn fetch []
-  (or (-> "resources/schema.edn" slurp* edn/read-string)
-      {}))
