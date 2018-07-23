@@ -58,6 +58,7 @@
         col-statements (schema/add-columns schema)
         ident-statements (schema/add-idents schema)
         rel-statements (schema/add-rels schema)
+        constraint-statements (schema/add-constraints schema)
         _ (doall
             (for [s create-statements]
               (jdbc/execute! conn s)))
@@ -69,6 +70,9 @@
               (jdbc/execute! conn s)))
         _ (doall
             (for [s rel-statements]
+              (jdbc/execute! conn s)))
+        _ (doall
+            (for [s constraint-statements]
               (jdbc/execute! conn s)))]
       (schema/save schema)))
 

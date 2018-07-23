@@ -68,6 +68,19 @@
   (->> (filter rel? v)
        (map add-rel)))
 
+(defn add-constraint [[table idents]]
+  (str "alter table " table " add unique ("
+       (->> (map #(-> % :db/ident name utils/snake) idents)
+            (string/join ", "))
+       ")"))
+
+(defn add-constraints [v]
+  (let [idents (filter ident? v)]
+    (if (> (count idents) 1)
+      (->> (group-by #(-> % :db/ident namespace) idents)
+           (map add-constraint))
+      [])))
+
 (defn create-table-if-not-exists [table]
   (str "create table if not exists " table " ("
        " id serial primary key,"
