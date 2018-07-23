@@ -25,6 +25,7 @@
         (:db/type m)
         "unique"
         "not null"]
+       (filter some?)
        (string/join " ")))
 
 (defn col-default [m]
@@ -36,6 +37,7 @@
         (:db/type m)
         (not-null m)
         (col-default m)]
+       (filter some?)
        (string/join " ")))
 
 (defn rel [m]
