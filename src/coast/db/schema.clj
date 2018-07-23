@@ -47,33 +47,25 @@
       (str table "_id integer not null references " table "(id) on delete cascade")
       nil)))
 
-(defn add-column [[table cols]]
-  (let [col-str (->> (map #(str " add column " (col %)) cols)
-                     (string/join ", "))]
-    (str "alter table " table " " col-str)))
+(defn add-column [m]
+  (string/join " " ["alter table" (-> m :db/col namespace utils/snake) "add column" (col m)]))
 
 (defn add-columns [v]
   (->> (filter col? v)
-       (group-by #(-> % :db/col namespace))
        (map add-column)))
 
-(defn add-ident [[table cols]]
-  (let [ident-str (->> (map #(str " add column " (ident %)) cols)
-                       (string/join ", "))]
-    (str "alter table " table " " ident-str)))
+(defn add-ident [m]
+  (string/join " " ["alter table" (-> m :db/ident namespace utils/snake) "add column" (ident m)]))
 
 (defn add-idents [v]
   (->> (filter ident? v)
-       (group-by #(-> % :db/ident namespace))
        (map add-ident)))
 
-(defn add-rel [[table rels]]
-  (str "alter table " table " " (->> (map #(str " add column " (rel %)) rels)
-                                     (string/join ", "))))
+(defn add-rel [m]
+  (string/join " " ["alter table" (-> m :db/joins namespace utils/snake) "add column" (rel m)]))
 
 (defn add-rels [v]
   (->> (filter rel? v)
-       (group-by #(-> % :db/joins namespace))
        (map add-rel)))
 
 (defn create-table-if-not-exists [table]
