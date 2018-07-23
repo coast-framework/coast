@@ -114,7 +114,10 @@
                    "id"
                    (->> (map #(col nil %) idents)
                         (string/join ",")))
-        excluded-cols-str (->> (map #(str (col nil %) " = " (col "excluded" %)) (-> (apply dissoc rm idents) (keys)))
+        excluded-cols-str (->> (map #(str (col nil %) " = " (if (= % :updated-at) "now()" (col "excluded" %)))
+                                    (-> (apply dissoc rm idents)
+                                        (keys)
+                                        (conj :updated-at)))
                                (string/join ", "))]
     (str " on conflict (" cols-str ") do update set " excluded-cols-str)))
 
