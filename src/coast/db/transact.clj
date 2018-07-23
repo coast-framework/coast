@@ -156,4 +156,4 @@
                           (string/join ", "))
                  ")"
                  " returning *")]
-    (apply concat [sql] (map #(-> % vals) v))))
+    (vec (apply concat [sql] (map #(-> % vals) v)))))
