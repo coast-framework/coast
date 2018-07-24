@@ -1,10 +1,11 @@
 (ns coast.time
-  (:import (java.time LocalDateTime)
+  (:import (java.time LocalDateTime OffsetDateTime)
            (java.time ZoneOffset)
            (java.time.format DateTimeFormatter)))
 
 (defn fmt [d pattern]
-  (when (instance? LocalDateTime d)
+  (when (or (instance? LocalDateTime d)
+            (instance? OffsetDateTime d))
     (let [formatter (DateTimeFormatter/ofPattern pattern)]
       (.format formatter d))))
 
