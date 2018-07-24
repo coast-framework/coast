@@ -217,7 +217,7 @@
       (first)))
 
 (defn url-for-routes-args? [k m]
-  (and (keyword? k)
+  (and (ident? k)
        (or (nil? m) (map? m))))
 
 (defn url-for-routes [routes]
