@@ -19,6 +19,9 @@
   ([d]
    (local d ZoneOffset/UTC)))
 
+(defn parse [s]
+  (OffsetDateTime/parse s))
+
 (defn at [val k]
   (when (and (integer? val)
              (qualified-keyword? k))
