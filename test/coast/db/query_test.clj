@@ -3,29 +3,6 @@
             [coast.db.schema]
             [clojure.test :refer [deftest testing is]]))
 
-(deftest vec->map
-  (testing "vec->map turns query vec into map"
-    (is (= '{:select [todo/name]}
-           (q/vec->map '[:select todo/name])))
-
-    (is (= '{:select [todo/name todo/id]}
-           (q/vec->map '[:select todo/name todo/id])))
-
-    (is (= '{:where [member/active true]
-             :group [member/name]
-             :limit [10]
-             :offset [0]
-             :joins [member/todos]
-             :order [todo/id desc]
-             :select [todo/id todo/name]})
-        (q/vec->map '[:select todo/id todo/name
-                      :joins member/todos
-                      :where [member/active true]
-                      :order todo/id desc
-                      :limit 10
-                      :offset 0
-                      :group member/name]))))
-
 (deftest where-test
   (testing "where with and, not"
     (is (= (q/where '[and [member/name != ""]
@@ -53,7 +30,7 @@
 
 (deftest sql-vec
   (testing "sql-vec with select, limit and where clause"
-    (is (= ["select member.name as member_name, member.email as member_email\nfrom member\nwhere (member.name = ? and member.email = ?)\nlimit 1" "test" "test@test.com"]
+    (is (= ["select member.name as member$name, member.email as member$email\nfrom member\nwhere (member.name = ? and member.email = ?)\nlimit 1" "test" "test@test.com"]
            (q/sql-vec '[:select member/name member/email
                         :where [member/name "test"]
                                [member/email "test@test.com"]
@@ -66,10 +43,10 @@
                                and [member/name != nil]
                                    [member/id != 1]
                         :limit 1])
-           ["select member.name as member_name, member.email as member_email\nfrom member\nwhere (member.name = ? or member.email = ?) and (member.name is not null and member.id != ?)\nlimit 1" "test" "test@test.com" 1])))
+           ["select member.name as member$name, member.email as member$email\nfrom member\nwhere (member.name = ? or member.email = ?) and (member.name is not null and member.id != ?)\nlimit 1" "test" "test@test.com" 1])))
 
   (testing "a sql-vec that tries out most of the stuff"
-    (is (= ["select member.id as member_id, member.name as member_name, member.email as member_email, todo.name as todo_name, todo.id as todo_id\nfrom member\nwhere (member.id != ? and todo.name != ?)\norder by todo.name desc, member.name asc\noffset 10\nlimit 1" 1 "hello"]
+    (is (= ["select member.id as member$id, member.name as member$name, member.email as member$email, todo.name as todo$name, todo.id as todo$id\nfrom member\nwhere (member.id != ? and todo.name != ?)\norder by todo.name desc, member.name asc\noffset 10\nlimit 1" 1 "hello"]
            (q/sql-vec '[:select member/id member/name member/email todo/name todo/id
                         :where and [member/id != 1]
                                    [todo/name != "hello"]
@@ -79,14 +56,14 @@
 
   (testing "a join with a select statement that doesn't include the main table"
     (with-redefs [coast.db.schema/fetch (fn [] {:member/todos {:db/joins :todo/member :db/type :many}})]
-      (is (= ["select todo.name as todo_name\nfrom member\njoin todo on todo.member_id = member.id\nwhere (todo.name is not null)"]
+      (is (= ["select todo.name as todo$name\nfrom member\njoin todo on todo.member_id = member.id\nwhere (todo.name is not null)"]
              (q/sql-vec '[:select todo/name
                           :joins member/todos
                           :where [todo/name != nil]])))))
 
   (testing "variable parameters"
     (let [ids [1 2 3]]
-      (is (= ["select todo.name as todo_name\nfrom todo\nwhere (todo.id in (?, ?, ?))" 1 2 3]
+      (is (= ["select todo.name as todo$name\nfrom todo\nwhere (todo.id in (?, ?, ?))" 1 2 3]
              (q/sql-vec '[:select todo/name
                           :where [todo/id ?ids]]
                         {:ids ids}))))))
