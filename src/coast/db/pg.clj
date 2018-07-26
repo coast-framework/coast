@@ -6,8 +6,9 @@
 
 (defn qualify-col [s]
   (let [parts (string/split s #"\$")
-        k-ns (first parts)
+        k-ns (first (map #(string/replace % #"_" "-") parts))
         k-n (->> (rest parts)
+                 (map #(string/replace % #"_" "-"))
                  (string/join "-"))]
     (keyword k-ns k-n)))
 
