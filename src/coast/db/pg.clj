@@ -5,7 +5,7 @@
   (:import [org.postgresql.util PGobject]))
 
 (defn qualify-col [s]
-  (let [parts (string/split s #"_")
+  (let [parts (string/split s #"\$")
         k-ns (first parts)
         k-n (->> (rest parts)
                  (string/join "-"))]
