@@ -30,7 +30,7 @@
    (when (qualified-ident? val)
      (let [k-ns (-> val namespace utils/snake)
            k-n (-> val name utils/snake)]
-       (str k-ns "." k-n " as " k-ns "_" k-n)))))
+       (str k-ns "." k-n " as " k-ns "$" k-n)))))
 
 (defn ? [m]
   (->> (keys m)
@@ -60,7 +60,7 @@
 (defn select-col [schema [k v]]
   (if (ident? schema v)
     (str (-> k name (string/replace #"-" "."))
-         " as " (-> k name (string/replace #"-" "_")))
+         " as " (-> k name (string/replace #"-" "$")))
     (col k)))
 
 (defn select [schema m]
@@ -148,7 +148,7 @@
 (defn delete-vec [val]
   (let [v (if (sequential? val) val [val])
         v (map validate-transaction v)
-        table (-> v first keys first namespace)
+        table (-> v first keys first namespace utils/snake)
         sql (str "delete from " table
                  " where " (->> v first keys first (col table)) " in "
                  "(" (->> (map ? v)

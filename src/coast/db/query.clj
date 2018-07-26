@@ -7,7 +7,7 @@
 (defn select-col [k]
   (str (-> k namespace utils/snake) "." (-> k name utils/snake)
        " as "
-       (-> k namespace utils/snake) "_" (-> k name utils/snake)))
+       (-> k namespace utils/snake) "$" (-> k name utils/snake)))
 
 (defn sql-vec? [v]
   (and (vector? v)
@@ -87,8 +87,8 @@
                 (flat))}))
 
 (defn from [s-ks j-ks]
-  (let [t (-> (map namespace s-ks) (first))
-        j (-> (map name j-ks) (first))]
+  (let [t (-> (map #(-> % namespace utils/snake) s-ks) (first))
+        j (-> (map #(-> % name utils/snake) j-ks) (first))]
     (str "from " (or j t))))
 
 (defn select [v]
@@ -131,7 +131,7 @@
        (str (-> k name utils/snake) ".id")))
 
 (defn pull-col [k]
-  (str (-> k namespace utils/snake) "_" (-> k name utils/snake)))
+  (str (-> k namespace utils/snake) "$" (-> k name utils/snake)))
 
 (defn json-build-object [k]
   (str "'" (pull-col k) "', " (col k)))
