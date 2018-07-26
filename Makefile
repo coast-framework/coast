@@ -3,5 +3,5 @@
 test:
 	clj -A\:test
 
-nrepl:
-	clj -R:nrepl:cider bin/nrepl.clj
+repl:
+	clj -R:nrepl bin/repl.clj

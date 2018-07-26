@@ -13,8 +13,7 @@
         ring/ring-core {:mvn/version "1.7.0-RC1"}
         com.mchange/c3p0 {:mvn/version "0.9.5.2"}}
 
- :aliases {:nrepl {:extra-deps {org.clojure/tools.nrepl {:mvn/version "0.2.12"}}}
-           :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.15.1"}}}
+ :aliases {:nrepl {:extra-deps {nrepl {:mvn/version "0.4.2"}}}
            :test
              {:extra-paths ["test"]
               :main-opts ["-m" "cognitect.test-runner"]
