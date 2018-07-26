@@ -8,3 +8,7 @@ repl:
 
 clean:
 	rm -rf target
+
+deploy: test
+	clj -Spom
+	mvn deploy
