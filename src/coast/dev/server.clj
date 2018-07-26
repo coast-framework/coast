@@ -2,7 +2,9 @@
   (:require [coast.repl :as repl]
             [org.httpkit.server :as httpkit]
             [coast.env :as env]
-            [coast.utils :as utils]))
+            [coast.utils :as utils]
+            [ring.middleware.reload :as reload]
+            [coast.dev.middleware :as dev.middleware]))
 
 (def server (atom nil))
 
@@ -12,8 +14,10 @@
   ([app opts]
    (let [port (-> (or (:port opts) (env/env :port) 1337)
                   (utils/parse-int))]
+     (def app app)
      (println "Server is listening on port" port)
-     (reset! server (httpkit/run-server app {:port port})))))
+     (reset! server (httpkit/run-server (dev.middleware/wrap-exceptions
+                                         (reload/wrap-reload #'app)) {:port port})))))
 
 (defn stop []
   (when (not (nil? @server))

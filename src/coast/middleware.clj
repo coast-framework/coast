@@ -1,7 +1,6 @@
 (ns coast.middleware
   (:require [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
-            [ring.middleware.reload :as reload]
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [clojure.edn :as edn]
@@ -73,11 +72,6 @@
           response (handler request)]
       (logger/log request response now)
       response)))
-
-(defn wrap-reload [handler]
-  (if (= "dev" (env/env :coast-env))
-    (reload/wrap-reload handler)
-    handler))
 
 (defn booleans? [val]
   (and (vector? val)
