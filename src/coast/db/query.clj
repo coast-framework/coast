@@ -1,8 +1,11 @@
 (ns coast.db.query
   (:require [clojure.string :as string]
             [clojure.walk]
+            [clojure.java.jdbc :as jdbc]
             [coast.db.schema :as db.schema]
-            [coast.utils :as utils]))
+            [coast.utils :as utils]
+            [coast.db.pg :as pg])
+  (:import [org.postgresql.util PGobject]))
 
 (defn select-col [k]
   (str (-> k namespace utils/snake) "." (-> k name utils/snake)
@@ -289,3 +292,14 @@
      (apply conj [sql] (filter some? args))))
   ([v]
    (sql-vec v nil)))
+
+(extend-protocol jdbc/IResultSetReadColumn
+  ;; Covert java.sql.Array to Clojure vector
+  java.sql.Array
+  (result-set-read-column [val _ _]
+    (vec (.getArray val)))
+
+  ;; PGobjects have their own multimethod
+  PGobject
+  (result-set-read-column [val _ _]
+    (pg/read-pgobject val)))

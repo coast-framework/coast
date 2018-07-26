@@ -1,6 +1,5 @@
 (ns coast.db.pg
   (:require [clojure.data.json :as json]
-            [clojure.java.jdbc :as jdbc]
             [clojure.string :as string])
   (:import [org.postgresql.util PGobject]))
 
@@ -56,14 +55,3 @@
 (defmethod read-pgobject :default
   [^org.postgresql.util.PGobject x]
   (.getValue x))
-
-(extend-protocol jdbc/IResultSetReadColumn
-  ;; Covert java.sql.Array to Clojure vector
-  java.sql.Array
-  (result-set-read-column [val _ _]
-    (vec (.getArray val)))
-
-  ;; PGobjects have their own multimethod
-  PGobject
-  (result-set-read-column [val _ _]
-    (read-pgobject val)))
