@@ -57,13 +57,13 @@ EOF
   exit 0
 }
 
-if [ "$1" == "" ]
+if [ "$1" = "" ]
 then
   usage;
 fi
 
 # new <project name>
-if [ "$1" == "new" ]
+if [ "$1" = "new" ]
 then
   if [ "$2" != "" ]
   then
