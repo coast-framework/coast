@@ -4,10 +4,10 @@
             [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
-            [coast.db.schema :as db.schema]
             [coast.db.connection :refer [connection admin-db-url]]
             [coast.db.query :as db.query]
             [coast.db.errors :as db.errors]
+            [coast.db.schema]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]])
   (:import (java.io File))
@@ -111,13 +111,67 @@
   ([v]
    (q v nil)))
 
+(defn select-rels [m]
+  (let [schema (coast.db.schema/fetch)]
+    (select-keys m (->> (:joins schema)
+                        (filter (fn [[_ v]] (qualified-ident? v)))
+                        (into {})
+                        (keys)))))
+
+(defn resolve-select-rels [m]
+  (let [queries (->> (filter (fn [[_ v]] (vector? v)) m)
+                     (db.transact/selects))
+        ids (->> (filter (fn [[_ v]] (number? v)) m)
+                 (mapv (fn [[k v]] [(keyword (namespace k) (str (name k) "-id")) v]))
+                 (into {}))
+        results (->> (map #(query (coast.db.connection/connection) % {:keywordize? false
+                                                                      :identifiers qualify-col})
+                          queries)
+                     (map first)
+                     (apply merge))]
+    (merge ids results)))
+
+(defn many-rels [m]
+  (let [schema (coast.db.schema/fetch)]
+    (select-keys m (->> (:joins schema)
+                        (filter (fn [[_ v]] (string? v)))
+                        (into {})
+                        (keys)))))
+
+(defn upsert-rel [parent [k v]]
+  (if (empty? v)
+    (let [schema (coast.db.schema/fetch)
+          k-ns (-> schema k :db/joins namespace utils/snake)
+          join-ns (-> schema k :db/joins name utils/snake)
+          _ (query (connection) [(str "delete from " k-ns " where " join-ns "_id = ? returning *") (get parent (keyword join-ns "id"))])]
+      [k []])
+    (let [k-ns (->> v first keys (filter qualified-ident?) first namespace)
+          parent-map (->> (filter (fn [[k _]] (= (name k) "id")) parent)
+                          (map (fn [[k* v]] [(keyword k-ns (str (namespace k*) "-id")) v]))
+                          (into {}))
+          v* (mapv #(merge parent-map %) v)
+          sql-vec (db.transact/sql-vec v*)
+          rows (->> (query (connection) sql-vec)
+                    (mapv #(qualify-map k-ns %)))]
+      [k rows])))
+
+(defn upsert-rels [parent m]
+  (->> (map #(upsert-rel parent %) m)
+       (into {})))
+
 (defn transact [m]
-  (let [k-ns (-> m keys first namespace)
-        schema (coast.db.schema/fetch)
-        v (db.transact/sql-vec schema m)]
-    (->> (query (connection) v)
-         (map #(qualify-map k-ns %))
-         (single))))
+  (let [k-ns (->> m keys (filter qualified-ident?) first namespace)
+        s-rels (select-rels m)
+        s-rel-results (resolve-select-rels s-rels)
+        m-rels (many-rels m)
+        m* (apply dissoc (merge m s-rel-results) (keys s-rels))
+        m* (apply dissoc m* (keys m-rels))
+        v (db.transact/sql-vec m*)
+        row (->> (query (connection) v)
+                 (map #(qualify-map k-ns %))
+                 (single))
+        upsert-rows (upsert-rels row m-rels)]
+   (merge row upsert-rows)))
 
 (defn delete [arg]
   (let [v (db.transact/delete-vec arg)

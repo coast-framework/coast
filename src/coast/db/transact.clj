@@ -1,7 +1,8 @@
 (ns coast.db.transact
   (:require [coast.utils :as utils]
             [clojure.string :as string]
-            [clojure.set])
+            [clojure.set]
+            [coast.db.schema])
   (:refer-clojure :exclude [ident? update]))
 
 (defn ident? [schema val]
@@ -56,6 +57,10 @@
                (string/join ", ")
                (wrap-str "()"))]
     (str "insert into " table s)))
+
+(defn values [v]
+  (str "values " (->> (map ? v) (map #(wrap-str "()" %))
+                      (string/join ", "))))
 
 (defn select-col [schema [k v]]
   (if (ident? schema v)
@@ -121,27 +126,38 @@
                                (string/join ", "))]
     (str " on conflict (" cols-str ") do update set " excluded-cols-str)))
 
-(defn sql-map [schema m]
-  {:insert-into (insert-into schema m)
-   :select (select schema m)
-   :from (from schema m)
-   :joins (joins schema m)
-   :on-conflict (on-conflict schema m)})
+(defn sql-map [schema v]
+  {:insert-into (insert-into schema (first v))
+   :values (values v)
+   :on-conflict (on-conflict schema (first v))})
 
 (defn ident-val [val]
   (if (vector? val)
     (second val)
     val))
 
-(defn sql-vec [schema m]
-  (let [m (validate-transaction m)
-        map* (into (sorted-map) m)
+(defn selects [m]
+    (mapv (fn [[k v]]
+           [(str "select " (name k) ".id as " (namespace k) "$" (name k) "_id from " (name k) " where " (-> v first name) " = ?") (second v)])
+          m))
+
+(defn single [v]
+  (if (= 1 (count v))
+    (first v)
+    v))
+
+(defn sql-vec [arg]
+  (let [v (if (map? arg) [arg] arg)
+        schema (coast.db.schema/fetch)
+        _ (map validate-transaction v)
+        maps (map #(into (sorted-map) %) v)
         returning "returning *"
-        {:keys [insert-into select from joins on-conflict]} (sql-map schema map*)
-        sql (->> [insert-into select from joins on-conflict returning]
+        {:keys [insert-into values on-conflict]} (sql-map schema maps)
+        sql (->> [insert-into values on-conflict returning]
                  (filter some?)
                  (string/join "\n"))
-        params (->> (vals map*)
+        params (->> (map vals maps)
+                    (mapcat identity)
                     (map ident-val))]
     (apply conj [sql] params)))
 
