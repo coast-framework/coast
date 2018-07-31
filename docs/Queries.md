@@ -87,7 +87,7 @@ But wait a minute, how do you control the order they get returned in that fancy 
       {:author/name "Cody Coast"})
 ```
 
-One limitation of pull syntax is how do you limit how many nested rows get returned? You  can do that too with `:limit`
+One limitation of pull syntax is how do you limit how many nested rows get returned? You can do that with `:limit`
 
 ```clojure
 (db/q '[:pull [author/email
@@ -111,7 +111,7 @@ If you know you only want to pull nested rows from one entity, you can use the `
          [:author/name "Cody Coast"])
 ```
 
-Unfortunately, or fortunately, if you want to get *really* crazy with a pull, you can't. You'll have to drop down to SQL and manipulate things with clojure yourself. The point of pull is to handle the common case, it doesn't arbitrary SQL functions or crazy SQL syntax. You'll have to either call `q` for that or fall back to SQL.
+Unfortunately, or fortunately, if you want to get *really* crazy with a pull, you can't. You'll have to drop down to SQL and manipulate things with clojure yourself. The point of pull is to handle the common case, it doesn't handle arbitrary SQL functions or crazy SQL syntax. You'll have to either call `q` for that or fall back to SQL.
 
 ## Transactions
 
@@ -142,6 +142,23 @@ Here's two examples using postgresql upserts to update records
 (db/transact {:post/title "5 things you should know about Coast on Clojure"
               :post/slug "07-10-2018-3-things-you-should-know"})
 ```
+
+Here's another cool thing you can do although, it's currently limited to one level of relations deep
+
+```clojure
+(db/transact {:post/slug "07-10-2018-3-things-you-should-know"
+              :post/comments [{:comment/text "+1"}
+                              {:comment/text "+1"}]})
+```
+
+Tired of those +1's? Get rid of 'em
+
+```clojure
+(db/transact {:post/slug "07-10-2018-3-things-you-should-know"
+              :post/comments []})
+```
+
+That will delete all of that post's comments. Is this dangerous? Yes, so be careful out there.
 
 ## Delete
 
