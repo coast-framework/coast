@@ -5,6 +5,9 @@
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
             [coast.db.connection :refer [connection admin-db-url]]
+            [coast.db.update :as db.update]
+            [coast.db.insert :as db.insert]
+            [coast.db.delete :as db.delete]
             [coast.db.query :as db.query]
             [coast.db.errors :as db.errors]
             [coast.db.schema]
@@ -162,19 +165,26 @@
 (defn transact [m]
   (let [k-ns (->> m keys (filter qualified-ident?) first namespace)
         s-rels (select-rels m)
-        s-rel-results (resolve-select-rels s-rels)
+        s-rel-results (resolve-select-rels s-rels) ; foreign key idents
         m-rels (many-rels m)
         m* (apply dissoc (merge m s-rel-results) (keys s-rels))
         m* (apply dissoc m* (keys m-rels))
-        v (db.transact/sql-vec m*)
-        row (->> (query (connection) v)
+        row (->> (db.update/sql-vec m*)
+                 (query (connection))
                  (map #(qualify-map k-ns %))
                  (single))
-        upsert-rows (upsert-rels row m-rels)]
-   (merge row upsert-rows)))
+        row (if (empty? row)
+              (->> (db.insert/sql-vec m*)
+                   (query (connection))
+                   (map #(qualify-map k-ns %))
+                   (single))
+              row)
+        rel-rows (upsert-rels row m-rels)]
+    (merge row rel-rows)))
+
 
 (defn delete [arg]
-  (let [v (db.transact/delete-vec arg)
+  (let [v (db.delete/sql-vec arg)
         k-ns (if (sequential? arg)
                (-> arg first keys first namespace utils/snake)
                (-> arg keys first namespace utils/snake))]

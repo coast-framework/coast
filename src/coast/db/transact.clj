@@ -160,16 +160,3 @@
                     (mapcat identity)
                     (map ident-val))]
     (apply conj [sql] params)))
-
-(defn delete-vec [val]
-  (let [v (if (sequential? val) val [val])
-        v (map validate-transaction v)
-        table (-> v first keys first namespace utils/snake)
-        sql (str "delete from " table
-                 " where " (->> v first keys first (col table)) " in "
-                 "(" (->> (map ? v)
-                          (mapcat identity)
-                          (string/join ", "))
-                 ")"
-                 " returning *")]
-    (vec (apply concat [sql] (map #(-> % vals) v)))))
