@@ -67,17 +67,12 @@
            (drop 1)
            (zipmap ks)))))
 
-(defn route? [val]
-  (and (vector? val)
-       (every? some? val)))
-
 (defn match [request-route route]
-  (when (every? route? [request-route route])
-    (let [[request-method request-uri] request-route
-          [route-method route-uri] route
-          params (route-params request-uri route-uri)]
-      (and (= request-method route-method)
-           (= request-uri (route-str route-uri params))))))
+  (let [[request-method request-uri] request-route
+        [route-method route-uri] route
+        params (route-params request-uri route-uri)]
+    (and (= request-method route-method)
+         (= request-uri (route-str route-uri params)))))
 
 (defn route
   "Sugar for making a route vector"
@@ -96,8 +91,8 @@
   "Wraps a single route in a ring middleware fn"
   (let [[method uri val route-name] route]
     (if (vector? val)
-      [method uri (conj val middleware) route-name]
-      [method uri [val middleware] route-name])))
+      [method uri (conj val middleware) (or route-name (-> val first keyword))]
+      [method uri [val middleware] (or route-name (keyword val))])))
 
 (defn wrap-routes [routes middleware]
   "Wraps a given set of routes in a function."
