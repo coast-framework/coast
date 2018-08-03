@@ -2,13 +2,13 @@
 
 * [README](../README.md)
 * [Why](Why.md)
+* [Structure](Structure.md)
 * [Routing](Routing.md)
-* Automatic Database Driving
-  * [Schema](Schema.md)
-  * [Queries](Queries.md)
-* Manual Database Driving
-  * [Database](Database.md)
-  * [Models](Models.md)
+* [Database](Database.md)
+* [SQL Migrations](SQL-Migrations.md)
+* [SQL Queries](SQL-Queries.md)
+* [EDN Migrations](EDN-Migrations.md)
+* [EDN Queries](EDN-Queries.md)
 * [Views](Views.md)
 * [Controllers](Controllers.md)
 * [Errors](Errors.md)

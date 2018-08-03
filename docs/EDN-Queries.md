@@ -1,4 +1,6 @@
-# Queries
+# EDN Queries
+
+__Warning: This only works if you use edn migrations, any tables created or changed with regular SQL migrations won't work with this cool stuff__
 
 ## What is it
 
@@ -6,7 +8,7 @@ The main advantage of putting your schema in the framework's hands is that one, 
 
 ## The goal
 
-Remove the O and the M in ORM. Data in, data out. Everything transparent and declarative.
+Remove the O and the M in ORM. Data in, data out. Everything transparent and declarative from your application code.
 
 ## CRUD in Coast
 
@@ -87,7 +89,7 @@ But wait a minute, how do you control the order they get returned in that fancy 
       {:author/name "Cody Coast"})
 ```
 
-One limitation of pull syntax is how do you limit how many nested rows get returned? You can do that with `:limit`
+How do you limit how many nested rows get returned? You can do that with `:limit`
 
 ```clojure
 (db/q '[:pull [author/email
