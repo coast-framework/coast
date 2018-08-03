@@ -49,10 +49,6 @@ away for you by Coast. Here's what it looks like practically using the migration
   :db/type :many
   :db/joins :post/author}
 
- {:db/rel :author/comments
-  :db/type :many
-  :db/joins :comment/author}
-
  {:db/ident :post/slug
   :db/type "text"}
 
@@ -67,6 +63,8 @@ away for you by Coast. Here's what it looks like practically using the migration
  {:db/col :post/published-at
   :db/type "timestamptz"}]
 ```
+
+This works the same as the SQL migrations, run `make db/migrate` from your terminal and `make db/rollback` to rollback
 
 ## Idents
 
@@ -90,6 +88,7 @@ create table if not exists author (
 );
 
 alter table author add column name text unique not null;
+alter table author add column email text unique not null;
 ```
 
 That's a lot less typing and a lot of stuff that just happened. "Idents" are just unique columns of any type you want that you'll reference later
