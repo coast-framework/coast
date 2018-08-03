@@ -8,6 +8,7 @@
    (raise "Error has occurred" m)))
 
 (defmacro rescue
+  "Regular exceptions leave little to be desired. raise and rescue are wrappers around ExceptionInfo"
   ([f k]
    `(try
      [~f nil]

@@ -163,6 +163,61 @@
        (into {})))
 
 (defn transact [m]
+  "This function resolves foreign keys (or hydrates), it also deletes related rows based on idents as well as inserting and updating rows.
+
+  Here are some concrete examples:
+
+  Given this schema:
+
+  [{:db/ident :author/name
+    :db/type \"citext\"}
+
+   {:db/ident :author/email
+    :db/type \"citext\"}
+
+   {:db/rel :author/posts
+    :db/joins :post/author
+    :db/type :many}
+
+   {:db/col :post/title
+    :db/type \"text\"}
+
+   {:db/col :post/body
+    :db/type \"text\"}]
+
+  Insert multiple tables at once
+
+  (db/transact {:author/name \"test\"
+                :author/email \"test@test.com\"
+                :author/posts [{:post/title \"title\"
+                                :post/body \"body\"}]})
+
+  or just one
+
+  (db/transact {:author/name \"test2\"
+                :author/email \"test2@test.com\"})
+
+  Retrieve nested rows
+
+  (db/pull '[author/id author/name author/email
+             {:author/posts [post/id post/title post/body]}]
+           [:author/name \"test\"])
+
+  Update with the same command
+
+  (db/transact {:post/id 1
+                :post/author [:author/name \"test2\"]})
+
+  or the equivalent
+
+  (db/transact {:post/id 1
+                :post/author 2})
+
+  Delete multiple nested rows with one function
+
+  (db/transact {:author/id 2
+                :author/posts []})"
+
   (let [k-ns (->> m keys (filter qualified-ident?) first namespace)
         s-rels (select-rels m)
         s-rel-results (resolve-select-rels s-rels) ; foreign key idents

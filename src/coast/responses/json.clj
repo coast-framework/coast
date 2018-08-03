@@ -2,6 +2,7 @@
   (:require [clojure.data.json :as json]))
 
 (defn response
+  "Helper for json responses, so you don't have to write out hash maps manually"
   ([status body headers]
    {:status status
     :body (json/write-str body)

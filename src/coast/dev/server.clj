@@ -25,6 +25,8 @@
     (reset! server nil)
     (println "Resetting dev server")))
 
-(defn restart [app opts]
+(defn restart
+  "Here's the magic that allows you to restart the server at will from the repl. It uses a custom version of repl/refresh that takes arguments"
+  [app opts]
   (stop)
   (repl/refresh :after `start :after-args [app opts]))

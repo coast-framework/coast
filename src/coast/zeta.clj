@@ -8,7 +8,7 @@
             [ring.middleware.keyword-params]))
 
 (defn resolve-routes
-  "This requires route namespaces for uberjar"
+  "Eager require route namespaces when app is called for uberjar compat"
   [routes]
   (->> (map #(nth % 2) routes)
        (map #(if (vector? %) (first %) %))
@@ -19,8 +19,7 @@
        (apply require)))
 
 (defn app
-  "The coast app function. This function is responsible for taking a request map
-   and calling the functions defined in routes"
+  "Tasteful ring middleware so you don't have to think about it"
   ([routes opts]
    ; hack for uberjar route resolution
    (resolve-routes routes)
@@ -42,6 +41,7 @@
    (app routes {})))
 
 (defn server
+  "Runs http-kit server based on COAST_ENV env variable, options are COAST_ENV=dev or COAST_ENV=prod"
   ([app]
    (server app nil))
   ([app opts]

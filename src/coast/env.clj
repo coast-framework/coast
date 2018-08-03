@@ -8,6 +8,7 @@
        (into {})))
 
 (defn dot-env []
+  "Environment variables all come from .env, specify it on prod, specify it on dev, live a happy life"
   (let [file (io/file ".env")]
     (if (.exists file)
       (->> (slurp file)
