@@ -35,6 +35,7 @@ curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/c
 sudo curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast && sudo chmod a+x /usr/local/bin/coast
 ```
 
+
 3. Create a new coast project
 
 ```bash
