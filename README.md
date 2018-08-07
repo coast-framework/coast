@@ -8,14 +8,29 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 
 1. Make sure clojure is installed first
 
+#### Mac
 ```bash
 brew install clojure
 ```
 
+#### Linux (Debian/Ubuntu)
+```bash
+sudo apt-get install clojure
+curl -O https://download.clojure.org/install/linux-install-1.9.0.391.sh
+chmod +x linux-install-1.9.0.391.sh
+sudo ./linux-install-1.9.0.391.sh
+```
+
 2. Install the coast cli script
 
+#### Mac
 ```bash
 curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast && chmod a+x /usr/local/bin/coast
+```
+
+#### Linux (Debian/Ubuntu)
+```bash
+sudo curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast && sudo chmod a+x /usr/local/bin/coast
 ```
 
 3. Create a new coast project
