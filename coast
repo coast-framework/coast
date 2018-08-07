@@ -78,9 +78,17 @@ then
     cd $2
     mv gitignore .gitignore
     for f in $(find . -type f) ; do
-      sed -i '' "s/{{name}}/$name/g" $f
-      sed -i '' "s/{{sanitized}}/$sanitized/g" $f
-      sed -i '' "s/{{secret}}/$secret/g" $f
+      if [ $(uname) = "Darwin" ] # Mac
+      then
+        sed -i '' "s/{{name}}/$name/g" $f
+        sed -i '' "s/{{sanitized}}/$sanitized/g" $f
+        sed -i '' "s/{{secret}}/$secret/g" $f
+      elif [ $(uname) = "Linux" ]
+      then
+        sed -i "s/{{name}}/$name/g" $f
+        sed -i "s/{{sanitized}}/$sanitized/g" $f
+        sed -i "s/{{secret}}/$secret/g" $f
+      fi
     done
 
     echo "Created a new coast project in directory $2"
