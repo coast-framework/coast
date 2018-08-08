@@ -1,6 +1,9 @@
 (ns coast.middleware
   (:require [ring.middleware.defaults :as defaults]
             [ring.middleware.session.cookie :as cookie]
+            [ring.middleware.file :refer [wrap-file]]
+            [ring.middleware.content-type :refer [wrap-content-type]]
+            [ring.middleware.not-modified :refer [wrap-not-modified]]
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [clojure.edn :as edn]
@@ -103,3 +106,10 @@
       (if (nil? middleware)
         (handler request)
         ((middleware handler) request)))))
+
+(defn wrap-storage [handler s]
+  (if (nil? s)
+    handler
+    (-> (wrap-file handler s)
+        (wrap-content-type)
+        (wrap-not-modified))))

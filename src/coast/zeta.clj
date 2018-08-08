@@ -32,6 +32,7 @@
          (middleware/wrap-route-middleware)
          (middleware/wrap-coerce-params)
          (router/wrap-route-info routes)
+         (middleware/wrap-storage (get opts :storage))
          (ring.middleware.keyword-params/wrap-keyword-params {:keywordize? true
                                                               :parse-namespaces? true})
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
