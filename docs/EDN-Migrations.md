@@ -26,7 +26,7 @@ who want to let the framework take care of that and get some benefits from it. H
 From your terminal in your Coast app folder run this
 
 ```bash
-coast gen schema add-authors-and-posts
+coast gen schema add-blog-schema
 ```
 
 So that's a lot of stuff, the naming doesn't really matter, it's just nice to see a summary, here's where an understanding of schema
@@ -34,23 +34,22 @@ comes in.
 
 ## No more tables
 
-In this new EDN driven migration world there are only relationships, columns and identities. There are no tables. Tables are abstracted
-away for you by Coast. Here's what it looks like practically using the migration file we made earlier
+In this new EDN driven migration world there are only relationships, columns, identities and constraints. Here's what it looks like practically using the migration file from earlier
 
 ```clojure
-; add-authors-and-posts
+; add-blog-schema
 [{:db/ident :author/name
-  :db/type "text"}
+  :db/type "citext"}
 
  {:db/ident :author/email
-  :db/type "text"}
+  :db/type "citext"}
 
  {:db/rel :author/posts
   :db/type :many
   :db/joins :post/author}
 
  {:db/ident :post/slug
-  :db/type "text"}
+  :db/type "citext"}
 
  {:db/col :post/title
   :db/type "text"
@@ -72,13 +71,10 @@ It's a lot to take in, so we'll start at the top with idents
 
 ```clojure
 {:db/ident :author/name
- :db/type "text"}
+ :db/type "citext"}
 ```
 
-Remember how there aren't any tables anymore? There still are, but Coast handles them for you. This is an ident, it's
-a map with two keys and values, the qualified name of the column (i.e which table to put it under), and the type of the column.
-So, not really as cool as "there are no tables", since you still have to tell Coast which table to put the column under, but it sounds
-great, so I said it. Here's the SQL that gets generated from that one map
+This is an ident, it's a map with two key value pairs, the qualified name of the column (i.e which table to put it under), and the type of the column. Here's the SQL that gets generated from that tiny map
 
 ```sql
 create table if not exists author (
@@ -87,15 +83,17 @@ create table if not exists author (
   created_at timestamptz not null default now()
 );
 
-alter table author add column name text unique not null;
-alter table author add column email text unique not null;
+alter table author add column name citext unique not null;
+alter table author add column email citext unique not null;
 ```
 
-That's a lot less typing and a lot of stuff that just happened. "Idents" are just unique columns of any type you want that you'll reference later
-in some really cool query stuff. That's all there is to that. Let's skip the other idents since they're all the same and get to the meat and potatoes
-of this thing, the relationships (or rels for short cause Coast is cool)
+That's a lot less typing and a lot of stuff that just happened. "idents" are just unique columns of any type that you'll reference later
+in some really cool query stuff. Let's skip the other idents since they're all the same and get to the meat and potatoes
+of this thing, the relationships or rels for short because coast is terse.
 
 ## Relationships
+
+### Many Rels
 
 Relationships are just shorthand for joins, but it's less typing and less searching for SQL references syntax
 
@@ -123,15 +121,29 @@ create table if not exists post (
   created_at timestamptz not null default now()
 );
 
-alter table post add column author_id integer not null references author (id) on delete cascade
+alter table post add column author integer not null references author (id) on delete cascade
 ```
 
-So this is a one to many relationship (currently the only supported relationship 😞) and the foreign key is defined in the `:db/joins` part there. So still some manual work on your part, but you always
+So this is a one to many relationship and the foreign key is defined in the `:db/joins` part there. So still some manual work on your part, but you always
 get a not null references and a delete cascade. You don't have to remember the syntax for that stuff anymore, which is great!
+
+### One Rels
+
+If you need more control over the column that is referenced from the `:db/joins` substitute it with `:db/ref` instead and then take control of your destiny with a one rel:
+
+```clojure
+{:db/rel :author/posts
+ :db/type :many
+ :db/ref :post/author} ; ref is the same as rel one line down
+
+{:db/rel :post/author
+ :db/type :one
+ :db/delete "delete"} ; this is the default, you can specify "restrict", "set default", "set null" or "no action" as well
+```
 
 ## Columns
 
-The last piece of the puzzle are regular old columns, no unique indices, no relationships, just straightforward data storage
+Regular old columns, no unique indices, no relationships, just data storage
 
 ```clojure
 {:db/col :post/title
@@ -152,6 +164,63 @@ alter table post add column title text not null;
 
 One thing that you'll notice is this only works for tables with zero rows, if there are rows, you'll need to specify a default with a `:db/default` key.
 
+That's nice for simple schemas, but what about the more interesting stuff, like join tables and compound unique constraints? DONT PANIC 😱
+
+## Constraints
+
+Coast has support for compound unique constraints!
+
+```clojure
+[{:db/constraint [:vote/member :vote/link]
+  :db/type "unique"}]
+```
+
+## All Together Now
+
+Here's a better example, let's say that you want people to be able to up vote links, but you don't want them to be able to upvote more than once. You could handle this in your application, but why do that when postgres can do it for you? Do less, ship 🚢 faster!
+
+```clojure
+[{:db/ident :member/name
+  :db/type "citext"} ; alter table member add column name citext unique not null;
+
+ {:db/col :link/name
+  :db/type "text"
+  :db/nil? false} ; alter table link add column name text not null;
+
+ {:db/col :link/url
+  :db/type "citext"
+  :db/nil? false} ; alter table link add column url citext not null;
+
+ {:db/rel :member/links
+  :db/type :many
+  :db/ref :link/member} ; 👇 :db/ref is :link/member
+
+ {:db/rel :link/member  ; 👆 :db/rel is :link/member
+  :db/type :one
+  :db/delete "no action"} ; alter table link add column member integer references member(id) not null
+
+ {:db/rel :member/votes
+  :db/type :many
+  :db/ref :vote/member}
+
+ {:db/rel :link/votes
+  :db/type :many
+  :db/ref :vote/link}
+
+ {:db/rel :vote/link
+  :db/type :one
+  :db/delete "no action"} ; alter table vote add column link integer references link(id) not null on delete no action;
+
+ {:db/rel :vote/member
+  :db/type :one
+  :db/delete "no action"} ; alter table vote add column member integer references member(id) not null on delete no action;
+
+ {:db/constraint [:vote/member :vote/link]
+  :db/type "unique"}]
+```
+
+There's a lot going on and although the many rels don't affect the db, it's nice to have them for the *sophisticated* queries you can do later.
+
 ## Reference
 
 Here's a handy dandy reference of all of the keys that you can pass into a migration:
@@ -163,12 +232,40 @@ Here's a handy dandy reference of all of the keys that you can pass into a migra
  :db/type "postgresql column type"}
 ```
 
-## Rels
+## Constraints
 
 ```clojure
-{:db/rel :any/name.you.like
- :db/type :many ; currently the only supported type
- :db/joins :belongs-to-table/refernces-table}
+{:db/constraint [:table/column :table1/column1]
+ :db/type "unique"}
+```
+
+## Rels
+
+### Many rels
+
+```clojure
+{:db/rel :any/name.you.want
+ :db/type :many
+ :db/ref :table/col}
+
+{:db/rel :table/col
+ :db/type :one
+ :db/delete "restrict"}
+```
+
+```clojure
+; or shorthand
+{:db/rel :any/name.you.want
+ :db/type :many
+ :db/joins :table/col}
+```
+
+### One rels
+
+```clojure
+{:db/rel :table/col
+ :db/type :one
+ :db/delete "no action"} ; or cascade, restrict, set null, set default
 ```
 
 ## Cols

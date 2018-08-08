@@ -67,13 +67,13 @@ So there's still the regular suspects, showing forms with `new` and `edit`, a `r
 (defn action [req])
 ```
 
-That's it, back to the web's roots, `view` functions that show html (`GET` requests) and `action` functions that handle `POST` requests from forms. It's so simple it hurts. I don't know if a lot of programmers know this, but browsers can only "natively" handle those two http verbs, the rest of the RESTful verbs don't exist as far as a browser is concerned. So you've got forms all across the web that have hidden inputs `<input type="hidden" name="__method" value="put">` which is fine but it's more work than you or I need to do.
+That's it, back to the web's roots, `view` functions that show html (`GET` requests) and `action` functions that handle `POST` requests from forms. I don't know if a lot of programmers know this, but browsers can only "natively" handle those two http verbs, the rest of the RESTful verbs don't exist as far as a browser is concerned. So you've got forms all across the web that have hidden inputs `<input type="hidden" name="__method" value="put">` which is fine but it's more work than you or I need to do.
 
 So what does a typical `view`/`action` pair look like?
 
 ```clojure
 (ns author.new
-  (:require [coast.app :refer [form validate rescue ok redirect]]
+  (:require [coast.app :refer [form validate rescue redirect]]
             [coast.db :as db]
             [routes :refer [url-for action-for]]))
 
@@ -98,4 +98,4 @@ So what does a typical `view`/`action` pair look like?
 
 That's it, that's all it takes to get a form validated and into your database. No classes, no objects, no controllers, no separate view files with separate syntax, no ORMs, no special framework-specific params whitelisting, just views and actions.
 
-Look at all of the things I'm not doing.
+Look at all of the things I'm not doing. 🚗

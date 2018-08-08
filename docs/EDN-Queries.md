@@ -31,7 +31,7 @@ The following query looks pretty basic and it is, it uses this SQL to query the 
 ```sql
 select author.name, author.email, post.title, post.body
 from author
-join post on post.author_id = author.id
+join post on post.author = author.id
 where author.name = ?
 -- queries are parameterized
 ```
@@ -133,7 +133,7 @@ In cases where you already know the primary key, you can just pass that in place
               :post/author 2})
 ```
 
-Here's two examples using postgresql upserts to update records
+Here's two examples of updating records
 
 ```clojure
 (db/transact {:post/title "5 things you should know about Coast on Clojure"

@@ -3,10 +3,8 @@
 ## Motivation
 
 In my short web programming career, I've found two things
-that I really like, Clojure and Ruby on Rails. This is my attempt
-to put the two together in a tasteful, less bolt-on kind of way.
-
-The goal is if you like Rails and you like Clojure, you should like this and contribute too! Open an issue! Make a PR! All codes from all people are welcome.
+that I really like: Clojure and Ruby on Rails. This is my attempt
+to put the two together in a tasteful, clojure-like way.
 
 ## Versioning
 
