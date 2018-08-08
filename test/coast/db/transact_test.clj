@@ -12,7 +12,7 @@
 
   (testing "upsert with one rel"
     (with-redefs [coast.db.schema/fetch (fn [] {:idents #{:member/id :member/name :member/email :token/id}
-                                                :joins {:token/member :token/member-id}})]
-      (is (= ["insert into token(ident, member_id)\nvalues (?, ?)\n on conflict (id) do update set updated_at = now(), ident = excluded.ident, member_id = excluded.member_id\nreturning *" "something unique" "test"]
+                                                :joins {:token/member :token/member}})]
+      (is (= ["insert into token(ident, member)\nvalues (?, ?)\n on conflict (id) do update set updated_at = now(), ident = excluded.ident, member = excluded.member\nreturning *" "something unique" "test"]
              (transact/sql-vec {:token/ident "something unique"
                                 :token/member [:member/name "test"]}))))))

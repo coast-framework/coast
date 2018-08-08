@@ -138,7 +138,7 @@
 
 (defn selects [m]
     (mapv (fn [[k v]]
-           [(str "select " (name k) ".id as " (namespace k) "$" (name k) "_id from " (name k) " where " (-> v first name) " = ?") (second v)])
+           [(str "select " (name k) ".id as " (namespace k) "$" (name k) " from " (name k) " where " (-> v first name) " = ?") (second v)])
           m))
 
 (defn single [v]

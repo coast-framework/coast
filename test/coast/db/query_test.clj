@@ -56,7 +56,7 @@
 
   (testing "a join with a select statement that doesn't include the main table"
     (with-redefs [coast.db.schema/fetch (fn [] {:member/todos {:db/joins :todo/member :db/type :many}})]
-      (is (= ["select todo.name as todo$name\nfrom member\njoin todo on todo.member_id = member.id\nwhere (todo.name is not null)"]
+      (is (= ["select todo.name as todo$name\nfrom member\njoin todo on todo.member = member.id\nwhere (todo.name is not null)"]
              (q/sql-vec '[:select todo/name
                           :joins member/todos
                           :where [todo/name != nil]])))))

@@ -124,7 +124,7 @@
 (defn join-col [k]
   (let [namespace (-> k namespace utils/snake)
         name (-> k name utils/snake)]
-    (str namespace "." name "_id")))
+    (str namespace "." name)))
 
 (defn join-statement [k]
   (str (-> k namespace utils/snake)
@@ -201,7 +201,8 @@
         v (filter qualified-ident? val)
         maps (filter map? val)
         child-cols (map #(-> % keys first rel-col) maps)
-        {:keys [db/joins]} (get schema (keyword k))]
+        {:keys [db/joins db/ref]} (get schema (keyword k))
+        joins (or joins ref)]
     (->> ["left outer join ("
           "select"
           (str (join-col joins) ",")
