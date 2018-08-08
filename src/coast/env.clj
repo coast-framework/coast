@@ -17,6 +17,6 @@
            (into {}))
       {})))
 
-(def env
-  (-> (merge (dot-env) (System/getenv))
-      (fmt)))
+(defn env [k]
+  (get (fmt (merge (dot-env) (System/getenv)))
+       k))
