@@ -25,7 +25,7 @@ Of course some people don't like this or claim that "it doesn't scale" whatever 
 
 A post-MVC app for regular html rendered websites without javascript, what does that even look like? Like this:
 
-.
+```bash
 ├── Makefile
 ├── README.md
 ├── bin
@@ -56,6 +56,7 @@ A post-MVC app for regular html rendered websites without javascript, what does 
 │   ├── server.clj
 └── test
     └── server_test.clj
+```
 
 So there's still the regular suspects, showing forms with `new` and `edit`, a `routes` file, the main difference is in how the code is laid out, like in `author.new` for example
 
