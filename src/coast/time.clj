@@ -1,7 +1,7 @@
 (ns coast.time
-  (:import (java.time LocalDateTime OffsetDateTime)
-           (java.time ZoneOffset)
-           (java.time.format DateTimeFormatter)))
+  (:import (java.time LocalDateTime OffsetDateTime ZoneOffset ZoneId)
+           (java.time.format DateTimeFormatter)
+           (java.time.temporal ChronoUnit)))
 
 (defn fmt [d pattern]
   (when (or (instance? LocalDateTime d)
@@ -9,15 +9,30 @@
     (let [formatter (DateTimeFormatter/ofPattern pattern)]
       (.format formatter d))))
 
-(defn now []
-  (LocalDateTime/now))
+(defn now
+  ([]
+   (LocalDateTime/now))
+  ([tz]
+   (LocalDateTime/now (ZoneId/of tz))))
 
 (defn local
   ([d tz]
    (when (instance? java.util.Date d)
-     (java.time.LocalDateTime/ofInstant (.toInstant d) tz)))
+     (LocalDateTime/ofInstant (.toInstant d) tz)))
   ([d]
    (local d ZoneOffset/UTC)))
+
+(defn since
+  ([t tz]
+   (let [n (now (or tz "UTC"))
+         t (if (nil? tz)
+             (local t)
+             (local t (ZoneId/of tz)))]
+     {:hours (.between (ChronoUnit/HOURS) t n)
+      :minutes (.between (ChronoUnit/MINUTES) t n)
+      :seconds (.between (ChronoUnit/SECONDS) t n)}))
+  ([t]
+   (since t nil)))
 
 (defn parse [s]
   (OffsetDateTime/parse s))
