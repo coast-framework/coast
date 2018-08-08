@@ -9,10 +9,9 @@ make db/create
 make db/drop
 make db/migrate
 make db/rollback
-coast gen migration
 ```
 
-Those all do what you think they do. Except that last one, we'll get to that later.
+Those all do what you think they do.
 
 ## `make db/create`
 
@@ -26,55 +25,10 @@ since the aliases have the name in them as the first argument.
 
 The opposite of `db/create`. Again, I don't know what happens when you run drop before create. Probably an error.
 
-## `coast gen migration`
-
-This creates a migration which is just plain sql 😎 with a timestamp and the filename in the `resources/migrations` folder
-
-## `coast gen migration the-name-of-a-migration`
-
-This creates an empty migration that looks like this
-
-```sql
--- up
-
--- down
-
-```
-
-## `coast gen migration create-posts`
-
-This creates a migration that creates a new table with the "default coast"
-columns of id and created_at.
-
-```sql
--- up
-create table posts (
-  id serial primary key,
-  created_at timestamptz default now()
-)
-
--- down
-drop table posts
-```
-
-## `coast gen migration create-posts title:text body:text`
-
-This makes a new migration that creates a table with the given name:type
-columns.
-
-```sql
--- up
-create table posts (
-  id serial primary key,
-  title text,
-  body text,
-  created_at timestamptz default now()
-)
-
--- down
-drop table posts
-```
-
 ## `make db/migrate`
 
-This performs the migration
+This runs all of the pending migrations on your database and it works across both sql migrations and edn migrations in order, so you can create an extension like `create extension citext` for example and then use `citext` as a `:db/ident` in the next migration, pretty cool eh?
+
+## `make db/rollback`
+
+Rolls back one migration, the edn and sql migrations live side by side and they get migrated/rolled back *in order*.

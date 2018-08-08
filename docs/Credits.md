@@ -15,3 +15,8 @@ Here's the list of open source projects that coast uses:
 - [org.clojure/java.jdbc](https://github.com/clojure/java.jdbc)
 - [org.clojure/tools.namespace](https://github.com/clojure/tools.namespace)
 - [verily](https://github.com/jkk/verily)
+- [potemkin](https://github.com/ztellman/potemkin)
+
+Here's the list of contributors that made coast what it is today 🎉
+
+https://github.com/coast-framework/coast/graphs/contributors

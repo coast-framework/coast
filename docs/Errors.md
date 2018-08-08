@@ -27,14 +27,12 @@ And here is how they work together:
 Coast uses this internally so something like this is now possible
 
 ```clojure
-(ns author
+(ns author.new
   (:require [coast.db :as db]
-            [coast.error :refer [rescue]]
-            [coast.responses :as res]
-            [coast.validation :as v]
+            [coast.app :refer [rescue redirect flash validate]]
             [routes :refer [url-for]))
 
-(defn _new [req]
+(defn view [req]
   ; pretend there's some form html here
   )
 
@@ -42,20 +40,20 @@ Coast uses this internally so something like this is now possible
   ; pretend there's an encryption function here
   params)
 
-(defn create [req]
-  (let [[_ errors] (-> (:params req)
-                       (v/validate [[:required [::nickname ::email ::password]]
-                                    [:equal [::password ::password-confirmation]
-                                            "Password and confirmation password do not match"]
-                                    [:min-length 12 ::password]])
-                       (select-keys [::nickname ::email ::password])
+(defn create [{:keys [params]}]
+  (let [[_ errors] (-> params
+                       (validate [[:required [:author/nickname :author/email :author/password]]
+                                  [:equal [:author/password :author/password-confirmation]
+                                          "Password and confirmation password do not match"]
+                                  [:min-length 12 :author/password]])
+                       (select-keys [:author/nickname :author/email :author/password])
                        (encrypt-password)
                        (db/transact)
                        (rescue))]
     (if (nil? errors)
-      (-> (res/redirect (url-for :home/index))
-          (res/flash "Welcome to coast!"))
-      (_new (assoc req :errors errors)))))
+      (-> (redirect (url-for :home/index))
+          (flash "Welcome to coast!"))
+      (view (merge req errors)))))
 ```
 
 Validation errors and database errors are now unified (again)! 🙌
