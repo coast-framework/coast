@@ -125,7 +125,7 @@
   (let [queries (->> (filter (fn [[_ v]] (vector? v)) m)
                      (db.transact/selects))
         ids (->> (filter (fn [[_ v]] (number? v)) m)
-                 (mapv (fn [[k v]] [(keyword (namespace k) (str (name k) "-id")) v]))
+                 (mapv (fn [[k v]] [(keyword (namespace k) (name k)) v]))
                  (into {}))
         results (->> (map #(query (coast.db.connection/connection) % {:keywordize? false
                                                                       :identifiers qualify-col})
@@ -146,11 +146,11 @@
     (let [schema (coast.db.schema/fetch)
           k-ns (-> schema k :db/joins namespace utils/snake)
           join-ns (-> schema k :db/joins name utils/snake)
-          _ (query (connection) [(str "delete from " k-ns " where " join-ns "_id = ? returning *") (get parent (keyword join-ns "id"))])]
+          _ (query (connection) [(str "delete from " k-ns " where " join-ns " = ? returning *") (get parent (keyword join-ns "id"))])]
       [k []])
     (let [k-ns (->> v first keys (filter qualified-ident?) first namespace)
           parent-map (->> (filter (fn [[k _]] (= (name k) "id")) parent)
-                          (map (fn [[k* v]] [(keyword k-ns (str (namespace k*) "-id")) v]))
+                          (map (fn [[k* v]] [(keyword k-ns (namespace k*)) v]))
                           (into {}))
           v* (mapv #(merge parent-map %) v)
           sql-vec (db.transact/sql-vec v*)
@@ -220,9 +220,9 @@
 
   (let [k-ns (->> m keys (filter qualified-ident?) first namespace)
         s-rels (select-rels m)
-        s-rel-results (resolve-select-rels s-rels) ; foreign key idents
+        s-rel-results (resolve-select-rels s-rels) ; foreign keys
         m-rels (many-rels m)
-        m* (apply dissoc (merge m s-rel-results) (keys s-rels))
+        m* (merge m s-rel-results)
         m* (apply dissoc m* (keys m-rels))
         row (when (not (empty? (db.update/idents (map identity m*))))
               (->> (db.update/sql-vec m*)

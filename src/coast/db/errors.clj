@@ -17,7 +17,7 @@
     (if (nil? col)
       {}
       {(keyword col) (str (utils/humanize col) " is already taken")
-       ::error :unique-contraint
+       ::error :unique-constraint
        :db.constraints/unique (keyword col)})))
 
 (defn error-map [ex]
