@@ -5,7 +5,9 @@
             [coast.prod.server :as prod.server]
             [coast.env :refer [env]]
             [ring.middleware.defaults :as middleware.defaults]
-            [ring.middleware.keyword-params]))
+            [ring.middleware.keyword-params]
+            [ring.middleware.content-type :refer [wrap-content-type]]
+            [ring.middleware.not-modified :refer [wrap-not-modified]]))
 
 (defn resolve-routes
   "Eager require route namespaces when app is called for uberjar compat"
@@ -33,6 +35,8 @@
          (middleware/wrap-coerce-params)
          (router/wrap-route-info routes)
          (middleware/wrap-storage (get opts :storage))
+         (wrap-content-type)
+         (wrap-not-modified)
          (ring.middleware.keyword-params/wrap-keyword-params {:keywordize? true
                                                               :parse-namespaces? true})
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
