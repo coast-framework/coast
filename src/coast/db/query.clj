@@ -126,6 +126,13 @@
         name (-> k name utils/snake)]
     (str namespace "." name)))
 
+(defn one-join-statement [k]
+  (str (-> k name utils/snake)
+       " on "
+       (str (-> k name utils/snake) ".id")
+       " = "
+       (join-col k)))
+
 (defn join-statement [k]
   (str (-> k namespace utils/snake)
        " on "
@@ -192,31 +199,42 @@
                        (str "from " table)
                        (str ") as " table)])))
 
+(defn one-join-col [k]
+  (str (-> k name utils/snake) ".id"))
+
 (defn pull-join [schema m]
   (let [k (rel-key m)
+        {:keys [db/joins db/ref]} (get schema (keyword k))
+        joins (or joins ref)
         {:keys [order limit]} (->> (rel-opts m)
                                    (map pull-sql-part)
                                    (apply merge))
         val (-> m vals first)
         v (filter qualified-ident? val)
         maps (filter map? val)
-        child-cols (map #(-> % keys first rel-col) maps)
-        {:keys [db/joins db/ref]} (get schema (keyword k))
-        joins (or joins ref)]
+        child-cols (map #(-> % keys first rel-col) maps)]
     (->> ["left outer join ("
           "select"
-          (str (join-col joins) ",")
+          (str (if (nil? joins)
+                 (one-join-col (keyword k))
+                 (join-col joins)) ",")
           "json_agg(json_build_object("
           (->> (map json-build-object v)
                (concat child-cols)
                (string/join ","))
           (str ") " order ") as " (pull-col k))
-          (str "from " (->> joins namespace utils/snake (pull-from order)))
+          (str "from " (if (nil? joins)
+                         (->> k keyword name utils/snake (pull-from order))
+                         (->> joins namespace utils/snake (pull-from order))))
           (->> (map #(pull-join schema %) maps)
                (string/join "\n"))
           limit
-          (str "group by " (join-col joins))
-          (str ")" (join-statement joins))]
+          (str "group by " (if (nil? joins)
+                             (one-join-col (keyword k))
+                             (join-col joins)))
+          (str ")" (if (nil? joins)
+                     (one-join-statement (keyword k))
+                     (join-statement joins)))]
          (filter some?)
          (string/join "\n"))))
 

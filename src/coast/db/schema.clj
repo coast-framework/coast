@@ -216,14 +216,17 @@
     (pprint-write "resources/schema.edn" schema-map)))
 
 (defn drop-column [m]
-  (let [k (or (:db/col m) (:db/ident m))
+  (let [k (or (:db/col m) (:db/ident m) (:db/joins m) (:db/rel m))
         table (-> k namespace utils/snake)
         col (-> k name utils/snake)]
     (str "alter table " table " drop column " col)))
 
 (defn drop-columns [schema]
   (->> (filter #(or (contains? % :db/col)
-                    (contains? % :db/ident))
+                    (contains? % :db/ident)
+                    (and (contains? % :db/rel)
+                         (= :one (:db/type %)))
+                    (contains? % :db/joins))
                schema)
        (map drop-column)))
 

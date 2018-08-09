@@ -1,6 +1,7 @@
 (ns coast.db
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
+            [clojure.walk]
             [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
@@ -105,12 +106,22 @@
   (->> (map (fn [[k v]] [(keyword k-ns (name k)) v]) m)
        (into (empty m))))
 
+; TODO fix pull queries for foreign key references
+(defn one-first [schema val]
+  (if (and (vector? val)
+           (= :one (:db/type (get schema (first val))))
+           (vector? (second val)))
+    [(first val) (first (second val))]
+    val))
+
 (defn q
   ([v params]
-   (query (connection)
-          (db.query/sql-vec v params)
-          {:keywordize? false
-           :identifiers qualify-col}))
+   (let [schema (coast.db.schema/fetch)
+         rows (query (connection)
+                     (db.query/sql-vec v params)
+                     {:keywordize? false
+                      :identifiers qualify-col})]
+     (clojure.walk/prewalk #(one-first schema %) rows)))
   ([v]
    (q v nil)))
 
