@@ -1,7 +1,6 @@
 (ns coast.db.errors
   (:require [coast.utils :as utils]
-            [clojure.string :as string]
-            [clojure.edn :as edn]))
+            [clojure.string :as string]))
 
 (defn not-null-constraint [s]
   (let [col (-> (re-find #"null value in column \"(.*)\" violates not-null constraint" s)
@@ -22,8 +21,7 @@
                   (map keyword))
         msg-values (map #(str (utils/humanize %) " already exists") cols)
         values (->> (string/split vs #",")
-                    (map string/trim)
-                    (map edn/read-string))
+                    (map string/trim))
         m (zipmap cols values)
         message-map (zipmap cols msg-values)]
     (merge message-map {:db.constraints/unique name
