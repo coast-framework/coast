@@ -99,4 +99,4 @@ So what does a typical `view`/`action` pair look like?
 
 That's it, that's all it takes to get a form validated and into your database. No classes, no objects, no controllers, no separate view files with separate syntax, no ORMs, no special framework-specific params whitelisting, just views and actions.
 
-Look at all of the things I'm not doing. 🚗
+Look at all of the things I'm not doing 🏎
