@@ -6,7 +6,7 @@ The goal of coast on clojure even if it has a similar sort of name, is not to *B
 
 ```clojure
 (ns your-project
-  (:require [coast.eta :as coast]))
+  (:require [coast.zeta :as coast]))
 
 (def routes [[:get "/hello/:name" `hello]])
 
@@ -15,7 +15,7 @@ The goal of coast on clojure even if it has a similar sort of name, is not to *B
 
 (def app (coast/app routes))
 
-(def main- [& [port]]
+(defn main- [& [port]]
   (coast/server app {:port port}))
 ```
 
