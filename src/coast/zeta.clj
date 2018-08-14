@@ -4,8 +4,9 @@
             [coast.dev.server :as dev.server]
             [coast.prod.server :as prod.server]
             [coast.env :refer [env]]
+            [coast.assets :as assets]
             [ring.middleware.defaults :as middleware.defaults]
-            [ring.middleware.keyword-params]
+            [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.content-type :refer [wrap-content-type]]
             [ring.middleware.not-modified :refer [wrap-not-modified]]))
 
@@ -20,6 +21,9 @@
        (map symbol)
        (apply require)))
 
+(defn prod? []
+  (= "prod" (env :coast-env)))
+
 (defn app
   "Tasteful ring middleware so you don't have to think about it"
   ([routes opts]
@@ -27,7 +31,8 @@
    (resolve-routes routes)
    (let [layout (get opts :layout)
          not-found-page (get opts :404)
-         error-page (get opts :500)]
+         error-page (get opts :500)
+         bundles (assets/bundles (prod?) (:assets opts))]
      (-> (router/handler not-found-page)
          (middleware/wrap-layout layout)
          (middleware/wrap-with-logger)
@@ -35,10 +40,10 @@
          (middleware/wrap-coerce-params)
          (router/wrap-route-info routes)
          (middleware/wrap-storage (get opts :storage))
+         (middleware/wrap-bundles bundles)
          (wrap-content-type)
          (wrap-not-modified)
-         (ring.middleware.keyword-params/wrap-keyword-params {:keywordize? true
-                                                              :parse-namespaces? true})
+         (wrap-keyword-params {:keywordize? true :parse-namespaces? true})
          (middleware.defaults/wrap-defaults (middleware/coast-defaults opts))
          (middleware/wrap-not-found not-found-page)
          (middleware/wrap-errors error-page))))
@@ -50,6 +55,6 @@
   ([app]
    (server app nil))
   ([app opts]
-   (if (= "prod" (env :coast-env))
+   (if (prod?)
      (prod.server/start app opts)
      (dev.server/restart app opts))))

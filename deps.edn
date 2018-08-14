@@ -12,7 +12,8 @@
         jkkramer/verily {:mvn/version "0.6.0"}
         ring/ring-core {:mvn/version "1.7.0-RC1"}
         com.mchange/c3p0 {:mvn/version "0.9.5.2"}
-        potemkin {:mvn/version "0.4.5"}}
+        potemkin {:mvn/version "0.4.5"}
+        asset-minifier {:mvn/version "0.2.5"}}
 
  :aliases {:nrepl {:extra-deps {nrepl {:mvn/version "0.4.2"}}}
            :test
