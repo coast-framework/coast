@@ -21,9 +21,6 @@
        (map symbol)
        (apply require)))
 
-(defn prod? []
-  (= "prod" (env :coast-env)))
-
 (defn app
   "Tasteful ring middleware so you don't have to think about it"
   ([routes opts]
@@ -32,7 +29,7 @@
    (let [layout (get opts :layout)
          not-found-page (get opts :404)
          error-page (get opts :500)
-         bundles (assets/bundles (prod?) (:assets opts))]
+         bundles (when (contains? opts :assets) (assets/bundles (= "prod" (env :coast-env)) (:assets opts)))]
      (-> (router/handler not-found-page)
          (middleware/wrap-layout layout)
          (middleware/wrap-with-logger)
@@ -55,6 +52,6 @@
   ([app]
    (server app nil))
   ([app opts]
-   (if (prod?)
+   (if (= "prod" (env :coast-env))
      (prod.server/start app opts)
      (dev.server/restart app opts))))

@@ -111,5 +111,7 @@
     (wrap-file handler s)))
 
 (defn wrap-bundles [handler bundles]
-  (fn [request]
-    (handler (merge request bundles))))
+  (if (nil? bundles)
+    handler
+    (fn [request]
+      (handler (merge request bundles)))))

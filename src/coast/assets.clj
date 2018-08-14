@@ -1,6 +1,8 @@
 (ns coast.assets
   (:require [asset-minifier.core :refer [minify-js minify-css]]
             [clojure.java.io :as io]
+            [clojure.edn :as edn]
+            [clojure.pprint :as pprint]
             [coast.utils :as utils])
   (:import (java.security MessageDigest)
            (java.io File)))
@@ -46,3 +48,32 @@
                                        (hrefs (ext k) v))})
                        m)
                   (apply merge))})
+
+(defn build [m]
+  (->> (map (fn [[k v]] {k [(minify-bundle k v)]}) m)
+       (apply merge)))
+
+(defn pprint-write [filename val]
+  (with-open [w (io/writer filename)]
+    (binding [*out* w]
+      (pprint/write val))))
+
+(defn bundle [coast-env bundle-name]
+  (if (= "prod" coast-env)
+    (-> (io/resource "assets.minified.edn")
+        (slurp)
+        (edn/read-string)
+        (get bundle-name))
+    (let [m (-> (io/resource "assets.edn")
+                (slurp)
+                (edn/read-string))]
+      (get (->> (map (fn [[k v]] {k (hrefs (ext k) v)}) m)
+                (apply merge))
+           bundle-name))))
+
+(defn -main []
+  (let [m (-> (io/resource "assets.edn")
+              (slurp)
+              (edn/read-string))]
+    (doall
+      (pprint-write "resources/assets.minified.edn" (build m)))))

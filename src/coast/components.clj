@@ -1,7 +1,9 @@
 (ns coast.components
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [coast.env :refer [env]]))
-
+            [clojure.java.io :as io]
+            [clojure.edn :as edn]
+            [coast.env :refer [env]]
+            [coast.assets :as assets]))
 
 (defn csrf
   ([attrs]
@@ -16,16 +18,20 @@
    (csrf)
    body])
 
-(defn css [req bundle]
-  (let [hrefs (get-in req [:coast.assets/bundles bundle])]
-    (if (= "prod" (env :coast-env))
-      [:link {:href (first hrefs) :type "text/css" :rel "stylesheet"}]
-      (for [href hrefs]
-        [:link {:href href :type "text/css" :rel "stylesheet"}]))))
+(defn css
+  ([req bundle]
+   (let [files (or (get-in req [:coast.assets/bundles bundle])
+                   (assets/bundle (env :coast-env) bundle))]
+     (for [href files]
+       [:link {:href href :type "text/css" :rel "stylesheet"}])))
+  ([bundle]
+   (css nil bundle)))
 
-(defn js [req bundle]
-  (let [hrefs (get-in req [:coast.assets/bundles bundle])]
-    (if (= "prod" (env :coast-env))
-      [:script {:src (first hrefs) :type "text/javascript"}]
-      (for [href hrefs]
-       [:script {:src href :type "text/javascript"}]))))
+(defn js
+  ([req bundle]
+   (let [files (or (get-in req [:coast.assets/bundles bundle])
+                   (assets/bundle (env :coast-env) bundle))]
+     (for [src files]
+      [:script {:src src :type "text/javascript"}])))
+  ([bundle]
+   (js nil bundle)))
