@@ -29,15 +29,12 @@ From your terminal in your Coast app folder run this
 coast gen schema add-blog-schema
 ```
 
-So that's a lot of stuff, the naming doesn't really matter, it's just nice to see a summary, here's where an understanding of schema
-comes in.
-
 ## No more tables
 
 In this new EDN driven migration world there are only relationships, columns, identities and constraints. Here's what it looks like practically using the migration file from earlier
 
 ```clojure
-; add-blog-schema
+; add-blog-schema.edn
 [{:db/ident :author/name
   :db/type "citext"}
 
