@@ -146,17 +146,18 @@
     (merge ids results)))
 
 (defn many-rels [m]
-  (let [schema (coast.db.schema/fetch)]
-    (select-keys m (->> (:joins schema)
-                        (filter (fn [[_ v]] (string? v)))
-                        (into {})
-                        (keys)))))
+  (select-keys m (->> (coast.db.schema/fetch)
+                      (filter (fn [[_ v]] (and (or (contains? v :db/ref) (contains? v :db/joins))
+                                               (= :many (:db/type v)))))
+                      (map first))))
 
 (defn upsert-rel [parent [k v]]
   (if (empty? v)
     (let [schema (coast.db.schema/fetch)
-          k-ns (-> schema k :db/joins namespace utils/snake)
-          join-ns (-> schema k :db/joins name utils/snake)
+          jk (or (get-in schema [k :db/joins])
+                 (get-in schema [k :db/ref]))
+          k-ns (-> jk namespace utils/snake)
+          join-ns (-> jk name utils/snake)
           _ (query (connection) [(str "delete from " k-ns " where " join-ns " = ? returning *") (get parent (keyword join-ns "id"))])]
       [k []])
     (let [k-ns (->> v first keys (filter qualified-ident?) first namespace)
