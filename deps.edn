@@ -20,5 +20,5 @@
              {:extra-paths ["test"]
               :main-opts ["-m" "cognitect.test-runner"]
               :extra-deps
-              {com.cognitect/test-runner {:git/url "git@github.com:cognitect-labs/test-runner"
+              {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
                                           :sha "5f2b5c2efb444df76fb5252102b33f542ebf7f58"}}}}}
