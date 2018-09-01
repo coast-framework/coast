@@ -28,11 +28,11 @@
       (try
         (handler request)
         (catch Exception e
-          (st/print-stack-trace e)
           (responses/internal-server-error
-            (or (error-fn (assoc request :exception e
-                                         :stacktrace (with-out-str (st/print-stack-trace e))))
-                (internal-server-error))))))
+            ((or error-fn internal-server-error)
+             (assoc request :exception e
+                            :stacktrace (with-out-str
+                                         (st/print-stack-trace e))))))))
     (dev.middleware/wrap-exceptions handler)))
 
 (defn wrap-not-found [handler not-found-page]
@@ -48,7 +48,7 @@
             (not-found-page request)))))))
 
 (defn layout? [response layout]
-  (and (not (nil? layout))
+  (and (some? layout)
        (or (vector? response)
            (string? response))))
 
@@ -62,10 +62,10 @@
 
 (defn coast-defaults [opts]
   (let [secret (env/env :secret)
-        default-opts {:session {:cookie-name "id"
-                                :store (cookie/cookie-store {:key secret})}
-                      :params {:keywordize? false}}]
-    (utils/deep-merge defaults/site-defaults default-opts opts)))
+        coast-opts {:session {:cookie-name "id"
+                              :store (cookie/cookie-store {:key secret})}
+                    :params {:keywordize? false}}]
+    (utils/deep-merge defaults/site-defaults coast-opts opts)))
 
 (defn wrap-with-logger [handler]
   (fn [request]
@@ -74,17 +74,11 @@
       (logger/log request response now)
       response)))
 
-(defn booleans? [val]
-  (and (vector? val)
-       (every? #(or (= % "true")
-                    (= % "false")) val)))
-
 (defn coerce-params [val]
   (cond
     (and (string? val)
          (some? (re-find #"^-?\d+\.?\d*$" val))) (edn/read-string val)
     (and (string? val) (string/blank? val)) (edn/read-string val)
-    (booleans? val) (edn/read-string (last val))
     (and (string? val) (= val "false")) false
     (and (string? val) (= val "true")) true
     (vector? val) (mapv coerce-params val)
@@ -109,9 +103,3 @@
   (if (nil? s)
     handler
     (wrap-file handler s)))
-
-(defn wrap-bundles [handler bundles]
-  (if (nil? bundles)
-    handler
-    (fn [request]
-      (handler (merge request bundles)))))
