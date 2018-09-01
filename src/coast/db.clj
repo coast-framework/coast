@@ -10,7 +10,6 @@
             [coast.db.insert :as db.insert]
             [coast.db.delete :as db.delete]
             [coast.db.query :as db.query]
-            [coast.db.errors :as db.errors]
             [coast.db.schema]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]])
@@ -68,6 +67,7 @@
 (defn first! [coll]
   (or (first coll)
       (raise "Record not found" {:coast.router/error :404
+                                 :404 true
                                  :type :404
                                  ::error :not-found})))
 
@@ -262,12 +262,3 @@
 
 (defn pull [v ident]
   (first (q [:pull v :where ident])))
-
-(defmacro maybe [f]
-  `(try
-     [~f nil]
-    (catch org.postgresql.util.PSQLException e#
-      (let [error-map# (db.errors/error-map e#)]
-        (if (empty? error-map#)
-          (throw e#)
-          [nil error-map#])))))
