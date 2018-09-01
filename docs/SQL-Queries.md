@@ -48,7 +48,7 @@ Here's a clojure function named `db.posts`
 (defq "sql/posts.generated.sql")
 ```
 
-This generates functions `fetch`, `all`, `insert`, `update` and `delete` in the `db.posts` namespace. That is all.
+This generates functions `fetch`, `all`, `insert`, `update` and `delete` in the `db.posts` namespace.
 
 Here's another example:
 
@@ -84,4 +84,4 @@ join
 (posts-with-count {:post-id 1}) ; => [{:id 1 ... :comment-count 12}]
 ```
 
-And now you have a new function wired to a bit of custom sql. 
+And now you have a new function wired to a bit of custom sql.

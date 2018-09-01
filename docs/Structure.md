@@ -2,11 +2,11 @@
 
 ## Why not MVC?
 
-The goal of coast on clojure even if it has a similar sort of name, is not to *BE* ruby on rails, it's to *BEAT* ruby on rails at rapid website development. One place where coast shines is that you can dump everything in one file and still have it work a la PHP or you can break your site into multiple files and still have it work. Some people may call this configuration, gasp! If configuration can look like this
+The goal of coast on clojure even if it has a similar sort of name, is not to *BE* ruby on rails, it's to *BEAT* ruby on rails at rapid website development. One place where coast shines is that you can dump everything in one file and still have it work a la PHP or you can break your site into multiple files and still have it work. Call it configuration if you want 🤷‍♂️
 
 ```clojure
 (ns your-project
-  (:require [coast.zeta :as coast]))
+  (:require [coast]))
 
 (def routes [[:get "/hello/:name" `hello]])
 
@@ -19,9 +19,7 @@ The goal of coast on clojure even if it has a similar sort of name, is not to *B
   (coast/server app {:port port}))
 ```
 
-Then that's fine by me.
-
-Of course some people don't like this or claim that "it doesn't scale" whatever that means. So coast can be split across multiple files in a way that makes sense when you don't have a model layer, since clojure as a language *is* the model layer (i.e. data everywhere, no classes/objects).
+So this might not scale... I'm kidding, there should be a coast manifesto that explicitly says we don't care about scaling, we care about shipping. So coast can be split across multiple files in a way that makes sense when you don't have a model layer, since clojure as a language *is* the model layer (i.e. data everywhere, no classes/objects).
 
 A post-MVC app for regular html rendered websites without javascript, what does that even look like? Like this:
 
@@ -39,6 +37,8 @@ A post-MVC app for regular html rendered websites without javascript, what does 
 │   │   ├── js
 │   │   |   └── app.js
 │   │   └── robots.txt
+│   ├── assets.edn
+│   └── routes.edn
 ├── src
 │   ├── error
 │   │   ├── internal_server_error.clj
@@ -74,12 +74,10 @@ So what does a typical `view`/`action` pair look like?
 
 ```clojure
 (ns author.new
-  (:require [coast.app :refer [form validate rescue redirect]]
-            [coast.db :as db]
-            [routes :refer [url-for action-for]]))
+  (:require [coast :refer [action-for url-for transact form validate rescue redirect]]))
 
 (defn view [req]
-  (form (action-for `action)
+  (form (action-for ::action)
     [:label {:for "author/email"} "Email"]
     [:input {:type "email" :name "author/email" :value (-> req :params :author/email)}]
 
@@ -90,7 +88,7 @@ So what does a typical `view`/`action` pair look like?
         [_ errors] (-> (validate params [[:required [:author/email] "can't be blank"
                                          [:email [:author/email] "needs to be an email"]]])
                        (select-keys [:author/email])
-                       (db/transact)
+                       (transact)
                        (rescue))]
     (if (nil? errors))
       (redirect (url-for :home.index/view))

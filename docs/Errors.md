@@ -28,9 +28,7 @@ Coast uses this internally so something like this is now possible
 
 ```clojure
 (ns author.new
-  (:require [coast.db :as db]
-            [coast.app :refer [rescue redirect flash validate]]
-            [routes :refer [url-for]))
+  (:require [coast :refer [url-for transact rescue redirect flash validate]]))
 
 (defn view [req]
   ; pretend there's some form html here
@@ -48,7 +46,7 @@ Coast uses this internally so something like this is now possible
                                   [:min-length 12 :author/password]])
                        (select-keys [:author/nickname :author/email :author/password])
                        (encrypt-password)
-                       (db/transact)
+                       (transact)
                        (rescue))]
     (if (nil? errors)
       (-> (redirect (url-for :home/index))
