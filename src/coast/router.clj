@@ -1,15 +1,16 @@
 (ns coast.router
   (:require [clojure.string :as string]
             [clojure.edn :as edn]
-            [coast.responses :as responses])
-  (:refer-clojure :exclude [get]))
+            [clojure.java.io :as io]
+            [clojure.pprint :refer [pprint]]
+            [coast.responses :as responses]))
 
 (def param-re #":([\w-_]+)")
 
 (defn replacement [match m]
   (let [fallback (first match)
         k (-> match last keyword)]
-    (str (clojure.core/get m k fallback))))
+    (str (get m k fallback))))
 
 (defn route-str [s m]
   (when (and (string? s)
@@ -74,29 +75,72 @@
     (and (= request-method route-method)
          (= request-uri (route-str route-uri params)))))
 
-(defn route
-  "Sugar for making a route vector"
-  ([method routes uri f]
-   (conj routes [method uri f (keyword f)]))
-  ([method uri f]
-   (route method [] uri f)))
+(defn expand-keyword-route [k]
+  (when (and (keyword? k)
+             (not (qualified-keyword? k)))
+    (let [s (name k)]
+      [[:get (str "/" s "/index") (keyword (str s ".index") "view")]
+       [:get (str "/" s "/:id") (keyword (str s ".show") "view")]
+       [:get (str "/new-" s) (keyword (str s ".new") "view")]
+       [:post (str "/new-" s) (keyword (str s ".new") "action")]
+       [:get (str "/edit-" s "/:id") (keyword (str s ".edit") "view")]
+       [:post (str "/edit-" s "/:id") (keyword (str s ".edit") "action")]
+       [:post (str "/delete-" s "/:id") (keyword (str s ".delete") "action")]])))
 
-(def get (partial route :get))
-(def post (partial route :post))
-(def put (partial route :put))
-(def patch (partial route :patch))
-(def delete (partial route :delete))
+(defn expand-qualified-keyword-route [k]
+  (when (qualified-keyword? k)
+    (let [s (name k)
+          p (namespace k)
+          m {"index" [[:get (str "/" p "/index") (keyword (str p ".index") "view")]]
+             "show" [[:get (str "/" p "/:id" (keyword (str p ".show") "view"))]]
+             "new" [[:get (str "/new-" p) (keyword (str p ".new") "view")]
+                    [:post (str "/new-" p) (keyword (str p ".new") "action")]]
+             "edit" [[:get (str "/edit-" p "/:id") (keyword (str p ".edit") "view")]
+                     [:post (str "/edit-" p "/:id") (keyword (str p ".edit") "action")]]
+             "delete" [[:post (str "/delete-" p "/:id") (keyword (str p ".delete") "action")]]}]
+      (get m s))))
 
-(defn wrap-route [route middleware]
-  "Wraps a single route in a ring middleware fn"
-  (let [[method uri val route-name] route]
-    (if (vector? val)
-      [method uri (conj val middleware) (or route-name (-> val first keyword))]
-      [method uri [val middleware] (or route-name (keyword val))])))
+(defn expand-route [v]
+  (let [[k] v]
+    (if (not (verb? k))
+      (if (qualified-keyword? k)
+        (map #(conj % (last v)) (expand-qualified-keyword-route k))
+        (map #(conj % (last v)) (expand-keyword-route k)))
+      [v])))
 
-(defn wrap-routes [routes middleware]
-  "Wraps a given set of routes in a function."
-  (mapv #(wrap-route % middleware) routes))
+(defn slurp* [val]
+  (when (some? val)
+    (slurp val)))
+
+(defn conj-group-name [[k v]]
+  (map #(conj % k) v))
+
+(defn routes-have-names? [coll]
+  (every? keyword? (map first coll)))
+
+(defn parse-routes []
+  "Reads routes.edn and attempts to give direction into how they should be laid out"
+  (let [parts (->> (io/resource "routes.edn")
+                   (slurp*)
+                   (edn/read-string)
+                   (partition-all 2))]
+    (if (routes-have-names? parts)
+      (->> (mapcat conj-group-name parts)
+           (mapcat expand-route)
+           (vec))
+      (throw (Exception. "Routes must have names like this: [:public [[:get \"/\" :home.index/view]] :private [[:get \"/private\" :home.private/view]]]")))))
+
+(def routes (parse-routes))
+
+(defn wrap-routes [handler k middleware]
+  (fn [request]
+    (let [{:keys [request-method uri]} request
+          route (-> (filter #(match [request-method uri] %) routes)
+                    (first))
+          group (last route)]
+      (if (= group k)
+        ((middleware handler) request)
+        (handler request)))))
 
 (defn fallback-not-found-page [_]
   [:html
@@ -105,10 +149,16 @@
     [:body
      [:h1 "404 Page not found"]]])
 
+(defn keyword->symbol [k]
+  (let [kns (namespace k)
+        kn (name k)]
+    (symbol kns kn)))
+
 (defn resolve-route-fn [f]
-  (if (symbol? f)
-    (resolve f)
-    f))
+  (cond
+    (symbol? f) (resolve f)
+    (keyword? f) (-> f keyword->symbol resolve)
+    :else f))
 
 (defn resolve-route [val]
   (if (vector? val)
@@ -122,7 +172,9 @@
          (apply comp))))
 
 (defn route-name [route]
-  (-> route last keyword))
+  (if (= 5 (count route))
+    (-> (nth route 3) keyword)
+    (-> (nth route 2) keyword)))
 
 (defn handler [not-found-page]
   (fn [request]
@@ -148,65 +200,6 @@
                                  :params (merge params route-params))]
       (handler request))))
 
-(defn resource-routes
-  ([symbols]
-   (let [routes [[:get "/%s" "index"]
-                 [:get "/%s/new" "new"]
-                 [:get "/%s/:id" "show"]
-                 [:get "/%s/:id/edit" "edit"]
-                 [:post "/%s" "create"]
-                 [:put "/%s/:id" "update"]
-                 [:delete "/%s/:id" "delete"]]
-         names (->> (map name symbols)
-                    (set))]
-     (if (and (not (nil? symbols))
-              (not (empty? symbols))
-              (every? symbol? symbols))
-       (filter #(contains? names (last %)) routes)
-       routes)))
-  ([]
-   (resource-routes nil)))
-
-(defn resource-route [prefix route-ns route]
-  (let [[method s name] route]
-    [method (format s prefix) (symbol route-ns name) (keyword prefix name)]))
-
-(defn routes? [args]
-  (coll? (first args)))
-
-(defn resource
-  "Creates a set of seven functions that map to a conventional set of named functions.
-   Generates routes that look like this:
-   [[:get    \"/resources\"          'resources/index]
-    [:get    \"/resources/:id\"      'resources/show]
-    [:get    \"/resources/new\"      'resources/new]
-    [:get    \"/resources/:id/edit\" 'resources/edit]
-    [:post   \"/resources\"          'resources/create]
-    [:put    \"/resources/:id\"      'resources/update]
-    [:delete \"/resources/:id\"      'resources/delete]]
-   Examples:
-   (resource 'items/show   'items/index)
-   (resource 'items/create 'items/delete)
-   (resource 'items/index  'items/create)
-   (resource 'items/index)
-   (resource :items)"
-  [& args]
-  (let [all-routes (first args)
-        args (if (routes? args)
-               (rest args)
-               args)
-        prefix (if (keyword? (first args))
-                 (name (first args))
-                 (string/replace (namespace (first args)) #"controllers\." ""))
-        route-ns (if (keyword? (first args))
-                   (str "controllers." prefix)
-                   (namespace (first args)))
-        routes (map #(resource-route prefix route-ns %)
-                    (resource-routes args))]
-    (if (coll? all-routes)
-      (reduce conj all-routes routes)
-      (vec routes))))
-
 (defn find-by-route-name [routes k]
   (-> (filter #(= k (route-name %)) routes)
       (first)))
@@ -219,7 +212,7 @@
   "Returns a function that takes a route name and a map and returns a route as a string"
   (fn [k & [m]]
     (if (url-for-routes-args? k m)
-      (let [[method route-url] (find-by-route-name routes k)
+      (let [[method route-url] (find-by-route-name routes (keyword k))
             url (route-str route-url m)
             r-params (route-params url route-url)
             q-params (apply dissoc m (keys r-params))
@@ -237,7 +230,7 @@
   "Returns a function that takes a route name and a optional map and returns a form map"
   (fn [k & [m]]
     (if (url-for-routes-args? k m)
-      (let [[method route-url] (find-by-route-name routes k)
+      (let [[method route-url] (find-by-route-name routes (keyword k))
             action (str (route-str route-url m)
                         (param-method method))
             method (if (not= :get method)
@@ -246,3 +239,9 @@
         {:method method
          :action action})
       (throw (Exception. "action-for takes a keyword and a map as arguments")))))
+
+(def action-for (action-for-routes routes))
+(def url-for (url-for-routes routes))
+
+(defn -main []
+  (pprint routes))
