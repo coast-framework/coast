@@ -32,6 +32,6 @@
    (let [files (or (get-in req [:coast.assets/bundles bundle])
                    (assets/bundle (env :coast-env) bundle))]
      (for [src files]
-      [:script {:src src :type "text/javascript" :defer true}])))
+      [:script {:src src :type "application/javascript" :defer true}])))
   ([bundle]
    (js nil bundle)))
