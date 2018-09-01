@@ -6,7 +6,7 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 
 ```clojure
 (ns my-project
-  (:require [coast.zeta :as coast]))
+  (:require [coast]))
 
 (def routes [[:get "/" `home]])
 
