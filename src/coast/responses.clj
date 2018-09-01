@@ -5,7 +5,7 @@
   ([status body headers]
    {:status status
     :body (h/html body)
-    :headers (merge {"Content-Type" "text/html; charset=utf-8"} headers)})
+    :headers (merge {"Content-Type" "text/html"} headers)})
   ([status body]
    (response status body {})))
 
@@ -15,8 +15,7 @@
 (defn redirect [url]
   {:status 302
    :body ""
-   :headers {"Location" url
-             "Turbolinks-Location" url}})
+   :headers {"Location" url}})
 
 (def ok (partial response 200))
 (def created (partial response 201))
