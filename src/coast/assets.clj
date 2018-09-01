@@ -42,13 +42,6 @@
         _ (io/delete-file tmp)]
     (str "/assets/" name "-" checksum "." ext)))
 
-(defn bundles [minify? m]
-  {::bundles (->> (map (fn [[k v]] {k (if minify?
-                                       [(minify-bundle k v)]
-                                       (hrefs (ext k) v))})
-                       m)
-                  (apply merge))})
-
 (defn build [m]
   (->> (map (fn [[k v]] {k [(minify-bundle k v)]}) m)
        (apply merge)))
@@ -75,5 +68,4 @@
   (let [m (-> (io/resource "assets.edn")
               (slurp)
               (edn/read-string))]
-    (doall
-      (pprint-write "resources/assets.minified.edn" (build m)))))
+    (pprint-write "resources/assets.minified.edn" (build m))))
