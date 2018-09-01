@@ -1,0 +1,6 @@
+(ns __resource__.__action__
+  (:require [coast :refer [action-for first! flash form pull q raise redirect rescue transact url-for validate]]))
+
+(defn view [req])
+
+(defn action [req])

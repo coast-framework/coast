@@ -1,0 +1,9 @@
+(ns __resource__.__action__
+  (:require [coast :refer [first! q url-for]]))
+
+(defn view [{{:keys [id]} :params :as req}]
+  (let [__resource__ (first!
+                      (q '[:select __qualified-keywords__
+                           :where [:__resource__/id ?id]]
+                         {:id id}))]
+    __dl-elements__))

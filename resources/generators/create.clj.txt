@@ -1,0 +1,17 @@
+(ns __resource__.__action__
+  (:require [coast :refer [action-for first! flash form pull q raise redirect rescue transact url-for validate]]))
+
+(defn view [req]
+  (form (action-for ::action)
+    __form-elements__
+
+    [:input {:type "submit" :value "New __resource__"}]))
+
+(defn action [{:keys [params] :as req}]
+  (let [[_ errors] (-> (validate params [[:required [__qualified-keywords__]]])
+                       (select-keys [__qualified-keywords__])
+                       (transact)
+                       (rescue))]
+    (if (nil? errors)
+      (redirect (url-for :__resource__.list/view))
+      (view (merge req errors)))))
