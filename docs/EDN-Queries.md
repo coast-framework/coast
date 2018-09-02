@@ -18,12 +18,12 @@ Not sure if it's any better than CRUD anywhere else, but the R in there is defin
 
 ```clojure
 (ns r-in-crud
-  (:require [coast.db :as db]))
+  (:require [coas :refer [q]]))
 
-(db/q '[:select author/name author/email post/title post/body
-        :joins  author/posts
-        :where  [author/name ?author/name]]
-      {:author/name "Cody Coast"})
+(q '[:select author/name author/email post/title post/body
+     :joins  author/posts
+     :where  [author/name ?author/name]]
+   {:author/name "Cody Coast"})
 ```
 
 The following query looks pretty basic and it is, it uses this SQL to query the database
@@ -62,13 +62,13 @@ Well you're in luck, thanks to letting Coast handle your schema, you can do just
 it's shamelessly stolen from datomic. This is how it looks.
 
 ```clojure
-(db/q '[:pull [author/id
-               author/email
-               author/name
-               {:author/posts [post/title
-                               post/body]}]
-        :where [author/name ?author/name]]
-      {:author/name "Cody Coast"})
+(q '[:pull [author/id
+            author/email
+            author/name
+            {:author/posts [post/title
+                            post/body]}]
+     :where [author/name ?author/name]]
+   {:author/name "Cody Coast"})
 ```
 
 Which will output what you saw earlier. It uses the relationship names and data from the schema earlier to build the select and join parts of the query.
@@ -78,39 +78,39 @@ Which will output what you saw earlier. It uses the relationship names and data 
 But wait a minute, how do you control the order they get returned in that fancy pull query? Here's how
 
 ```clojure
-(db/q '[:pull [author/email
-               author/name
-               {(:author/posts :order post/id desc) [post/title
-                                                     post/body]}]
-        :where [author/name ?author/name]
-               [author/name != nil]
-        :limit 10
-        :order author/id desc]
-      {:author/name "Cody Coast"})
+(q '[:pull [author/email
+            author/name
+            {(:author/posts :order post/id desc) [post/title
+                                                  post/body]}]
+     :where [author/name ?author/name]
+            [author/name != nil]
+     :limit 10
+     :order author/id desc]
+   {:author/name "Cody Coast"})
 ```
 
 How do you limit how many nested rows get returned? You can do that with `:limit`
 
 ```clojure
-(db/q '[:pull [author/email
-               author/name
-               {(:author/posts :order post/id desc
-                               :limit 10) [post/title
-                                           post/body]}]
-        :where [author/name ?author/name]]
-      {:author/name "Cody Coast"})
+(q '[:pull [author/email
+            author/name
+            {(:author/posts :order post/id desc
+                            :limit 10) [post/title
+                                        post/body]}]
+     :where [author/name ?author/name]]
+   {:author/name "Cody Coast"})
 ```
 
 If you know you only want to pull nested rows from one entity, you can use the `pull` function
 
 ```clojure
-(db/pull '[author/id
-           author/email
-           author/name
-           {(:author/posts :order post/created-at desc
-                           :limit 10) [post/title
-                                       post/body]}]
-         [:author/name "Cody Coast"])
+(pull '[author/id
+        author/email
+        author/name
+        {(:author/posts :order post/created-at desc
+                        :limit 10) [post/title
+                                    post/body]}]
+      [:author/name "Cody Coast"])
 ```
 
 Unfortunately, or fortunately, if you want to get *really* crazy with a pull, you can't. You'll have to drop down to SQL and manipulate things with clojure yourself. The point of pull is to handle the common case, it doesn't handle arbitrary SQL functions or crazy SQL syntax. You'll have to either call `q` for that or fall back to SQL.
@@ -120,44 +120,44 @@ Unfortunately, or fortunately, if you want to get *really* crazy with a pull, yo
 Here's two examples of inserting
 
 ```clojure
-(db/transact {:post/title "3 things you should know about Coast on Clojure"
-              :post/body "1. It's great. 2. It's tremendous. 3. It's making web development fun again."
-              :post/author [:author/name "Cody Coast"]})
+(transact {:post/title "3 things you should know about Coast on Clojure"
+           :post/body "1. It's great. 2. It's tremendous. 3. It's making web development fun again."
+           :post/author [:author/name "Cody Coast"]})
 ```
 
 In cases where you already know the primary key, you can just pass that in place of the ident
 
 ```clojure
-(db/transact {:post/title "3 things you should know about Coast on Clojure"
-              :post/body "1. It's great. 2. It's tremendous. 3. It's making web development fun again."
-              :post/author 2})
+(transact {:post/title "3 things you should know about Coast on Clojure"
+           :post/body "1. It's great. 2. It's tremendous. 3. It's making web development fun again."
+           :post/author 2})
 ```
 
 Here's two examples of updating records
 
 ```clojure
-(db/transact {:post/title "5 things you should know about Coast on Clojure"
-              :post/id 1})
+(transact {:post/title "5 things you should know about Coast on Clojure"
+           :post/id 1})
 
 ;  or with an ident
 
-(db/transact {:post/title "5 things you should know about Coast on Clojure"
-              :post/slug "07-10-2018-3-things-you-should-know"})
+(transact {:post/title "5 things you should know about Coast on Clojure"
+           :post/slug "07-10-2018-3-things-you-should-know"})
 ```
 
 Here's another cool thing you can do although, it's currently limited to one level of relations deep
 
 ```clojure
-(db/transact {:post/slug "07-10-2018-3-things-you-should-know"
-              :post/comments [{:comment/text "+1"}
-                              {:comment/text "+1"}]})
+(transact {:post/slug "07-10-2018-3-things-you-should-know"
+           :post/comments [{:comment/text "+1"}
+                           {:comment/text "+1"}]})
 ```
 
 Tired of those +1's? Get rid of 'em
 
 ```clojure
-(db/transact {:post/slug "07-10-2018-3-things-you-should-know"
-              :post/comments []})
+(transact {:post/slug "07-10-2018-3-things-you-should-know"
+           :post/comments []})
 ```
 
 That will delete all of that post's comments. Is this dangerous? Yes, so be careful out there.
@@ -167,14 +167,14 @@ That will delete all of that post's comments. Is this dangerous? Yes, so be care
 You can delete rows by any table/col pair, multiple column delete is still under construction...
 
 ```clojure
-(db/delete {:author/name "Cody Coast"})
+(delete {:author/name "Cody Coast"})
 ```
 
 you can also delete multiple rows at a time with the same key
 
 ```clojure
-(db/delete [{:author/name "Cody Coast"}
-            {:author/name "Carol Coast"}])
+(delete [{:author/name "Cody Coast"}
+         {:author/name "Carol Coast"}])
 ```
 
 and since Coast is managing your schema, you get `on delete cascade` without even thinking about it!

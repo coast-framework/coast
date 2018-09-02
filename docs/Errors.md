@@ -6,7 +6,7 @@ Here's an example how to use raise/rescue (which was shamelessly stolen from rub
 
 ```clojure
 (ns your-proj
-  (:require [coast.error :refer [raise]]))
+  (:require [coast :refer [raise]]))
 
 (raise {:message "Oh no! 😱"}) ; => clojure.lang.ExceptionInfo "An error has occurred" {:ex-data {:message "Oh no! 😱"}}
 
