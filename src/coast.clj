@@ -27,6 +27,7 @@
    q
    pull
    transact
+   delete
    first!]
 
   [coast.validation
