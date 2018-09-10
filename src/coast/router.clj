@@ -112,35 +112,35 @@
   (when (some? val)
     (slurp val)))
 
-(defn conj-group-name [[k v]]
-  (map #(conj % k) v))
+(defn wrap-route [route middleware]
+  "Wraps a single route in a ring middleware fn"
+  (let [[method uri val route-name] route
+        val (if (vector? val) val [val])]
+    [method
+     uri
+     (if (sequential? middleware)
+       (apply conj val middleware)
+       (conj val middleware))
+     (or route-name (-> val first keyword))]))
 
-(defn routes-have-names? [coll]
-  (every? keyword? (map first coll)))
+(defn wrap-routes [routes middleware]
+  "Wraps a given set of routes in a function."
+  (mapv #(wrap-route % middleware) routes))
 
 (defn parse-routes []
   "Reads routes.edn and attempts to give direction into how they should be laid out"
-  (let [parts (->> (io/resource "routes.edn")
-                   (slurp*)
-                   (edn/read-string)
-                   (partition-all 2))]
-    (if (routes-have-names? parts)
-      (->> (mapcat conj-group-name parts)
-           (mapcat expand-route)
-           (vec))
-      (throw (Exception. "Routes must have names like this: [:public [[:get \"/\" :home.index/view]] :private [[:get \"/private\" :home.private/view]]]")))))
+  (let [routes (->> (io/resource "routes.edn")
+                    (slurp*)
+                    (edn/read-string))]
+    (cond
+      (vector? routes) (vec
+                        (mapcat expand-route routes))
+      (map? routes) (vec
+                     (mapcat (fn [[k v]] (mapv #(wrap-route % k) (vec (mapcat expand-route v)))) routes))
+      (nil? routes) nil
+      :else (throw (Exception. "routes.edn should either be a vector or a map")))))
 
 (def routes (parse-routes))
-
-(defn wrap-routes [handler k middleware]
-  (fn [request]
-    (let [{:keys [request-method uri]} request
-          route (-> (filter #(match [request-method uri] %) routes)
-                    (first))
-          group (last route)]
-      (if (= group k)
-        ((middleware handler) request)
-        (handler request)))))
 
 (defn fallback-not-found-page [_]
   [:html
@@ -172,9 +172,7 @@
          (apply comp))))
 
 (defn route-name [route]
-  (if (= 5 (count route))
-    (-> (nth route 3) keyword)
-    (-> (nth route 2) keyword)))
+  (-> route last keyword))
 
 (defn handler [not-found-page]
   (fn [request]
@@ -243,5 +241,16 @@
 (def action-for (action-for-routes routes))
 (def url-for (url-for-routes routes))
 
+(defn pretty-route [route]
+  (let [[method uri val route-name] route
+        f (if (vector? val) (first val) val)]
+    (str (-> method name string/upper-case)
+         " "
+         uri
+         " "
+         f
+         " "
+         route-name)))
+
 (defn -main []
-  (pprint routes))
+  (println (string/join "\n" (map pretty-route routes))))
