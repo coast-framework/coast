@@ -92,7 +92,7 @@
     (let [s (name k)
           p (namespace k)
           m {"index" [[:get (str "/" p "/index") (keyword (str p ".index") "view")]]
-             "show" [[:get (str "/" p "/:id" (keyword (str p ".show") "view"))]]
+             "show" [[:get (str "/" p "/:id") (keyword (str p ".show") "view")]]
              "new" [[:get (str "/new-" p) (keyword (str p ".new") "view")]
                     [:post (str "/new-" p) (keyword (str p ".new") "action")]]
              "edit" [[:get (str "/edit-" p "/:id") (keyword (str p ".edit") "view")]
