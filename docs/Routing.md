@@ -59,10 +59,29 @@ Any params you don't reference in the url will be appended as query params
 (url-for :comment/edit {:post-id 1 :id 2 :all true}) ; => "/post/1/comment/2/edit?all=true"
 ```
 
-Typing out routes and putting them in a file works well when there aren't too many routes, but even a solo dev might have an app with quite a few. That's where `routes.edn` comes in. This file lets you specify your routes in an edn file and coast will read from this file. Here's what it looks like:
+Typing out routes and putting them in a clojure file works well when there aren't too many routes, but even a solo dev might have an app with quite a few. That's where `routes.edn` comes in. This file lets you specify your routes in an edn file and coast will read from this file. Here's what it looks like:
 
 ```clojure
-[:public [[:get "/"         :home.index/view]
-          [:get "/todos"    :todo.index/view]
-          [:get "/todo/:id" :todo.show/view]]]
+[[:get "/"         :home.index/view]
+ [:get "/todos"    :todo.index/view]
+ [:get "/todo/:id" :todo.show/view]]
+```
+
+And you can specify middleware as data in the same file too
+
+```clojure
+; routes.edn
+{:middleware/wrap-certain-errors [[:get "/"         :home.index/view]
+                                  [:get "/todos"    :todo.index/view]
+                                  [:get "/todo/:id" :todo.show/view]]}
+```
+
+or multiple middleware
+
+```clojure
+; routes.edn
+{[:middleware/wrap-certain-errors
+  :middleware/another-one]        [[:get "/"         :home.index/view]
+                                   [:get "/todos"    :todo.index/view]
+                                   [:get "/todo/:id" :todo.show/view]]}
 ```
