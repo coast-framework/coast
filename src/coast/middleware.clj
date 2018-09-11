@@ -1,26 +1,29 @@
 (ns coast.middleware
-  (:require [ring.middleware.defaults :as defaults]
+  (:require [ring.middleware.defaults :as middleware.defaults :refer [site-defaults api-defaults]]
             [ring.middleware.session.cookie :as cookie]
             [ring.middleware.file :refer [wrap-file]]
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [clojure.edn :as edn]
+            [clojure.data.json :as json]
             [coast.time :as time]
             [coast.utils :as utils]
             [coast.responses :as responses]
             [coast.env :as env]
             [coast.dev.middleware :as dev.middleware]
             [coast.logger :as logger]
-            [coast.error :refer [rescue]])
+            [coast.error :refer [rescue]]
+            [hiccup.core :as h])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
 
 (defn internal-server-error []
-  [:html
-    [:head
-     [:title "Internal Server Error"]]
-    [:body
-     [:h1 "500 Internal server error"]]])
+  (responses/internal-server-error
+    [:html
+      [:head
+       [:title "Internal Server Error"]]
+      [:body
+       [:h1 "500 Internal server error"]]]))
 
 (defn wrap-errors [handler error-fn]
   (if (= "prod" (env/env :coast-env))
@@ -60,12 +63,70 @@
         (layout? response layout) (responses/ok (layout request response))
         :else (responses/ok response)))))
 
-(defn coast-defaults [opts]
-  (let [secret (env/env :secret)
-        coast-opts {:session {:cookie-name "id"
-                              :store (cookie/cookie-store {:key secret})}
-                    :params {:keywordize? false}}]
-    (utils/deep-merge defaults/site-defaults coast-opts opts)))
+(defn wrap-json-response [handler opts]
+  (fn [request]
+    (let [response (handler request)
+          accept (get-in request [:headers "accept"])]
+      (if (or (= :api (:wrap-defaults opts))
+              (and (some? accept)
+                   (some? (re-find #"application/json" accept))))
+        (-> (update response :body json/write-str)
+            (assoc :headers {"content-type" "application/json"}))
+        response))))
+
+(defn wrap-html-response [handler]
+  (fn [request]
+    (let [{:keys [body] :as response} (handler request)]
+      (if (vector? body)
+        (assoc response :body (h/html body)
+                        :headers {"content-type" "text/html"})
+        response))))
+
+(defn wrap-json-params [handler opts]
+  (fn [{:keys [body params content-type] :as request}]
+    (if (and (some? body)
+             (or (= :api (:wrap-defaults opts))
+                 (= "application/json" content-type)))
+      (let [s (slurp body)
+            parsed-params (if (some? body)
+                            (json/read-str s)
+                            body)]
+        (handler (assoc request :params (merge params parsed-params))))
+      (handler request))))
+
+(defn wrap-api
+  ([handler opts]
+   (let [m (utils/deep-merge api-defaults {:params {:keywordize? false}} opts)
+         handler (middleware.defaults/wrap-defaults handler m)]
+     (fn [request]
+       (handler (utils/deep-merge request {:wrap-defaults :api
+                                           :headers {"content-type" "application/json"
+                                                     "accept" "application/json"}
+                                           :content-type "application/json"})))))
+  ([handler]
+   (wrap-api handler {})))
+
+(defn wrap-site
+  ([handler opts]
+   (fn [request]
+     (if (or (= :api (:wrap-defaults opts))
+             (= :api (:wrap-defaults request)))
+       (handler request)
+       (let [secret (env/env :secret)
+             session-opts {:session {:cookie-name "id"
+                                     :store (cookie/cookie-store {:key secret})}}
+             m (utils/deep-merge site-defaults session-opts {:params {:keywordize? false}} opts)
+             handler (-> (middleware.defaults/wrap-defaults handler m)
+                         (wrap-html-response))]
+         (handler request)))))
+  ([handler]
+   (wrap-site handler {})))
+
+(defn wrap-defaults [handler opts]
+  (condp = (:wrap-defaults opts)
+    false handler
+    :api (wrap-api handler opts)
+    (wrap-site handler opts)))
 
 (defn wrap-with-logger [handler]
   (fn [request]
