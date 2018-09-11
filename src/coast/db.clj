@@ -250,6 +250,20 @@
         rel-rows (upsert-rels row m-rels)]
     (merge row rel-rows)))
 
+(defn insert [arg]
+  (let [m (if (sequential? arg) (first arg) arg)
+        k-ns (-> m keys first namespace utils/snake)]
+    (->> (db.insert/sql-vec arg)
+         (query (connection))
+         (map #(qualify-map k-ns %))
+         (single))))
+
+(defn update* [m]
+  (let [k-ns (-> m keys first namespace utils/snake)]
+    (->> (db.update/sql-vec m)
+         (query (connection))
+         (map #(qualify-map k-ns %))
+         (single))))
 
 (defn delete [arg]
   (let [v (db.delete/sql-vec arg)

@@ -14,12 +14,12 @@
 (defn read-pg-vector
   "oidvector, int2vector, etc. are space separated lists"
   [s]
-  (when (seq s) (clojure.string/split s #"\s+")))
+  (when (seq s) (string/split s #"\s+")))
 
 (defn read-pg-array
   "Arrays are of form {1,2,3}"
   [s]
-  (when (seq s) (when-let [[_ content] (re-matches #"^\{(.+)\}$" s)] (if-not (empty? content) (clojure.string/split content #"\s*,\s*") []))))
+  (when (seq s) (when-let [[_ content] (re-matches #"^\{(.+)\}$" s)] (if-not (empty? content) (string/split content #"\s*,\s*") []))))
 
 (defmulti read-pgobject
   "Convert returned PGobject to Clojure value."

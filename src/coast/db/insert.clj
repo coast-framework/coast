@@ -8,7 +8,7 @@
     (-> k name utils/snake)))
 
 (defn unqualified-col [k]
-  (col (keyword (name k))))
+  (-> k name utils/snake))
 
 (defn table [t]
   (str (->> (map first t)

@@ -16,6 +16,7 @@
 (import-vars
   [coast.responses
    ok
+   bad-request
    not-found
    unauthorized
    internal-server-error
@@ -31,6 +32,8 @@
    pull
    transact
    delete
+   insert
+   update*
    first!]
 
   [coast.validation
