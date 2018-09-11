@@ -15,9 +15,9 @@
    (let [port (-> (or (:port opts) (env/env :port) 1337)
                   (utils/parse-int))]
      (def app app)
-     (println "Server is listening on port" port)
      (reset! server (httpkit/run-server (dev.middleware/wrap-exceptions
-                                         (reload/wrap-reload #'app)) (merge opts {:port port}))))))
+                                         (reload/wrap-reload #'app)) (merge opts {:port port})))
+     (println "Server is listening on port" port))))
 
 (defn stop []
   (when (not (nil? @server))
