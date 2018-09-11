@@ -14,6 +14,7 @@ Examples:
   coast new another-foo
 
   coast gen migration <name>           # Creates a new edn migration file
+  coast gen sql:migration <name>       # Creates a new sql migration file
   coast gen action <resource>          # Creates a five new clj files with view/action functions in src/<resource>/create/read/update/delete/list.clj
   coast gen action <resource>:<action> # Creates a new clj file with view/action functions in src/<resource>/<action>.clj"))
 
