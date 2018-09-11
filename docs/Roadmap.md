@@ -1,9 +1,6 @@
 # Roadmap
 
-- Update generators (eta)
-- Add shortcuts for routes to view/action function pairs
 - Nested view caching tied to db updated_at column
-- routes.edn?
 - Emails
 - File storage on disk and cloud
 - Better db docs
@@ -16,3 +13,5 @@
 - Tests/spec
 
 - ~~Add js/css minifcation/concatenation (eta)~~
+- ~~Update generators (eta)~~
+- ~~Add shortcuts for routes to view/action function pairs~~
