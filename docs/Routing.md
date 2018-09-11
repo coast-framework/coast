@@ -59,29 +59,63 @@ Any params you don't reference in the url will be appended as query params
 (url-for :comment/edit {:post-id 1 :id 2 :all true}) ; => "/post/1/comment/2/edit?all=true"
 ```
 
-Typing out routes and putting them in a clojure file works well when there aren't too many routes, but even a solo dev might have an app with quite a few. That's where `routes.edn` comes in. This file lets you specify your routes in an edn file and coast will read from this file. Here's what it looks like:
+Sometimes you need to call a function (or a few) on certain routes, but not every route, here's how that looks
 
 ```clojure
-[[:get "/"         :home.index/view]
- [:get "/todos"    :todo.index/view]
- [:get "/todo/:id" :todo.show/view]]
+(ns routes
+  (:require [coast :refer [wrap-routes unauthorized]]))
+
+(defn wrap-auth [handler]
+  (fn [request]
+    (if (some? (:session request))
+      (handler request)
+      (unauthorized [:h1 "Sorry dave, I can't let you do that"]))))
+
+(def public [[:get "/"         :home.index/view]
+             [:get "/todos"    :todo.index/view]
+             [:get "/todo/:id" :todo.show/view]])
+
+(def private (wrap-routes wrap-auth
+              [[:get "/new-todo"  :todo.new/view]
+               [:post "/new-todo" :todo.new/action]]))
+
+(def routes (concat public private))
 ```
 
-And you can specify middleware as data in the same file too
+Maybe you want separate routes for an api and routes for your site? Coast can do that too, although it's a little tedious to set up
 
 ```clojure
-; routes.edn
-{:middleware/wrap-certain-errors [[:get "/"         :home.index/view]
-                                  [:get "/todos"    :todo.index/view]
-                                  [:get "/todo/:id" :todo.show/view]]}
+(ns routes
+  (:require [coast :refer [wrap-site wrap-routes prefix-routes]]))
+
+(def site [[:get "/" :home.index/view :home]]))
+
+(def api (prefix-routes "/api"
+           (wrap-routes wrap-api
+            [[:get "/status" :api.status.index/view]])))
+
+(def routes (concat site api))
 ```
 
-or multiple middleware
+Or if you just want to use coast as an api, you can do that too
 
 ```clojure
-; routes.edn
-{[:middleware/wrap-certain-errors
-  :middleware/another-one]        [[:get "/"         :home.index/view]
-                                   [:get "/todos"    :todo.index/view]
-                                   [:get "/todo/:id" :todo.show/view]]}
+(ns server
+  (:require [coast])
+  (:gen-class))
+
+(def app (coast/app {:wrap-defaults :api})) ; by default every request/response is json
+
+(defn -main [& [port]]
+  (coast/server app {:port port}))
+```
+
+Here's an example route in api mode
+
+```clojure
+(ns home.index
+  (:require [coast :refer [ok]]))
+
+(defn view [req]
+  (ok {:status "up"})) ; => 200 OK {"status": "up"}
 ```

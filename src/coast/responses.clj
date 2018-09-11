@@ -1,11 +1,10 @@
-(ns coast.responses
-  (:require [hiccup.core :as h]))
+(ns coast.responses)
 
 (defn response
   ([status body headers]
    {:status status
-    :body (h/html body)
-    :headers (merge {"Content-Type" "text/html"} headers)})
+    :body body
+    :headers headers})
   ([status body]
    (response status body {})))
 

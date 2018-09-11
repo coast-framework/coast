@@ -12,7 +12,7 @@ of your site
 (defn home [request]
   [:h1 "Welcome!"])
 
-(def routes [[:get "/" `home]})
+(def routes [[:get "/" :home]})
 
 (defn layout [request body]
   [:html
@@ -30,15 +30,14 @@ If you want to return something else other than [hiccup](https://github.com/weav
 
 ```clojure
 (ns server
-  (:require [coast]
-            [coast.responses.json :as json]))
+  (:require [coast]))
 
 (defn home [request]
-  (json/ok {:message "Welcome!"}))
+  (ok {:message "Welcome!"}))
 
-(def routes [[:get "/" `home]])
+(def routes [[:get "/" :home]])
 
 (def app (coast/app routes))
 
-(app {:request-method :get :uri "/"}) ; => {"message": "Welcome!"}
+(app {:request-method :get :uri "/" :headers {"accept" "application/json"}}) ; => {"message": "Welcome!"}
 ```

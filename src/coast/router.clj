@@ -2,7 +2,6 @@
   (:require [clojure.string :as string]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.pprint :refer [pprint]]
             [coast.responses :as responses]))
 
 (def param-re #":([\w-_]+)")
@@ -112,8 +111,9 @@
   (when (some? val)
     (slurp val)))
 
-(defn wrap-route [route middleware]
+(defn wrap-route
   "Wraps a single route in a ring middleware fn"
+  [route middleware]
   (let [[method uri val route-name] route
         val (if (vector? val) val [val])]
     [method
@@ -123,31 +123,25 @@
        (conj val middleware))
      (or route-name (-> val first keyword))]))
 
-(defn wrap-routes [routes middleware]
-  "Wraps a given set of routes in a function."
-  (mapv #(wrap-route % middleware) routes))
-
-(defn parse-routes []
-  "Reads routes.edn and attempts to give direction into how they should be laid out"
-  (let [routes (->> (io/resource "routes.edn")
-                    (slurp*)
-                    (edn/read-string))]
-    (cond
-      (vector? routes) (vec
-                        (mapcat expand-route routes))
-      (map? routes) (vec
-                     (mapcat (fn [[k v]] (mapv #(wrap-route % k) (vec (mapcat expand-route v)))) routes))
-      (nil? routes) nil
-      :else (throw (Exception. "routes.edn should either be a vector or a map")))))
-
-(def routes (parse-routes))
+(defn wrap-routes
+  "Wraps a given set of routes in the given functions"
+  [& args]
+  (let [routes (last args)
+        fns (drop-last args)]
+    (vec
+     (mapcat identity
+             (mapv (fn [route]
+                     (mapv (fn [mw]
+                             (wrap-route route mw)) fns))
+                   routes)))))
 
 (defn fallback-not-found-page [_]
-  [:html
-    [:head
-     [:title "Not Found"]]
-    [:body
-     [:h1 "404 Page not found"]]])
+  (responses/not-found
+    [:html
+      [:head
+       [:title "Not Found"]]
+      [:body
+       [:h1 "404 Page not found"]]]))
 
 (defn keyword->symbol [k]
   (let [kns (namespace k)
@@ -176,11 +170,8 @@
 
 (defn handler [not-found-page]
   (fn [request]
-    (let [route-handler (:route/handler request)]
-      (if (nil? route-handler)
-        (responses/not-found
-          ((or not-found-page fallback-not-found-page) request))
-        (route-handler request)))))
+    (let [route-handler (or (:route/handler request) not-found-page fallback-not-found-page)]
+      (route-handler request))))
 
 (defn wrap-route-info [handler routes]
   "Adds route info to request map"
@@ -238,9 +229,6 @@
          :action action})
       (throw (Exception. "action-for takes a keyword and a map as arguments")))))
 
-(def action-for (action-for-routes routes))
-(def url-for (url-for-routes routes))
-
 (defn pretty-route [route]
   (let [[method uri val route-name] route
         f (if (vector? val) (first val) val)]
@@ -252,5 +240,11 @@
          " "
          route-name)))
 
-(defn -main []
+(defn prefix-route [s route]
+  (update route 1 #(str s %)))
+
+(defn prefix-routes [s routes]
+  (mapv #(prefix-route s %) routes))
+
+(defn pretty-routes [routes]
   (println (string/join "\n" (map pretty-route routes))))
