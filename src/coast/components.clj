@@ -20,8 +20,7 @@
 
 (defn css
   ([req bundle]
-   (let [files (or (get-in req [:coast.assets/bundles bundle])
-                   (assets/bundle (env :coast-env) bundle))]
+   (let [files (assets/bundle (env :coast-env) bundle)]
      (for [href files]
        [:link {:href href :type "text/css" :rel "stylesheet"}])))
   ([bundle]
@@ -29,8 +28,7 @@
 
 (defn js
   ([req bundle]
-   (let [files (or (get-in req [:coast.assets/bundles bundle])
-                   (assets/bundle (env :coast-env) bundle))]
+   (let [files (assets/bundle (env :coast-env) bundle)]
      (for [src files]
       [:script {:src src :type "application/javascript" :defer true}])))
   ([bundle]
