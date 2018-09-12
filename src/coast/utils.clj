@@ -15,7 +15,9 @@
 
 (defn parse-int [s]
   (if (string? s)
-    (Integer. (re-find  #"^\d+$" s))
+    (let [val (re-find  #"^\d+$" s)]
+      (when (some? val)
+        (Integer. val)))
     s))
 
 (defn map-vals [f m]
