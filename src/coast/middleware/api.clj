@@ -5,7 +5,8 @@
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [clojure.data.json :as json]
-            [ring.middleware.defaults :refer [wrap-defaults api-defaults]]))
+            [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]))
 
 (defn wrap-errors [handler {:keys [api/internal-server-error]}]
   (fn [request]
@@ -50,6 +51,7 @@
                         (wrap-errors server-error)
                         (wrap-defaults (utils/deep-merge api-defaults opts))
                         (wrap-json-params)
+                        (wrap-multipart-params)
                         (wrap-json-response))]
     (fn [request]
       (if (or (true? (:coast.router/api-route? request))
