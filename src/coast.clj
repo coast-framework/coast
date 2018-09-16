@@ -10,8 +10,7 @@
             [coast.error]
             [coast.router]
             [coast.jobs]
-            [coast.validation]
-            [coast.middleware]))
+            [coast.validation]))
 
 (import-vars
   [coast.responses
@@ -43,11 +42,6 @@
    form
    js
    css]
-
-  [coast.middleware
-   wrap-layout
-   wrap-site
-   wrap-api]
 
   [coast.router
    wrap-routes
