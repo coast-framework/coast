@@ -87,3 +87,5 @@
     (catch clojure.lang.ExceptionInfo e#
       (let [ex# (ex-data e#)]
         (~error-fn (ex-data e#))))))
+
+(defn api-route? [handler] handler)

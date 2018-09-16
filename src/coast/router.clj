@@ -2,7 +2,8 @@
   (:require [clojure.string :as string]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [coast.responses :as responses]))
+            [coast.responses :as responses]
+            [coast.utils :as utils]))
 
 (def param-re #":([\w-_]+)")
 
@@ -128,12 +129,7 @@
   [& args]
   (let [routes (last args)
         fns (drop-last args)]
-    (vec
-     (mapcat identity
-             (mapv (fn [route]
-                     (mapv (fn [mw]
-                             (wrap-route route mw)) fns))
-                   routes)))))
+    (mapv #(wrap-route % fns) routes)))
 
 (defn fallback-not-found-page [_]
   (responses/not-found
@@ -142,6 +138,12 @@
        [:title "Not Found"]]
       [:body
        [:h1 "404 Page not found"]]]))
+
+(defn fallback-api-not-found-page [_]
+  {:status 404
+   :body {:status 404
+          :message "404 uri not found"}
+   :headers {"content-type" "application/json"}})
 
 (defn keyword->symbol [k]
   (let [kns (namespace k)
@@ -168,10 +170,31 @@
 (defn route-name [route]
   (-> route last keyword))
 
-(defn handler [not-found-page]
+(defn handler [opts]
   (fn [request]
-    (let [route-handler (or (:route/handler request) not-found-page fallback-not-found-page)]
-      (route-handler request))))
+    (let [{api-not-found :api/not-found
+           not-found-page :404} opts
+          route-handler (or (::handler request)
+                            not-found-page
+                            fallback-not-found-page)]
+      (if (or (some? (re-find #"application/json" (or (get-in request [:headers "accept"])
+                                                      ""))))
+        ((or (::handler request)
+             api-not-found
+             fallback-api-not-found-page) request)
+        (route-handler request)))))
+
+(defn wrap-middleware [handler]
+  (fn [request]
+    (let [middleware (get request ::middleware)]
+      (if (nil? middleware)
+        (handler request)
+        ((middleware handler) request)))))
+
+(defn api-route? [route]
+  (let [val (nth route 2)]
+    (and (vector? val)
+         (> (.indexOf val utils/api-route?) -1))))
 
 (defn wrap-route-info [handler routes]
   "Adds route info to request map"
@@ -183,9 +206,11 @@
           [_ route-uri f] route
           route-params (route-params uri route-uri)
           route-handler (resolve-route f)
-          request (assoc request :route/handler route-handler
-                                 :route/middleware (route-middleware-fn f)
-                                 :route/name (if (vector? f) (first f) f)
+          middleware (route-middleware-fn f)
+          request (assoc request ::name (if (vector? f) (first f) f)
+                                 ::handler route-handler
+                                 ::middleware middleware
+                                 ::api-route? (api-route? route)
                                  :params (merge params route-params))]
       (handler request))))
 

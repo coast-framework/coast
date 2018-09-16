@@ -6,8 +6,9 @@
 (defn start
   "The prod server doesn't handle restarts with an atom, it's built for speed"
   ([app opts]
-   (let [port (-> (or (:port opts) (env/env :port) 1337)
-                  (utils/parse-int))]
+   (let [port (or (-> (or (:port opts) (env/env :port))
+                      (utils/parse-int))
+                  1337)]
      (println "Server is listening on port" port)
      (httpkit/run-server app (merge opts {:port port}))))
   ([app]

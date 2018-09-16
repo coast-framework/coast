@@ -1,6 +1,7 @@
 (ns coast.logger
   (:require [clojure.string :as string]
-            [coast.time :as time])
+            [coast.time :as time]
+            [coast.utils :as utils])
   (:import (java.time Duration)))
 
 (defn diff [start end]
@@ -16,8 +17,10 @@
         uri (:uri request)
         status (:status response)
         method (-> (req-method request) name string/upper-case)
-        content-type (get-in response [:headers "Content-Type"])
-        route (:route/name request)]
+        headers (->> (:headers response)
+                     (utils/map-vals string/lower-case))
+        content-type (get headers "content-type")
+        route (:coast.router/name request)]
     (str method " " uri " " route " " status " " content-type " " ms "ms")))
 
 (defn log [request response start-time]

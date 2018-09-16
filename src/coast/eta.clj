@@ -1,11 +1,14 @@
 (ns coast.eta
-  (:require [coast.middleware :as middleware]
-            [coast.router :as router]
+  (:require [coast.middleware :refer [wrap-logger]]
+            [coast.middleware.site :refer [wrap-site-defaults]]
+            [coast.middleware.api :refer [wrap-api-defaults]]
+            [coast.router :refer [wrap-routes url-for-routes action-for-routes handler wrap-middleware wrap-route-info]]
             [coast.dev.server :as dev.server]
             [coast.prod.server :as prod.server]
             [coast.env :refer [env]]
+            [coast.utils :as utils]
             [clojure.java.io :as io]
-            [ring.middleware.keyword-params :refer [wrap-keyword-params]]))
+            [clojure.string :as string]))
 
 (defn resolve-routes
   "Eager require route namespaces when app is called for uberjar compat"
@@ -21,49 +24,39 @@
 
 (defn resolve-components
   "Eager require components"
-  [opts]
-  (when (and (contains? #{"test" "prod"} (env :coast-env))
-             (not= :api (:wrap-defaults opts)))
+  []
+  (when (contains? #{"test" "prod"} (env :coast-env))
     (require 'components)))
 
 (defn app
-  "Tasteful ring middleware so you don't have to think about it"
-  ([routes opts]
-   ; hack for url-for and action-for
-   (def routes routes)
-   ; hack for uberjar route resolution
-   (resolve-routes routes)
-   (resolve-components opts)
-   (let [layout (get opts :layout (resolve `components/layout))
-         not-found-page (get opts :404 (resolve `error.not-found/view))
-         error-page (get opts :500 (resolve `error.internal-server-error/view))]
-     (-> (router/handler not-found-page)
-         (middleware/wrap-layout layout)
-         (middleware/wrap-with-logger)
-         (middleware/wrap-storage (get opts :storage))
-         (middleware/wrap-coerce-params)
-         (wrap-keyword-params {:keywordize? true :parse-namespaces? true})
-         (middleware/wrap-defaults opts)
-         (middleware/wrap-json-params opts)
-         (middleware/wrap-json-response opts)
-         (middleware/wrap-route-middleware)
-         (router/wrap-route-info routes)
-         (middleware/wrap-not-found not-found-page)
-         (middleware/wrap-errors error-page))))
-  ([routes]
-   (app routes {})))
+  "The main entry point for all coast websites"
+  [opts]
+  (let [{:keys [routes routes/site routes/api]} opts
+        api (wrap-routes utils/api-route? api)
+        routes (or routes (concat site api))]
+    ; url-for and action-for hack
+    (def routes routes)
+    ; uberjar eager load hack
+    (resolve-routes routes)
+    (resolve-components)
+    (-> (handler opts)
+        (wrap-middleware)
+        (wrap-api-defaults opts)
+        (wrap-site-defaults opts)
+        (wrap-logger)
+        (wrap-route-info routes))))
 
 (defn server
   "Runs an http-kit server based on the COAST_ENV env variable, options are dev, test or prod"
   ([app]
    (server app nil))
   ([app opts]
-   (if (= "prod" (env :coast-env))
-     (prod.server/start app opts)
-     (dev.server/restart app opts))))
+   (if (= "dev" (env :coast-env))
+     (dev.server/restart app opts)
+     (prod.server/start app opts))))
 
 (defn url-for [k]
-  ((router/url-for-routes routes) k))
+  ((url-for-routes routes) k))
 
 (defn action-for [k]
-  ((router/action-for-routes routes) k))
+  ((action-for-routes routes) k))

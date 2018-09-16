@@ -25,7 +25,7 @@
 
 (defn wrap-json-params [handler]
   (fn [{:keys [body params content-type] :as request}]
-    (if (and (some? (re-find #"application/json" content-type))
+    (if (and (some? (re-find #"application/json" (or content-type "")))
              (some? body))
       (let [json-params (-> body slurp json/read-str)]
         (handler (assoc request :params (merge params json-params))))
@@ -52,6 +52,8 @@
                         (wrap-json-params)
                         (wrap-json-response))]
     (fn [request]
-      (if (true? (:coast.router/api-route? request))
+      (if (or (true? (:coast.router/api-route? request))
+              (some? (re-find #"application/json" (or (get-in request [:headers "accept"])
+                                                      ""))))
         (api-handler request)
         (handler request)))))
