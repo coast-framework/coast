@@ -1,5 +1,5 @@
 (ns coast.eta
-  (:require [coast.middleware :refer [wrap-logger]]
+  (:require [coast.middleware :refer [wrap-logger wrap-file]]
             [coast.middleware.site :refer [wrap-site-defaults]]
             [coast.middleware.api :refer [wrap-api-defaults]]
             [coast.router :refer [wrap-routes url-for-routes action-for-routes handler wrap-middleware wrap-route-info]]
@@ -13,14 +13,12 @@
 (defn resolve-routes
   "Eager require route namespaces when app is called for uberjar compat"
   [routes]
-  (when (contains? #{"test" "prod"} (env :coast-env))
-    (->> (map #(nth % 2) routes)
-         (map #(if (vector? %) (first %) %))
-         (map namespace)
-         (distinct)
-         (filter some?)
-         (map symbol)
-         (apply require))))
+  (->> (map #(nth % 2) routes)
+       (map #(if (vector? %) (first %) %))
+       (map namespace)
+       (distinct)
+       (filter some?)
+       (map symbol)))
 
 (defn resolve-components
   "Eager require components"
@@ -41,6 +39,7 @@
     (resolve-components)
     (-> (handler opts)
         (wrap-middleware)
+        (wrap-file opts)
         (wrap-api-defaults opts)
         (wrap-site-defaults opts)
         (wrap-logger)
