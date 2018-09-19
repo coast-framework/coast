@@ -34,11 +34,11 @@
   (let [{:keys [routes routes/site routes/api]} opts
         api (wrap-routes utils/api-route? api)
         routes (or routes (concat site api))]
+    ; url-for and action-for hack
+    (def routes routes)
     ; uberjar eager load hacks
     (resolve-components)
     (resolve-routes routes)
-    ; url-for and action-for hack
-    (def routes routes)
     (-> (handler opts)
         (wrap-middleware)
         (wrap-file opts)

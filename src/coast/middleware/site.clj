@@ -35,16 +35,15 @@
          (string/replace #"\$" "/"))]]])
 
 (defn wrap-exceptions [handler]
-  (if (not= "dev" (env :coast-env))
-    handler
-    (fn [request]
-      (try
-        (handler request)
-        (catch Exception e
-          (responses/internal-server-error
-            (exception-page request e)))))))
+  (fn [request]
+    (try
+      (handler request)
+      (catch Exception e
+        (responses/internal-server-error
+          (exception-page request e))))))
 
 (defn internal-server-error [request]
+  (println (:stacktrace request))
   (responses/internal-server-error
     [:html
       [:head
@@ -53,7 +52,7 @@
        [:h1 "500 Internal server error"]]]))
 
 (defn wrap-errors [handler error-fn]
-  (if (not= "prod" (env :coast-env))
+  (if (= "dev" (env :coast-env))
     (wrap-exceptions handler)
     (fn [request]
       (try
@@ -91,10 +90,9 @@
 (defn wrap-html-response [handler]
   (fn [request]
     (let [{:keys [body] :as response} (handler request)
-          accept (get-in request [:headers "accept"])]
+          accept (get-in request [:headers "accept"] "")]
       (if (and (vector? body)
-               (or (nil? accept)
-                   (= "*/*" accept)
+               (or (= "*/*" accept)
                    (string/blank? accept)
                    (some? (re-find #"text/html" accept))))
         (-> (assoc response :body (h/html body))

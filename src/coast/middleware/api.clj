@@ -55,7 +55,6 @@
                         (wrap-json-response))]
     (fn [request]
       (if (or (true? (:coast.router/api-route? request))
-              (some? (re-find #"application/json" (or (get-in request [:headers "accept"])
-                                                      ""))))
+              (some? (re-find #"application/json" (get-in request [:headers "accept"] ""))))
         (api-handler request)
         (handler request)))))
