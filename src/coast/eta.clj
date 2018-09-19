@@ -13,12 +13,13 @@
 (defn resolve-routes
   "Eager require route namespaces when app is called for uberjar compat"
   [routes]
-  (->> (map #(nth % 2) routes)
-       (map #(if (vector? %) (first %) %))
-       (map namespace)
-       (distinct)
-       (filter some?)
-       (map symbol)))
+  (when (contains? #{"test" "prod"} (env :coast-env))
+   (->> (map #(nth % 2) routes)
+        (map #(if (vector? %) (first %) %))
+        (map namespace)
+        (distinct)
+        (filter some?)
+        (map symbol))))
 
 (defn resolve-components
   "Eager require components"
@@ -32,11 +33,11 @@
   (let [{:keys [routes routes/site routes/api]} opts
         api (wrap-routes utils/api-route? api)
         routes (or routes (concat site api))]
+    ; uberjar eager load hacks
+    (resolve-components)
+    (resolve-routes routes)
     ; url-for and action-for hack
     (def routes routes)
-    ; uberjar eager load hack
-    (resolve-routes routes)
-    (resolve-components)
     (-> (handler opts)
         (wrap-middleware)
         (wrap-file opts)
