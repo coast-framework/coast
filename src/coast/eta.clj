@@ -19,7 +19,8 @@
         (map namespace)
         (distinct)
         (filter some?)
-        (map symbol))))
+        (map symbol)
+        (apply require))))
 
 (defn resolve-components
   "Eager require components"
