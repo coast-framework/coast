@@ -176,9 +176,9 @@
            not-found-page :404} opts
           route-handler (or (::handler request)
                             not-found-page
-                            fallback-not-found-page)]
-      (if (or (some? (re-find #"application/json" (or (get-in request [:headers "accept"])
-                                                      ""))))
+                            fallback-not-found-page)
+          accept (get-in request [:headers "accept"] "")]
+      (if (some? (re-find #"application/json" accept))
         ((or (::handler request)
              api-not-found
              fallback-api-not-found-page) request)
