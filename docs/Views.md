@@ -21,23 +21,7 @@ of your site
     [:body
       body]]])
 
-(def app (coast/app routes {:layout layout}))
+(def app (coast/app {:routes routes :layout layout}))
 
 (app {:request-method :get :uri "/"}) ; => <html><head><title>Hello!</title></head><body><h1>Welcome!</h1></body></html>
-```
-
-If you want to return something else other than [hiccup](https://github.com/weavejester/hiccup), like a string or json, you can override coast's regular behavior of rendering html like this:
-
-```clojure
-(ns server
-  (:require [coast]))
-
-(defn home [request]
-  (ok {:message "Welcome!"}))
-
-(def routes [[:get "/" :home]])
-
-(def app (coast/app routes))
-
-(app {:request-method :get :uri "/" :headers {"accept" "application/json"}}) ; => {"message": "Welcome!"}
 ```

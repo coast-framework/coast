@@ -8,12 +8,12 @@ The goal of coast on clojure even if it has a similar sort of name, is not to *B
 (ns your-project
   (:require [coast]))
 
-(def routes [[:get "/hello/:name" `hello]])
+(def routes [[:get "/hello/:name" :hello]])
 
 (defn hello [req]
   [:div (str "Hello " (-> req :params :name) "!")])
 
-(def app (coast/app routes))
+(def app (coast/app {:routes routes}))
 
 (defn main- [& [port]]
   (coast/server app {:port port}))
@@ -69,6 +69,10 @@ So there's still the regular suspects, showing forms with `new` and `edit`, a `r
 ```
 
 That's it, back to the web's roots, `view` functions that show html (`GET` requests) and `action` functions that handle `POST` requests from forms. I don't know if a lot of programmers know this, but browsers can only "natively" handle those two http verbs, the rest of the RESTful verbs don't exist as far as a browser is concerned. So you've got forms all across the web that have hidden inputs `<input type="hidden" name="__method" value="put">` which is fine but it's more work than you or I need to do.
+
+You're doing too much, do less
+
+![](https://media.giphy.com/media/2wZpm9zyceDyXHPf5S/giphy.gif)
 
 So what does a typical `view`/`action` pair look like?
 

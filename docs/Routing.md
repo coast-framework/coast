@@ -71,9 +71,9 @@ Sometimes you need to call a function (or a few) on certain routes, but not ever
       (handler request)
       (unauthorized [:h1 "Sorry dave, I can't let you do that"]))))
 
-(def public [[:get "/"         :home.index/view]
-             [:get "/todos"    :todo.index/view]
-             [:get "/todo/:id" :todo.show/view]])
+(def public [[:get "/"          :home.index/view]
+             [:get "/todo/list" :todo.index/view]
+             [:get "/todo/:id"  :todo.show/view]])
 
 (def private (wrap-routes wrap-auth
               [[:get "/new-todo"  :todo.new/view]
@@ -82,19 +82,31 @@ Sometimes you need to call a function (or a few) on certain routes, but not ever
 (def routes (concat public private))
 ```
 
-Maybe you want separate routes for an api and routes for your site? Coast can do that too, although it's a little tedious to set up
+Maybe you want separate routes for an api and routes for your site? Coast can do that too!
+
+```clojure
+(ns your-app
+  (:require [coast]))
+
+(def site [[:get "/" :home.index/view :home]]))
+
+(def api [[:get "/api/status" :api/status]])))
+          [:get "/api/another-api-route" :api/another]
+
+(def app (coast/app {:routes/site site :routes/api api}))
+```
+
+If you have a lot of routes that share the same prefix you can use `prefix-routes` from the `coast` namespace
 
 ```clojure
 (ns routes
-  (:require [coast :refer [wrap-site wrap-routes prefix-routes]]))
+  (:require [coast :refer [prefix-routes]]))
 
 (def site [[:get "/" :home.index/view :home]]))
 
 (def api (prefix-routes "/api"
-           (wrap-routes wrap-api
-            [[:get "/status" :api.status.index/view]])))
-
-(def routes (concat site api))
+          [[:get "" :api/status]] ; this is the /api route, it's weird but it works
+           [:get "/another-api-route" :api/another]))
 ```
 
 Or if you just want to use coast as an api, you can do that too
@@ -104,18 +116,14 @@ Or if you just want to use coast as an api, you can do that too
   (:require [coast])
   (:gen-class))
 
-(def app (coast/app {:wrap-defaults :api})) ; by default every request/response is json
+(defn home [request]
+  (coast/ok {:message "ok"}))
+
+(def app (coast/app {:routes [[:get "/" :home]]}))
 
 (defn -main [& [port]]
   (coast/server app {:port port}))
-```
 
-Here's an example route in api mode
-
-```clojure
-(ns home.index
-  (:require [coast :refer [ok]]))
-
-(defn view [req]
-  (ok {:status "up"})) ; => 200 OK {"status": "up"}
+(comment
+  (app {:request-method :get :uri "/"}) ; => {"message": "ok"}
 ```

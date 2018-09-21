@@ -20,3 +20,4 @@ Here's the list of open source projects that coast uses:
 Here's the list of contributors that made coast what it is today 🎉
 
 https://github.com/coast-framework/coast/graphs/contributors
+https://github.com/coast-framework/template/graphs/contributors

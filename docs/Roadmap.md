@@ -12,6 +12,7 @@
 - Deploying to various clouds with one deploy command (ansible?)
 - Tests/spec
 
+- ~~API routes~~
 - ~~Add js/css minifcation/concatenation (eta)~~
 - ~~Update generators (eta)~~
 - ~~Add shortcuts for routes to view/action function pairs~~
