@@ -72,7 +72,7 @@ That's it, back to the web's roots, `view` functions that show html (`GET` reque
 
 You're doing too much, do less
 
-![](https://media.giphy.com/media/2wZpm9zyceDyXHPf5S/giphy.gif)
+![](https://i.imgur.com/xz7Efqm.gif)
 
 So what does a typical `view`/`action` pair look like?
 
