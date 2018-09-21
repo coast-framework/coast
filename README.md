@@ -1,22 +1,22 @@
-![](logo/horizontal.png)
-
-## What is this?
-
-Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the server without javascript which allows you to ship your web applications faster and it looks like this
+## WAT
 
 ```clojure
 (ns my-project
   (:require [coast]))
 
-(def routes [[:get "/" `home]])
+(def routes [[:get "/" :home]])
 
 (defn home [req]
   [:h1 "You're coasting on clojure!"])
 
-(def app (coast/app routes))
+(def app (coast/app {:routes routes}))
 
 (coast/server app {:port 1337})
 ```
+
+## Wait, What is this?
+
+Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the server without javascript which allows you to ship your web applications faster
 
 ## Getting Started
 
@@ -39,8 +39,6 @@ curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/c
 ```bash
 coast new myapp && cd myapp && make server
 ```
-
-
 
 ### Installation on Linux (Debian/Ubuntu)
 
@@ -66,7 +64,6 @@ coast new myapp && cd myapp && make server
 
 You should be greeted with the text "You're coasting on clojure!"
 when you visit `http://localhost:1337`
-
 
 ## Read The Docs
 
