@@ -8,7 +8,7 @@
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [ring.middleware.multipart-params :refer [wrap-multipart-params]]))
 
-(defn wrap-errors [handler {:keys [api/internal-server-error]}]
+(defn wrap-errors [handler {:keys [api/server-error]}]
   (fn [request]
     (try
       (handler request)
@@ -19,10 +19,10 @@
                     :stacktrace (with-out-str
                                  (st/print-stack-trace e))}]
           (if (= "dev" (env :coast-env))
-            (res/internal-server-error body)
-            (if (fn? internal-server-error)
-              (internal-server-error body)
-              (res/internal-server-error {:error "😵 something went wrong"}))))))))
+            (res/server-error body)
+            (if (fn? server-error)
+              (server-error body)
+              (res/server-error {:error "😵 something went wrong"}))))))))
 
 (defn wrap-json-params [handler]
   (fn [{:keys [body params content-type] :as request}]
@@ -45,8 +45,8 @@
         response))))
 
 (defn wrap-api-defaults [handler opts]
-  (let [;not-found (get opts :api/not-found (resolve `api.error/not-found))
-        server-error (get opts :api/internal-server-error (resolve `api.error/internal-server-error))
+  (let [not-found (get opts :api/not-found (resolve `api.error/not-found))
+        server-error (get opts :api/server-error (resolve `api.error/server-error))
         api-handler (-> handler
                         (wrap-errors server-error)
                         (wrap-defaults (utils/deep-merge api-defaults opts))

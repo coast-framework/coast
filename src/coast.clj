@@ -18,7 +18,7 @@
    bad-request
    not-found
    unauthorized
-   internal-server-error
+   server-error
    redirect
    flash]
 

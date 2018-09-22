@@ -24,4 +24,4 @@
 (def unauthorized (partial response 401))
 (def not-found (partial response 404))
 (def forbidden (partial response 403))
-(def internal-server-error (partial response 500))
+(def server-error (partial response 500))

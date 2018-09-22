@@ -7,10 +7,9 @@
             [clojure.edn :as edn]
             [coast.time :as time]
             [coast.utils :as utils]
-            [coast.responses :as responses]
+            [coast.responses :as res]
             [coast.env :refer [env]]
             [coast.logger :as logger]
-            [coast.error :refer [rescue]]
             [hiccup.core :as h])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
@@ -39,12 +38,11 @@
     (try
       (handler request)
       (catch Exception e
-        (responses/internal-server-error
+        (res/server-error
           (exception-page request e))))))
 
-(defn internal-server-error [request]
-  (println (:stacktrace request))
-  (responses/internal-server-error
+(defn server-error [request]
+  (res/server-error
     [:html
       [:head
        [:title "Internal Server Error"]]
@@ -58,21 +56,11 @@
       (try
         (handler request)
         (catch Exception e
-          (responses/internal-server-error
-            ((or error-fn internal-server-error)
+          (res/server-error
+            ((or error-fn server-error)
              (assoc request :exception e
                             :stacktrace (with-out-str
                                          (st/print-stack-trace e))))))))))
-
-(defn wrap-not-found [handler not-found-page]
-  (if (nil? not-found-page)
-    handler
-    (fn [request]
-      (let [[response errors] (rescue (handler request) :404)]
-        (if (nil? errors)
-          response
-          (responses/not-found
-            (not-found-page request)))))))
 
 (defn layout? [response layout]
   (and (some? layout)
@@ -84,8 +72,8 @@
     (let [response (handler request)]
       (cond
         (map? response) response
-        (layout? response layout) (responses/ok (layout request response))
-        :else (responses/ok response)))))
+        (layout? response layout) (res/ok (layout request response))
+        :else (res/ok response)))))
 
 (defn wrap-html-response [handler]
   (fn [request]
@@ -126,8 +114,7 @@
 
 (defn wrap-site-defaults [handler opts]
   (let [layout (get opts :layout (resolve `components/layout))
-        not-found (get opts :404 (resolve `error.not-found/view))
-        server-error (get opts :500 (resolve `error.internal-server-error/view))
+        server-error (get opts :site/server-error (resolve `error.server-error/view))
         m (utils/deep-merge
            {:session {:cookie-name "id"
                       :store (cookie/cookie-store {:key (env :secret)})}
@@ -138,7 +125,6 @@
                          (wrap-layout layout)
                          (wrap-keyword-params {:keywordize? true :parse-namespaces? true})
                          (wrap-coerce-params)
-                         (wrap-not-found not-found)
                          (wrap-errors server-error)
                          (wrap-html-response)
                          (wrap-defaults m))]

@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [coast.responses :as responses]
+            [coast.responses :as res]
             [coast.utils :as utils]))
 
 (def param-re #":([\w-_]+)")
@@ -131,15 +131,15 @@
         fns (drop-last args)]
     (mapv #(wrap-route % fns) routes)))
 
-(defn fallback-not-found-page [_]
-  (responses/not-found
+(defn fallback-not-found [_]
+  (res/not-found
     [:html
       [:head
        [:title "Not Found"]]
       [:body
        [:h1 "404 Page not found"]]]))
 
-(defn fallback-api-not-found-page [_]
+(defn fallback-api-not-found [_]
   {:status 404
    :body {:status 404
           :message "404 uri not found"}
@@ -172,17 +172,16 @@
 
 (defn handler [opts]
   (fn [request]
-    (let [{api-not-found :api/not-found
-           not-found-page :404} opts
-          route-handler (or (::handler request)
-                            not-found-page
-                            fallback-not-found-page)
+    (let [api-not-found (get opts :api/not-found (resolve `api.error/not-found))
+          not-found (get opts :site/not-found (resolve `error.not-found/view))
           accept (get-in request [:headers "accept"] "")]
       (if (some? (re-find #"application/json" accept))
         ((or (::handler request)
              api-not-found
-             fallback-api-not-found-page) request)
-        (route-handler request)))))
+             fallback-api-not-found) request)
+        ((or (::handler request)
+             not-found
+             fallback-not-found) request)))))
 
 (defn wrap-middleware [handler]
   (fn [request]
