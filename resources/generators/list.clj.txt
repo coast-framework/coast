@@ -2,7 +2,5 @@
   (:require [coast :refer [pull q url-for validate]]))
 
 (defn view [{{:keys [id]} :params :as req}]
-  (let [rows (q '[:pull [__qualified-keywords__]
-                  :where [:__resource__/id ?id]]
-                {:id id})]
+  (let [rows (q '[:pull [__qualified-keywords__]])]
     __table__))
