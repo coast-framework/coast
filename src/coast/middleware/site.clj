@@ -10,7 +10,7 @@
             [coast.responses :as res]
             [coast.env :refer [env]]
             [coast.logger :as logger]
-            [hiccup.core :as h])
+            [hiccup2.core :as h])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
 
@@ -83,7 +83,7 @@
                (or (= "*/*" accept)
                    (string/blank? accept)
                    (some? (re-find #"text/html" accept))))
-        (-> (assoc response :body (h/html body))
+        (-> (assoc response :body (str (h/html body)))
             (assoc-in [:headers "content-type"] "text/html"))
         response))))
 

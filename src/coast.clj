@@ -1,5 +1,6 @@
 (ns coast
   (:require [potemkin :refer [import-vars]]
+            [hiccup2.core]
             [coast.db]
             [coast.eta]
             [coast.env]
@@ -63,4 +64,8 @@
    uuid]
 
   [coast.time
-   now])
+   now]
+
+  [hiccup2.core
+   raw
+   html])

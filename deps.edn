@@ -8,7 +8,7 @@
         org.clojure/tools.namespace {:mvn/version "0.3.0-alpha4"}
         http-kit {:mvn/version "2.3.0"}
         org.clojure/java.jdbc {:mvn/version "0.7.5"}
-        hiccup {:mvn/version "1.0.5"}
+        hiccup {:mvn/version "2.0.0-alpha1"}
         jkkramer/verily {:mvn/version "0.6.0"}
         ring/ring-core {:mvn/version "1.7.0-RC1"}
         com.mchange/c3p0 {:mvn/version "0.9.5.2"}
