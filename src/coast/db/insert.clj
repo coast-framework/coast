@@ -24,16 +24,22 @@
                     ")")})
 
 (defn values [t]
-  {:values (str "values (" (->> (map (fn [_] "?") t)
-                                (string/join ","))
-                ")")})
+  {:values (str "values " (string/join ","
+                           (map #(str "(" (->> (map (fn [_] "?") %)
+                                               (string/join ","))
+                                     ")")
+                                t)))})
 
 (defn sql-map [t]
-  (apply merge (insert-into t)
+  (apply merge (insert-into (first t))
                (values t)))
 
-(defn sql-vec [m]
-  (let [tuples (map identity m)
+(defn tuple [m]
+  (mapv identity m))
+
+(defn sql-vec [arg]
+  (let [v (if (sequential? arg) arg [arg])
+        tuples (mapv tuple v)
         {:keys [insert-into values]} (sql-map tuples)]
     (vec (concat [(string/join " " (filter some? [insert-into values "returning *"]))]
-                 (map second tuples)))))
+                 (mapcat #(map second %) tuples)))))
