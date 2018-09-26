@@ -26,7 +26,7 @@ who want to let the framework take care of that and get some benefits from it. H
 From your terminal in your Coast app folder run this
 
 ```bash
-coast gen schema add-blog-schema
+coast gen migration add-blog-schema
 ```
 
 ## No more tables
