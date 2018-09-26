@@ -56,8 +56,14 @@
      (dev.server/restart app opts)
      (prod.server/start app opts))))
 
-(defn url-for [k]
-  ((url-for-routes routes) k))
+(defn url-for
+  ([k m]
+   ((url-for-routes routes) k m))
+  ([k]
+   (url-for k {})))
 
-(defn action-for [k]
-  ((action-for-routes routes) k))
+(defn action-for
+  ([k m]
+   ((action-for-routes routes) k m))
+  ([k]
+   (action-for k {})))
