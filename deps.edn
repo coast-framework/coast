@@ -15,7 +15,7 @@
         potemkin {:mvn/version "0.4.5"}
         asset-minifier {:mvn/version "0.2.5"}}
 
- :aliases {:nrepl {:extra-deps {nrepl {:mvn/version "0.4.2"}}}
+ :aliases {:nrepl {:extra-deps {nrepl {:mvn/version "0.4.4"}}}
            :test
              {:extra-paths ["test"]
               :main-opts ["-m" "cognitect.test-runner"]
