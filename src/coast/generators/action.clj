@@ -50,8 +50,8 @@
 
 (defn dl-element [k]
   (str "[:dl
-      [:dt \""(name k)"\"]
-      [:dd (" (str k) " " (namespace k) ")]]"))
+       [:dt \""(name k)"\"]
+       [:dd (" (str k) " " (namespace k) ")]]"))
 
 (defn table [ks]
   (str "[:table
@@ -78,7 +78,7 @@
              (fill {:qualified-keywords (string/join " " cols)
                     :form-elements (string/join "\n\n    "
                                     (map form-element cols))
-                    :dl-elements (string/join "\n\n    "
+                    :dl-elements (string/join "\n\n     "
                                    (map dl-element cols))
                     :table (table cols)
                     :action action

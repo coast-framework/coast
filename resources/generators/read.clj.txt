@@ -6,4 +6,5 @@
                       (q '[:select __qualified-keywords__
                            :where [:__resource__/id ?id]]
                          {:id id}))]
-    __dl-elements__))
+    [:div
+      __dl-elements__]))
