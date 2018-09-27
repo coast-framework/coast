@@ -7,10 +7,18 @@
 
 (def param-re #":([\w-_]+)")
 
+(defn qualify-ident [k]
+  (when (and (ident? k)
+             (re-find #"-" (name k)))
+    (let [[kns kn] (string/split (name k) #"-")]
+      (keyword (or kns "") (or kn "")))))
+
 (defn replacement [match m]
   (let [fallback (first match)
-        k (-> match last keyword)]
-    (str (get m k fallback))))
+        k (-> match last keyword)
+        s1 (get m k)
+        s2 (get m (qualify-ident k))]
+    (str (or s1 s2 fallback))))
 
 (defn route-str [s m]
   (when (and (string? s)
