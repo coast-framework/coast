@@ -57,6 +57,7 @@
      (prod.server/start app opts))))
 
 (defn url-for
+  "Creates a url from a route name"
   ([k m]
    ((url-for-routes routes) k m))
   ([k]
