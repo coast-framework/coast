@@ -26,12 +26,13 @@
        (str "at " (:uri request))]]
      [:h1 {:style "color: white; margin: 0; padding: 0"} (.getMessage e)]]
     [:p {:style "background-color: #f4f4f4; padding: 2rem;"}
-     (-> (st/print-stack-trace e)
-         (with-out-str)
-         (string/replace #"\n" "<br />")
-         (string/replace #"\$fn__\d+\.invoke" "")
-         (string/replace #"\$fn__\d+\.doInvoke" "")
-         (string/replace #"\$" "/"))]]])
+     (h/raw
+       (-> (st/print-stack-trace e)
+           (with-out-str)
+           (string/replace #"\n" "<br />")
+           (string/replace #"\$fn__\d+\.invoke" "")
+           (string/replace #"\$fn__\d+\.doInvoke" "")
+           (string/replace #"\$" "/")))]]])
 
 (defn wrap-exceptions [handler]
   (fn [request]
