@@ -1,6 +1,6 @@
 # Table of Contents
 
-* [Quickstart](../Quickstart.md)
+* [Quickstart](Quickstart.md)
 * [Why](Why.md)
 * [Structure](Structure.md)
 * [Routing](Routing.md)
