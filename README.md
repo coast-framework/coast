@@ -192,7 +192,7 @@ This is specifying which resource (table) to generate and it puts a file in `src
          [:td (:todo/completed-at row)]])]]))
 ```
 
-# Routes
+### Routes
 
 One thing coast doesn't do yet is update the routes file, let's do that now:
 
