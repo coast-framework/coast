@@ -35,7 +35,7 @@ curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/c
 3. Create a new coast project
 
 ```bash
-coast new myapp && cd myapp && make server
+coast new myapp && cd myapp
 ```
 
 ### Installation on Linux (Debian/Ubuntu)
@@ -57,7 +57,7 @@ sudo curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framew
 3. Create a new coast project
 
 ```bash
-coast new myapp && cd myapp && make server
+coast new myapp && cd myapp
 ```
 
 You should be greeted with the text "You're coasting on clojure!"
@@ -205,7 +205,7 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
              [:get "/todo/list" :todo.list/view]])
 ```
 
-Now we can check it out in the browser, there's no styling or anything so it's not going to look amazing, go to `http://localhost:1337/todo/list` to check out your handiwork.
+Now we can check it out in the browser, there's no styling or anything so it's not going to look amazing, start up a repl with `make repl` and run `(server/-main)` then go to `http://localhost:1337/todo/list` to check out your handiwork.
 
 Example projects and more coming soon...
 
