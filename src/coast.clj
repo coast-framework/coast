@@ -11,7 +11,8 @@
             [coast.error]
             [coast.router]
             [coast.jobs]
-            [coast.validation]))
+            [coast.validation]
+            [coast.middleware.site]))
 
 (import-vars
   [coast.responses
@@ -47,6 +48,9 @@
   [coast.router
    wrap-routes
    prefix-routes]
+
+  [coast.middleware.site
+   wrap-layout]
 
   [coast.eta
    server
