@@ -1,7 +1,9 @@
 (ns coast.db
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
-            [clojure.walk]
+            [clojure.walk :as walk]
+            [clojure.data.json :as json]
+            [clojure.instant :as instant]
             [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
@@ -13,7 +15,9 @@
             [coast.db.schema]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]])
-  (:import (java.io File))
+  (:import (java.io File)
+           (java.time Instant)
+           (java.text SimpleDateFormat))
   (:refer-clojure :exclude [drop update]))
 
 (defn exec [db sql]
@@ -114,6 +118,38 @@
     [(first val) (first (second val))]
     val))
 
+(defn coerce-inst
+  "Coerce json iso8601 to clojure #inst"
+  [val]
+  (if (string? val)
+    (try
+      (instant/read-instant-timestamp val)
+      (catch Exception e
+        val))
+    val))
+
+(defn coerce-timestamp-inst
+  "Coerce timestamps to clojure #inst"
+  [val]
+  (if (string? val)
+    (try
+      (let [fmt (SimpleDateFormat. "yyyy-MM-dd HH:mm:ss")]
+        (.parse fmt val))
+      (catch Exception e
+        val))
+    val))
+
+(defn parse-json
+  "Parses json from pull queries"
+  [schema val]
+  (if (and (sequential? val)
+           (= 2 (count val))
+           (or (= :many (get-in schema [(first val) :db/type]))
+               (= :one (get-in schema [(first val) :db/type])))
+           (string? (second val)))
+    [(first val) (json/read-str (second val) :key-fn qualify-col)]
+    val))
+
 (defn q
   ([v params]
    (let [schema (coast.db.schema/fetch)
@@ -121,7 +157,9 @@
                      (db.query/sql-vec v params)
                      {:keywordize? false
                       :identifiers qualify-col})]
-     (clojure.walk/prewalk #(one-first schema %) rows)))
+     (walk/postwalk #(-> % coerce-inst coerce-timestamp-inst)
+        (walk/prewalk #(->> (one-first schema %) (parse-json schema))
+          rows))))
   ([v]
    (q v nil)))
 
