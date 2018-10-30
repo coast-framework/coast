@@ -1,19 +1,19 @@
 {:paths ["src" "resources"]
 
- :deps {org.clojure/data.json {:mvn/version "0.2.6"}
+ :deps {asset-minifier {:mvn/version "0.2.5"}
+        com.mchange/c3p0 {:mvn/version "0.9.5.2"}
+        hiccup {:mvn/version "2.0.0-alpha1"}
+        http-kit {:mvn/version "2.3.0"}
+        jkkramer/verily {:mvn/version "0.6.0"}
+        org.clojure/data.json {:mvn/version "0.2.6"}
         org.clojure/clojure {:mvn/version "1.9.0"}
-        ring/ring-devel {:mvn/version "1.5.0"}
-        ring/ring-defaults {:mvn/version "0.2.3"}
         org.postgresql/postgresql {:mvn/version "42.2.1"}
         org.clojure/tools.namespace {:mvn/version "0.3.0-alpha4"}
-        http-kit {:mvn/version "2.3.0"}
         org.clojure/java.jdbc {:mvn/version "0.7.5"}
-        hiccup {:mvn/version "2.0.0-alpha1"}
-        jkkramer/verily {:mvn/version "0.6.0"}
-        ring/ring-core {:mvn/version "1.7.0-RC1"}
-        com.mchange/c3p0 {:mvn/version "0.9.5.2"}
         potemkin {:mvn/version "0.4.5"}
-        asset-minifier {:mvn/version "0.2.5"}}
+        ring/ring-core {:mvn/version "1.7.0-RC1"}
+        ring/ring-defaults {:mvn/version "0.2.3"}
+        ring/ring-devel {:mvn/version "1.5.0"}}
 
  :aliases {:nrepl {:extra-deps {nrepl {:mvn/version "0.4.4"}}}
            :test
