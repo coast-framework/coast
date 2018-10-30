@@ -115,7 +115,13 @@
 
 (defn wrap-site-defaults [handler opts]
   (let [layout (get opts :layout (resolve `components/layout))
-        server-error (get opts :site/server-error (resolve `error.server-error/view))
+        route-server-error (-> (filter #(= (second %) "/500") (or (:routes opts) (:routes/site opts)))
+                               (first)
+                               (nth 2)
+                               (utils/keyword->symbol)
+                               (utils/resolve-safely))
+        server-error (or (get opts :site/server-error (resolve `error.server-error/view))
+                         route-server-error)
         m (utils/deep-merge
            {:session {:cookie-name "id"
                       :store (cookie/cookie-store {:key (env :secret)})}

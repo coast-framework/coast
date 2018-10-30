@@ -181,7 +181,13 @@
 (defn handler [opts]
   (fn [request]
     (let [api-not-found (get opts :api/not-found (resolve `api.error/not-found))
-          not-found (get opts :site/not-found (resolve `error.not-found/view))
+          route-not-found (-> (filter #(= (second %) "/404") (or (:routes opts) (:routes/site opts)))
+                              (first)
+                              (nth 2)
+                              (utils/keyword->symbol)
+                              (utils/resolve-safely))
+          not-found (or (get opts :site/not-found (resolve `error.not-found/view))
+                        route-not-found)
           accept (get-in request [:headers "accept"] "")]
       (if (some? (re-find #"application/json" accept))
         ((or (::handler request)

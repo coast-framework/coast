@@ -89,3 +89,11 @@
         (~error-fn (ex-data e#))))))
 
 (defn api-route? [handler] handler)
+
+(defn keyword->symbol [k]
+  (when (keyword? k)
+    (symbol (namespace k) (name k))))
+
+(defn resolve-safely [sym]
+  (when (symbol? sym)
+    (resolve sym)))
