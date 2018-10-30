@@ -61,7 +61,9 @@
 (defn url-for
   "Creates a url from a route name"
   ([k m]
-   ((url-for-routes routes) k m))
+   (if-let [anchor (:# m)]
+     (str ((url-for-routes routes) k (dissoc m :#)) "#" (name anchor))
+     ((url-for-routes routes) k m)))
   ([k]
    (url-for k {})))
 
