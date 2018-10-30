@@ -52,17 +52,16 @@
       (pprint/write val))))
 
 (defn bundle [coast-env bundle-name]
-  (if (= "prod" coast-env)
-    (-> (io/resource "assets.minified.edn")
-        (slurp)
-        (edn/read-string)
-        (get bundle-name))
-    (let [m (-> (io/resource "assets.edn")
-                (slurp)
-                (edn/read-string))]
-      (get (->> (map (fn [[k v]] {k (hrefs (ext k) v)}) m)
-                (apply merge))
-           bundle-name))))
+  (let [s (if (= "prod" coast-env) "assets.minified.edn" "assets.edn")
+        res (io/resource s)]
+    (if (some? res)
+      (let [m (-> res slurp edn/read-string)]
+        (if (= "prod" coast-env)
+          (get m bundle-name)
+          (get (->> (map (fn [[k v]] {k (hrefs (ext k) v)}) m)
+                    (apply merge))
+               bundle-name)))
+      (println "Warning: You're trying to load" s "but it doesn't exist! Run `COAST_ENV=prod make assets` for minified, bundled assets in production"))))
 
 (defn -main []
   (let [m (-> (io/resource "assets.edn")
