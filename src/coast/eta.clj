@@ -24,7 +24,9 @@
 (defn resolve-components
   "Eager require components"
   []
-  (require 'components))
+  (try
+    (require 'components)
+    (catch Exception e)))
 
 (defn app
   "The main entry point for coast apps"
