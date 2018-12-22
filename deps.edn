@@ -6,7 +6,7 @@
         http-kit {:mvn/version "2.3.0"}
         jkkramer/verily {:mvn/version "0.6.0"}
         org.clojure/data.json {:mvn/version "0.2.6"}
-        org.clojure/clojure {:mvn/version "1.9.0"}
+        org.clojure/clojure {:mvn/version "1.10.0"}
         org.postgresql/postgresql {:mvn/version "42.2.1"}
         org.clojure/tools.namespace {:mvn/version "0.3.0-alpha4"}
         org.clojure/java.jdbc {:mvn/version "0.7.5"}
