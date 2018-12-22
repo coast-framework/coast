@@ -99,11 +99,13 @@
        (map add-constraint)))
 
 (defn create-table-if-not-exists [table]
-  (str "create table if not exists " table " ("
-       " id serial primary key,"
-       " updated_at timestamptz,"
-       " created_at timestamptz not null default now()"
-       " )"))
+  (if (= "user" table)
+    (throw (Exception. "user is a reserved word in postgres try a different name for this table"))
+    (str "create table if not exists " table " ("
+         " id serial primary key,"
+         " updated_at timestamptz,"
+         " created_at timestamptz not null default now()"
+         " )")))
 
 (defn create-tables-if-not-exists [v]
   (let [idents (->> (filter ident? v)
