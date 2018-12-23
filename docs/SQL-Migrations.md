@@ -2,12 +2,20 @@
 
 ## `coast gen sql:migration the-name-of-a-migration`
 
-This creates an empty migration in resources/migrations that looks like this
+This creates a sql file with a timestamp and the filename in the `resources/migrations` folder. Here's an example migration
 
 ```sql
 -- up
+create table customer (
+  id serial primary key,
+  email text unique not null,
+  password text not null,
+  first_name text,
+  last_name text
+);
 
 -- down
+drop table customer;
 
 ```
 
