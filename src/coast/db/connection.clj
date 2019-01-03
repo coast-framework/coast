@@ -26,7 +26,7 @@
 
 (defn user-info [db-uri]
   (when (string? (.getUserInfo db-uri))
-    (let [[user password] (clojure.string/split (.getUserInfo db-uri) #":")]
+    (let [[user password] (string/split (.getUserInfo db-uri) #":")]
       {:user user :password password})))
 
 (defn db-spec []
