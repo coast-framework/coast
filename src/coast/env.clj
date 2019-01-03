@@ -13,7 +13,10 @@
     (if (.exists file)
       (->> (slurp file)
            (string/split-lines)
+           (map string/trim)
+           (filter #(not (string/blank? %)))
            (map #(string/split % #"="))
+           (map #(mapv (fn [s] (string/trim s)) %))
            (into {}))
       {})))
 
