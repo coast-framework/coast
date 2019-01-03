@@ -10,6 +10,7 @@
             [coast.responses :as res]
             [coast.env :refer [env]]
             [coast.logger :as logger]
+            [coast.router :as router]
             [hiccup2.core :as h])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
@@ -139,3 +140,7 @@
       (if (:coast.router/api-route? request)
         (handler request)
         (site-handler request)))))
+
+(defn wrap-with-layout [layout routes]
+  (router/wrap-routes #(wrap-layout % layout)
+    routes))
