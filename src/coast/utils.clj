@@ -61,6 +61,9 @@
 (def kebab (partial convert-case #"_" "-"))
 (def snake (partial convert-case #"-" "_"))
 
+(def kebab-case (partial convert-case #"_" "-"))
+(def snake-case (partial convert-case #"-" "_"))
+
 (defn long-str [& s]
   (let [s (filter some? s)]
     (if (= 1 (count s))
@@ -97,3 +100,11 @@
 (defn resolve-safely [sym]
   (when (symbol? sym)
     (resolve sym)))
+
+(defn sqlize [val]
+  (cond
+    (qualified-ident? val) (str (-> val namespace snake-case) "." (-> val name snake-case))
+    (ident? val) (-> val name snake-case)
+    (string? val) (snake-case val)
+    (nil? val) val
+    :else (throw (Exception. (str val " is not an ident or a string. Example: :customer, :public/customer or \"customer\"")))))
