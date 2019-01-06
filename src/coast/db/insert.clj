@@ -14,7 +14,8 @@
   (str (->> (map first t)
             (filter qualified-ident?)
             (first)
-            (namespace))))
+            (namespace)
+            (utils/snake))))
 
 (defn insert-into [t]
   {:insert-into (str "insert into " (table t) " ("

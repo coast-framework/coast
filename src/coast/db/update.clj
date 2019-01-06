@@ -32,7 +32,8 @@
   (str (->> (map first t)
             (filter qualified-ident?)
             (first)
-            (namespace))))
+            (namespace)
+            (utils/snake))))
 
 (defn update-set [t]
   (let [cols (cols t)
