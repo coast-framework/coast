@@ -42,14 +42,23 @@
         completed (set (completed-migrations))]
     (sort (vec (set/difference all completed)))))
 
+
+(defn migration-blank? [migration]
+  (let [ext (last (re-find #"\.(\w+)$" migration))]
+    (condp = ext
+      "sql" (string/blank? (migrations.sql/up migration))
+      "edn" (empty? (migrations.edn/content migration))
+      true)))
+
+
 (defn migrate []
   (let [migrations (pending)]
     (doseq [migration migrations]
       (let [sql (or (migrations.sql/up migration)
                     (migrations.edn/migrate migration))
             edn (migrations.edn/content migration)
-            friendly-name (string/replace migration #"\..*$" "")]
-        (if (string/blank? sql)
+            friendly-name (string/replace migration #"\.edn|\.sql" "")]
+        (if (migration-blank? migration)
           (throw (Exception. (format "%s is empty" migration)))
           (do
             (println "")
@@ -65,6 +74,15 @@
               (schema/save edn))
             (println friendly-name "migrated successfully")))))))
 
+
+(defn rollback-blank? [migration]
+  (let [ext (last (re-find #"\.(\w+)$" migration))]
+    (condp = ext
+      "sql" (string/blank? (migrations.sql/down migration))
+      "edn" (empty? (migrations.edn/rollback migration))
+      true)))
+
+
 (defn rollback []
   (let [migration (last (completed-migrations))]
     (when (some? migration)
@@ -72,7 +90,7 @@
                       (migrations.edn/rollback migration))
               edn (migrations.edn/content migration)
               friendly-name (string/replace migration #"\.edn|\.sql" "")]
-          (if (string/blank? sql)
+          (if (rollback-blank? migration)
             (throw (Exception. (format "%s is empty" migration)))
             (do
               (println "")
