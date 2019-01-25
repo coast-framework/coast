@@ -1,14 +1,18 @@
 (ns coast.env
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
+            [clojure.edn :as edn]
             [coast.utils :as utils]))
 
-(defn fmt [m]
+(defn fmt
+  "This formats .env keys that LOOK_LIKE_THIS to keys that :look-like-this"
+  [m]
   (->> (map (fn [[k v]] [(-> k .toLowerCase (utils/kebab) keyword) v]) m)
        (into {})))
 
-(defn dot-env []
+(defn dot-env
   "Environment variables all come from .env, specify it on prod, specify it on dev, live a happy life"
+  []
   (let [file (io/file ".env")]
     (if (.exists file)
       (->> (slurp file)
@@ -20,6 +24,15 @@
            (into {}))
       {})))
 
+(defn env-edn
+  "Environment variables can also come from the easily-parse-able env.edn"
+  []
+  (let [file (io/file "env.edn")]
+    (if (.exists file)
+      (-> file slurp edn/read-string)
+      {})))
+
 (defn env [k]
-  (get (fmt (merge (dot-env) (System/getenv)))
-       k))
+  (let [m (fmt (merge (dot-env) (System/getenv)))
+        m (merge (env-edn) m)]
+    (get m k)))
