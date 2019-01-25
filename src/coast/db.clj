@@ -7,14 +7,15 @@
             [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
-            [coast.db.connection :refer [connection admin-db-url]]
+            [coast.db.connection :refer [connection]]
             [coast.db.update :as db.update]
             [coast.db.insert :as db.insert]
             [coast.db.delete :as db.delete]
             [coast.db.query :as db.query]
             [coast.db.schema]
             [coast.utils :as utils]
-            [coast.error :refer [raise rescue]])
+            [coast.error :refer [raise rescue]]
+            [clojure.java.shell :as shell])
   (:import (java.io File)
            (java.time Instant)
            (java.text SimpleDateFormat))
@@ -77,20 +78,32 @@
 
 (defq "sql/schema.sql")
 
-(defn admin-connection []
-  {:connection (jdbc/get-connection (admin-db-url))})
 
-(defn create [db-name]
-  (let [db-name (format "%s_%s" db-name (env/env :coast-env))
-        sql (format "create database %s" db-name)]
-    (exec (admin-connection) sql)
-    (println "Database" db-name "created successfully")))
+(defn create
+ "Creates a new database"
+ [s]
+ (let [cmd (cond
+             (coast.db.connection/sqlite? (env/env :database-url)) "touch"
+             (coast.db.connection/pg? (env/env :database-url)) "createdb"
+             :else "")
+       m (shell/sh cmd s)]
+   (if (= 0 (:exit m))
+     (str s " created successfully")
+     (:err m))))
 
-(defn drop [db-name]
-  (let [db-name (format "%s_%s" db-name (env/env :coast-env))
-        sql (format "drop database %s" db-name)]
-    (exec (admin-connection) sql)
-    (println "Database" db-name "dropped successfully")))
+
+(defn drop
+  "Drops an existing database"
+  [s]
+  (let [cmd (cond
+              (coast.db.connection/sqlite? connection) "rm"
+              (coast.db.connection/pg? connection) "dropdb"
+              :else "")
+        m (shell/sh cmd s)]
+    (if (= 0 (:exit m))
+      (str s " dropped successfully")
+      (:err m))))
+
 
 (defn single [coll]
   (if (and (= 1 (count coll))
@@ -314,3 +327,11 @@
 
 (defn pull [v ident]
   (first (q [:pull v :where ident])))
+
+
+(defn -main [& [action db-name]]
+  (case action
+    "create" (println (create (or db-name (env/env :dev-db))))
+    "drop" (println (drop (or db-name (env/env :dev-db))))
+    "")
+  (System/exit 0))

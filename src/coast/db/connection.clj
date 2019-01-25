@@ -12,20 +12,12 @@
       url)))
 
 
-(defn admin-db-url []
-  (let [url (or (env :admin-db-spec-or-url)
-                (env :admin-database-url)
-                "postgres://localhost:5432/postgres")]
-    (if (string/blank? url)
-      (throw (Exception. "Your admin database connection string is blank. Set the ADMIN_DB_SPEC_OR_URL environment variable"))
-      url)))
-
-
 (defn sqlite? [arg]
   (cond
     (string? arg) (> (.indexOf arg "sqlite") -1)
     (map? arg) (sqlite? (.getJdbcUrl (:datasource arg)))
     :else false))
+
 
 (defn pg? [arg]
   (cond
