@@ -125,7 +125,8 @@
                          route-server-error)
         m (utils/deep-merge
            {:session {:cookie-name "id"
-                      :store (cookie/cookie-store {:key (env :secret)})}
+                      :store (cookie/cookie-store {:key (or (env :secret)
+                                                            (env :cookie-store-key))})}
             :params {:keywordize? false}}
            site-defaults
            opts)
