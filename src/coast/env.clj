@@ -32,7 +32,9 @@
       (-> file slurp edn/read-string)
       {})))
 
-(defn env [k]
+(defn env
+  "This formats and merges environment variables from .env, env.edn and the OS environment"
+  [k]
   (let [m (fmt (merge (dot-env) (System/getenv)))
         m (merge (env-edn) m)]
     (get m k)))
