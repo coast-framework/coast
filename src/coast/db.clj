@@ -7,7 +7,7 @@
             [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
-            [coast.db.connection :as db.connection :refer [connection]]
+            [coast.db.connection :as db.connection :refer [connection spec]]
             [coast.db.update :as db.update]
             [coast.db.insert :as db.insert]
             [coast.db.delete :as db.delete]
@@ -77,8 +77,8 @@
  "Creates a new database"
  [s]
  (let [cmd (cond
-             (db.connection/sqlite? (connection)) "touch"
-             (db.connection/pg? (connection)) "createdb"
+             (= (spec :adapter) "sqlite") "touch"
+             (= (spec :adapter) "postgres") "createdb"
              :else "")
        m (shell/sh cmd s)]
    (if (= 0 (:exit m))
@@ -90,8 +90,8 @@
   "Drops an existing database"
   [s]
   (let [cmd (cond
-              (db.connection/sqlite? (connection)) "rm"
-              (db.connection/pg? (connection)) "dropdb"
+              (= (spec :adapter) "sqlite") "rm"
+              (= (spec :adapter) "postgres") "dropdb"
               :else "")
         m (shell/sh cmd s)]
     (if (= 0 (:exit m))
@@ -327,7 +327,7 @@
 
 (defn -main [& [action db-name]]
   (case action
-    "create" (println (create (or db-name (env/env :dev-db))))
-    "drop" (println (drop (or db-name (env/env :dev-db))))
+    "create" (println (create (or db-name (spec :database))))
+    "drop" (println (drop (or db-name (spec :database))))
     "")
   (System/exit 0))

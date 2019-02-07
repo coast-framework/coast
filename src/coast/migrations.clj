@@ -76,7 +76,7 @@
              :filename filename}
       (let [f (load-file filename-with-path)
             output (f)]
-        {:sql (string/join "; " output)
+        {:sql (string/join "" output)
          :vec output
          :filename filename}))))
 
@@ -116,7 +116,7 @@
              :filename filename}
       (let [f (load-file filename-with-path)
             output (f)]
-        {:sql (string/join ";" output)
+        {:sql (string/join "" output)
          :vec output
          :filename filename}))))
 

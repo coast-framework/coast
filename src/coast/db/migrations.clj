@@ -1,8 +1,8 @@
 (ns coast.db.migrations
   (:require [coast.utils :as utils]
-            [coast.env :as env]
             [clojure.edn :as edn]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [coast.db.connection :refer [spec]])
   (:refer-clojure :exclude [boolean]))
 
 (def rollback? (atom false))
@@ -11,9 +11,9 @@
 (def sql {"sqlite" {:timestamp "timestamp"
                     :now "current_timestamp"
                     :pk "integer primary key"}
-          "pg" {:timestamp "timestamptz"
-                :now "now()"
-                :pk "serial primary key"}})
+          "postgres" {:timestamp "timestamptz"
+                      :now "now()"
+                      :pk "serial primary key"}})
 
 
 (defn not-null [m]
@@ -222,7 +222,7 @@
            (filter some?
              [(str "create table " (utils/sqlize table) " (")
               (string/join ", "
-               (conj args (str "id " (get-in sql [(env/env :db-adapter) :pk]))))
+               (conj args (str "id " (get-in sql [(spec :adapter) :pk]))))
               ")"]))]
         index-sql-strings))))
 
@@ -294,5 +294,5 @@
 
 (defn timestamps []
   (string/join " "
-    [(str "updated_at " (get-in sql [(env/env :db-adapter) :timestamp]) ",")
-     (str "created_at " (get-in sql [(env/env :db-adapter) :timestamp]) " not null default " (get-in sql [(env/env :db-adapter) :now]))]))
+    [(str "updated_at " (get-in sql [(spec :adapter) :timestamp]) ",")
+     (str "created_at " (get-in sql [(spec :adapter) :timestamp]) " not null default " (get-in sql [(spec :adapter) :now]))]))
