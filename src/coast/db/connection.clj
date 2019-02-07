@@ -17,20 +17,6 @@
    (get (spec) k)))
 
 
-(defn sqlite? [arg]
-  (cond
-    (string? arg) (> (.indexOf arg "sqlite") -1)
-    (map? arg) (sqlite? (.getJdbcUrl (:datasource arg)))
-    :else false))
-
-
-(defn pg? [arg]
-  (cond
-    (string? arg) (> (.indexOf arg "postgres") -1)
-    (map? arg) (pg? (.getJdbcUrl (:datasource arg)))
-    :else false))
-
-
 (def datasource-class-names {"sqlite" "org.sqlite.SQLiteDataSource"
                              "postgres" "org.postgresql.ds.PGSimpleDataSource"})
 
