@@ -21,12 +21,6 @@
            (java.text SimpleDateFormat))
   (:refer-clojure :exclude [drop update]))
 
-(defn exec [db sql]
-  (jdbc/with-db-connection [conn db]
-    (with-open [s (.createStatement (jdbc/db-connection conn))]
-      (.addBatch s sql)
-      (seq (.executeBatch s)))))
-
 (defn sql-vec? [v]
   (and (vector? v)
        (string? (first v))
