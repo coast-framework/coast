@@ -7,12 +7,12 @@
             [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
-            [coast.db.connection :refer [connection]]
+            [coast.db.connection :as db.connection :refer [connection]]
             [coast.db.update :as db.update]
             [coast.db.insert :as db.insert]
             [coast.db.delete :as db.delete]
             [coast.db.query :as db.query]
-            [coast.db.schema]
+            [coast.db.schema :as db.schema]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]]
             [clojure.java.shell :as shell])
@@ -77,8 +77,8 @@
  "Creates a new database"
  [s]
  (let [cmd (cond
-             (coast.db.connection/sqlite? (env/env :database-url)) "touch"
-             (coast.db.connection/pg? (env/env :database-url)) "createdb"
+             (db.connection/sqlite? (connection)) "touch"
+             (db.connection/pg? (connection)) "createdb"
              :else "")
        m (shell/sh cmd s)]
    (if (= 0 (:exit m))
@@ -90,8 +90,8 @@
   "Drops an existing database"
   [s]
   (let [cmd (cond
-              (coast.db.connection/sqlite? connection) "rm"
-              (coast.db.connection/pg? connection) "dropdb"
+              (db.connection/sqlite? (connection)) "rm"
+              (db.connection/pg? (connection)) "dropdb"
               :else "")
         m (shell/sh cmd s)]
     (if (= 0 (:exit m))
@@ -159,7 +159,7 @@
 
 (defn q
   ([v params]
-   (let [schema (coast.db.schema/fetch)
+   (let [schema (db.schema/fetch)
          rows (query (connection)
                      (db.query/sql-vec v params)
                      {:keywordize? false
@@ -171,7 +171,7 @@
    (q v nil)))
 
 (defn select-rels [m]
-  (let [schema (coast.db.schema/fetch)]
+  (let [schema (db.schema/fetch)]
     (select-keys m (->> (:joins schema)
                         (filter (fn [[_ v]] (qualified-ident? v)))
                         (into {})
@@ -183,22 +183,22 @@
         ids (->> (filter (fn [[_ v]] (number? v)) m)
                  (mapv (fn [[k v]] [(keyword (namespace k) (name k)) v]))
                  (into {}))
-        results (->> (map #(query (coast.db.connection/connection) % {:keywordize? false
-                                                                      :identifiers qualify-col})
+        results (->> (map #(query (db.connection/connection) % {:keywordize? false
+                                                                :identifiers qualify-col})
                           queries)
                      (map first)
                      (apply merge))]
     (merge ids results)))
 
 (defn many-rels [m]
-  (select-keys m (->> (coast.db.schema/fetch)
+  (select-keys m (->> (db.schema/fetch)
                       (filter (fn [[_ v]] (and (or (contains? v :db/ref) (contains? v :db/joins))
                                                (= :many (:db/type v)))))
                       (map first))))
 
 (defn upsert-rel [parent [k v]]
   (if (empty? v)
-    (let [schema (coast.db.schema/fetch)
+    (let [schema (db.schema/fetch)
           jk (or (get-in schema [k :db/joins])
                  (get-in schema [k :db/ref]))
           k-ns (-> jk namespace utils/snake)
@@ -310,6 +310,7 @@
          (map #(qualify-map k-ns %))
          (single))))
 
+
 (defn delete [arg]
   (let [v (db.delete/sql-vec arg)
         k-ns (if (sequential? arg)
@@ -318,6 +319,7 @@
     (->> (query (connection) v)
          (map #(qualify-map k-ns %))
          (single))))
+
 
 (defn pull [v ident]
   (first (q [:pull v :where ident])))
