@@ -8,7 +8,8 @@
             [coast.env :refer [env]]
             [coast.utils :as utils]
             [clojure.java.io :as io]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [coast.components :as components]))
 
 (defn resolve-routes
   "Eager require route namespaces when app is called for uberjar compat"
@@ -72,3 +73,25 @@
    ((action-for-routes routes) k m))
   ([k]
    (action-for k {})))
+
+
+(defn redirect-to [& args]
+  {:status 302
+   :body ""
+   :headers {"Location" (apply url-for args)}})
+
+
+(defn form-for [k & body]
+  (let [m (if (map? (first body))
+            (first body)
+            {})
+        body (if (map? (first body))
+               (rest body)
+               body)
+        opts (when (map? (first body))
+               (first body))
+        body (if (map? (first body))
+               (drop 1 body)
+               body)]
+    (components/form (merge (action-for k m) opts)
+      body)))
