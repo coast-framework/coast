@@ -18,16 +18,11 @@
 (defn col [k]
   (str (-> k namespace utils/snake) "." (-> k name utils/snake)))
 
-(defn wrap-str [ws s]
-  (if (string/blank? s)
-    ""
-    (str (first ws) s (second ws))))
-
 (defn ? [val]
   (cond
     (coll? val) (->> (map (fn [_] "?") val)
                      (string/join ", ")
-                     (wrap-str "()"))
+                     (utils/surround "()"))
     (nil? val) "null"
     :else "?"))
 
@@ -81,7 +76,7 @@
   (if (sql-vec? v)
     {:where (str "where " (first v))
      :args (rest v)}
-    {:where (str "where " (string/join " and " (map #(wrap-str "()" %) (where-clauses v))))
+    {:where (str "where " (string/join " and " (map #(utils/surround "()" %) (where-clauses v))))
      :args (->> (filter vector? v)
                 (mapv last)
                 (filter some?)
