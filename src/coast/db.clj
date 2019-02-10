@@ -167,6 +167,30 @@
   ([v]
    (q v nil)))
 
+
+(defn pluck
+  ([v params]
+   (first
+    (q v params)))
+  ([v]
+   (first
+    (pluck v nil))))
+
+
+(defn fetch [k id]
+  (when (and (qualified-ident? k)
+             (some? id))
+    (let [sql-vec [(str "select " (namespace k) ".*"
+                    " from " (namespace k)
+                    " where " (name k) " = ? limit 1") id]]
+      (first
+        (jdbc/query
+         (connection)
+         sql-vec
+         {:keywordize? false
+          :identifiers #(keyword (namespace k) %)})))))
+
+
 (defn select-rels [m]
   (let [schema (db.schema/fetch)]
     (select-keys m (->> (:joins schema)
@@ -306,6 +330,10 @@
          (query (connection))
          (map #(qualify-map k-ns %))
          (single))))
+
+
+(defn update [m]
+  (update* m))
 
 
 (defn delete [arg]
