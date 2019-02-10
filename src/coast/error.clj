@@ -1,5 +1,4 @@
-(ns coast.error
-  (:require [coast.db.errors :as db.errors]))
+(ns coast.error)
 
 (defn raise
   ([s m]
@@ -12,11 +11,6 @@
   ([f k]
    `(try
      [~f nil]
-     (catch org.postgresql.util.PSQLException e#
-       (let [error-map# (db.errors/error-map e#)]
-         (if (empty? error-map#)
-           (throw e#)
-           [nil error-map#])))
      (catch clojure.lang.ExceptionInfo e#
        (let [ex# (ex-data e#)]
          (if (and (contains? ex# ::raise)
