@@ -108,3 +108,24 @@
     (string? val) (snake-case val)
     (nil? val) val
     :else (throw (Exception. (str val " is not an ident or a string. Example: :customer, :public/customer or \"customer\"")))))
+
+(defn vectorize [val]
+  (if (sequential? val)
+    val
+    [val]))
+
+
+(defn surround [ws s]
+  (if (string/blank? s)
+    ""
+    (str (first ws) s (second ws))))
+
+
+(defn flat [coll]
+  (mapcat #(if (sequential? %) % [%]) coll))
+
+
+(defn sql-vec? [v]
+  (and (vector? v)
+       (string? (first v))
+       (not (string/blank? (first v)))))
