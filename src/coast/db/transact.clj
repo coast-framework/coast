@@ -44,10 +44,6 @@
     (not (qualified-map? m)) (throw (Exception. "All keys must be qualified"))
     :else m))
 
-(defn wrap-str [ws s]
-  (if (string/blank? s)
-    ""
-    (str (first ws) s (second ws))))
 
 (defn insert-into [schema m]
   (let [table (-> m keys first namespace utils/snake)
@@ -55,11 +51,11 @@
         s (->> (keys rm)
                (map #(col nil %))
                (string/join ", ")
-               (wrap-str "()"))]
+               (utils/surround "()"))]
     (str "insert into " table s)))
 
 (defn values [v]
-  (str "values " (->> (map ? v) (map #(wrap-str "()" %))
+  (str "values " (->> (map ? v) (map #(utils/surround "()" %))
                       (string/join ", "))))
 
 (defn select-col [schema [k v]]
@@ -88,7 +84,7 @@
 (defn from [schema m]
   (let [table (-> m keys first namespace utils/snake)
         rm (clojure.set/rename-keys m (:joins schema))
-        vals-str (->> (? rm) (wrap-str "()"))
+        vals-str (->> (? rm) (utils/surround "()"))
         cols-str (->> (map #(from-col schema %) rm) (string/join ", "))]
     (str "from (values " vals-str ") as " table "(" cols-str ")")))
 
