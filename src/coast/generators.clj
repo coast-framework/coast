@@ -1,7 +1,7 @@
 (ns coast.generators
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
-            [coast.generators.action :as generators.action]
+            [coast.generators.code :as generators.code]
             [coast.generators.migration :as generators.migration]))
 
 
@@ -15,15 +15,14 @@ Examples:
 
   coast gen migration <name>           # Creates a new migration file
   coast gen migration <name>.sql       # Creates a new plain old sql migration file
-  coast gen action <resource>          # Creates a five new clj files with view/action functions in src/<resource>/create/read/update/delete/list.clj
-  coast gen action <resource>:<action> # Creates a new clj file with view/action functions in src/<resource>/<action>.clj"))
+  coast gen code <table>               # Creates a new clj file with handler functions in src/<table>.clj"))
 
 
 (defn gen [args]
   (let [[_ kind arg] args]
     (case kind
       "migration" (generators.migration/write (drop 2 args))
-      "action" (generators.action/write arg)
+      "code" (generators.code/write arg)
       (usage))))
 
 

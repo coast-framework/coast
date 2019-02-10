@@ -1,6 +1,0 @@
-(ns __resource__.__action__
-  (:require [coast :refer [pull q url-for validate]]))
-
-(defn view [request]
-  (let [rows (q '[:pull [__qualified-keywords__]])]
-    __table__))
