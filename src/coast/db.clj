@@ -70,9 +70,6 @@
                                  :type :404
                                  ::error :not-found})))
 
-(defq "sql/schema.sql")
-
-
 (defn create
  "Creates a new database"
  [s]
