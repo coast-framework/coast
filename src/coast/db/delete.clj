@@ -4,7 +4,7 @@
 
 (defn col
   ([table val]
-   (when (clojure.core/ident? val)
+   (when (ident? val)
      (let [prefix (if (nil? table)
                     ""
                     (str table "."))]
