@@ -142,6 +142,10 @@
         (handler request)
         (site-handler request)))))
 
-(defn wrap-with-layout [layout routes]
-  (router/wrap-routes #(wrap-layout % layout)
-    routes))
+(defn wrap-with-layout [layout & routes]
+  (let [routes (if (and (= 1 (count routes))
+                        (vector? (first routes)))
+                 (first routes)
+                 (vec routes))]
+    (router/wrap-routes #(wrap-layout % layout)
+     routes)))
