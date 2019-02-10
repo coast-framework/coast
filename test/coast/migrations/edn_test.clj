@@ -4,6 +4,5 @@
 
 (deftest migrate
   (testing "migrate with user table"
-    (with-redefs [migrations.edn/content (fn [s] [{:db/ident :user/name :db/type "text"}])]
-      (is (thrown-with-msg? Exception #"user is a reserved word in postgres try a different name for this table"
-                            (migrations.edn/migrate ""))))))
+    (is (thrown-with-msg? Exception #"user is a reserved word in postgres try a different name for this table"
+                          (migrations.edn/migrate [{:db/ident :user/name :db/type "text"}])))))
