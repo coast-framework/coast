@@ -129,3 +129,26 @@
   (and (vector? v)
        (string? (first v))
        (not (string/blank? (first v)))))
+
+
+(def singular-patterns
+  [[#"(?i)ies$" "y"]
+   [#"(?i)(\w)\1(es)$" "$1"]
+   [#"(?i)(tch)(es)$" "$1"]
+   [#"(?i)(ss)$" "$1"]
+   [#"(?i)s$" ""]])
+
+
+(defn replace-pattern [s pattern]
+  (let [[match replacement] pattern]
+    (if (re-find match s)
+      (string/replace s match replacement))))
+
+
+(defn singular [s]
+  (if (string? s)
+    (let [match (->> singular-patterns
+                     (keep #(replace-pattern s %))
+                     (first))]
+      (or match s))
+    s))
