@@ -90,6 +90,9 @@ This will show you the layout of a default coast project:
 ├── README.md
 ├── bin
 │   └── repl.clj
+├── db
+│   └── migrations
+│   └── associations.clj
 ├── deps.edn
 ├── resources
 │   ├── assets.edn
@@ -100,86 +103,90 @@ This will show you the layout of a default coast project:
 │           └── app.js
 ├── src
 │   ├── components.clj
-│   ├── error
-│   │   ├── not_found.clj
-│   │   └── server_error.clj
-│   ├── home
-│   │   └── index.clj
+│   ├── home.clj
 │   ├── routes.clj
 │   └── server.clj
 └── test
     └── server_test.clj
-
-9 directories, 14 file
 ```
 
 ### Databases
 
-For the sake of this tutorial, we want to show a list of todos as the first thing people see when they come to our site. In coast, that means making a place for these todos to live, in this case (and in every case): the database. Assuming your postgres server is up and running, you can make a database with a handy shortcut that coast gives you:
+For the sake of this tutorial, we want to show a list of todos. In coast, that means making a place for these todos to live, in this case (and in every case): start with the database. You can make a database with a handy shortcut that coast gives you:
 
 ```bash
 make db/create
 # clj -A\:db/create
-# Database todos_dev created successfully
+# Database todos_dev.sqlite3 created successfully
 ```
 
-This will create a database with the name of your project and whatever `COAST_ENV` is set to, which by default is `dev`. So the database name will be `todos_dev`.
+This will create a sqlite database with the name of your project and whatever `COAST_ENV` is set to, which by default is `dev`. So the database name will be `todos_dev`.
 
 ### Migrations
 
 Now that the database is created, let's generate a migration:
 
 ```bash
-coast gen migration add-todos
-# resources/migrations/20180926190239_add_todos.edn created
+coast gen migration create-table-todo name:text finished-at:timestamp
+# db/migrations/20190926190239_create_table_todo.clj created
 ```
 
-This will create a file in `resources/migrations` with a timestamp and whatever name you gave it, in this case: `add_todos`. Let's fill it in with our first migration:
+This will create a file in `db/migrations` with a timestamp and whatever name you gave it, in this case: `create_table_todo`
 
 ```clojure
-[{:db/col :todo/name
-  :db/type "text"}
+(ns migrations.20190926190239-create-table-todo
+  (:require [coast.db.migrations :refer :all])
+  (:refer-clojure :exclude [boolean]))
 
- {:db/col :todo/completed-at
-  :db/type "timestamptz"}]
+(defn change []
+  (create-table :todo
+    (text :name)
+    (timestamp :finished-at)
+    (timestamps)))
 ```
 
-This is edn, not sql, although sql migrations would work, in coast it's cooler if you use edn migrations for the sweet query power you'll have later. The left side of the `/` is the name of the table, and the right side is the name of the column. Or in coast terms: `:<resource>/<prop>`  Let's apply this migration to the database
+This is clojure, not sql, although plain sql migrations would work just fine. Time to apply this migration to the database:
 
 ```bash
 make db/migrate
 # clj -A\:db/migrate
 #
-# -- Migrating:  20180926160239_add_todos ---------------------
+# -- Migrating:  20190926190239-create-table-todo ---------------------
 #
-# [#:db{:col :todo/name, :type text} #:db{:col :todo/completed-at, :type timestamptz}]
+#  (create-table :todo
+#    (text :name)
+#    (timestamp :finished-at)
+#    (timestamps)))
 #
-# -- 20180926160239_add_todos ---------------------
+# -- 20190926190239-create-table-todo ---------------------
 #
-# 20180926160239_add_todos migrated successfully
+# 20190926190239-create-table-todo migrated successfully
 ```
 
-This updates the database and creates a `resources/schema.edn` file to keep track of relationships and things that don't normally fit in the database schema.
+This updates the database schema with a `todo` table. Time to move on to the clojure code.
 
 ### Generators
 
-Now that the database has been migrated and we have a place to store the todos we want to show them too. This is where coast generators come in. Rather than you having to type everything out, generators are a way to get you started and you can customize from there.
+Now that the database has been migrated, this is where coast's generators come in. Rather than you having to type everything out by hand and read docs as you go, generators are a way to get you started and you can customize what you need from there.
 
-This will create a file in the `src` directory with the name of an `action`. Coast is a pretty humble web framework, there's no FRP or graph query languages or anything. There are just five actions: `create`, `read`, `update`, `delete`, and `list`. You can specify an action to generate or you can generate all five. Lets just generate the list file for now:
+This will create a file in the `src` directory with the name of a table. Coast is a pretty humble web framework, there's no FRP or graph query languages or anything. There are just files with seven functions each: `build`, `create`, `view`, `edit`, `update`, `delete` and `index`.
 
 ```bash
-coast gen action todo:list
-# src/todo/list.clj created successfully
+coast gen code todo
+# src/todo.clj created successfully
 ```
 
-This is specifying which resource (table) to generate and it puts a file in `src/todo/list.clj` which looks like this:
+That file looks like this
 
 ```clojure
-(ns todo.list
-  (:require [coast :refer [pull q url-for validate]]))
+(ns todo
+  (:require [coast]))
 
 (defn view [request]
-  (let [rows (q '[:pull [:todo/name :todo/completed-at]])]
+  (let [rows (coast/q '[:select *
+                        :from todo
+                        :order id
+                        :limit 10])]
     [:table
      [:thead
       [:tr
@@ -192,27 +199,47 @@ This is specifying which resource (table) to generate and it puts a file in `src
          [:td (:todo/completed-at row)]])]]))
 ```
 
+There's more to the file, but you can check it out yourself. Just from this example, coast is using clojure's vectors and a library called `hiccup` to generate html, and it's also using vectors to generate sql with coast's own internal library for parsing/querying the database.
+
 ### Routes
 
 One thing coast doesn't do yet is update the routes file, let's do that now:
 
 ```clojure
 (ns routes)
+  (:require [coast]
+            [components])
 
-(def routes [[:get "/"          :home.index/view :home]
-             [:get "/404"       :error.not-found/view :404]
-             [:get "/500"       :error.server-error/view :500]
-             [:get "/todo/list" :todo.list/view]])
+(defn routes []
+  (coast/wrap-with-layout components/layout
+    [:get "/"       :home/index]
+    [:get "/404"    :home/not-found    :404]
+    [:get "/500"    :home/server-error :500]
+    [:get "/todos"  :todo/index]))
 ```
 
-Now we can check it out in the browser, there's no styling or anything so it's not going to look amazing, start up a repl with `make repl` and run `(server/-main)` then go to `http://localhost:1337/todo/list` to check out your handiwork.
+The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.
 
-Example projects and more coming soon...
+Let's check it out from the terminal run this
 
-## Read The Docs
+```bash
+make server
+```
 
-The docs are still under construction, but there should be enough there
-to get a production-ready website off the ground
+or navigate to the `src/server.clj` file and type this:
+
+```clojure
+(comment
+  (-main))
+```
+
+Then put your cursor somewhere inside of `(-main)` and send this over to the running repl server (made with `make repl` from the terminal).
+
+I currently use [proto-repl](https://github.com/jasongilman/proto-repl), check it out if you want a smooth clojure REPL experience.
+
+## But Wait There's More Docs!
+
+The docs are always under construction, but there should be enough to get you started
 
 [Read the docs](docs/README.md)
 

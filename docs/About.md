@@ -1,4 +1,4 @@
-# Why
+# About
 
 ## Motivation
 

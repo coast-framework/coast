@@ -1,7 +1,8 @@
 # Table of Contents
 
-* [Quickstart](Quickstart.md)
-* [Why](Why.md)
+## Preface
+* [About](About.md)
+* [Upgrading from eta](Upgrading.md)
 * [Structure](Structure.md)
 * [Routing](Routing.md)
 * [Database](Database.md)
