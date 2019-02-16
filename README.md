@@ -169,7 +169,7 @@ This updates the database schema with a `todo` table. Time to move on to the clo
 
 Now that the database has been migrated, this is where coast's generators come in. Rather than you having to type everything out by hand and read docs as you go, generators are a way to get you started and you can customize what you need from there.
 
-This will create a file in the `src` directory with the name of a table. Coast is a pretty humble web framework, there's no FRP or graph query languages or anything. There are just files with seven functions each: `build`, `create`, `view`, `edit`, `update`, `delete` and `index`.
+This will create a file in the `src` directory with the name of a table. Coast is a pretty humble web framework, there's no FRP or graph query languages or anything. There are just files with seven functions each: `build`, `create`, `view`, `edit`, `change`, `delete` and `index`.
 
 ```bash
 coast gen code todo
