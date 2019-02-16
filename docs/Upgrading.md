@@ -220,10 +220,39 @@ Routing hasn't changed really, old routing code will still work and continue to 
 
 (defn routes []
   (coast/wrap-with-layout components/layout
-    [:get "/" :home/index]))
+    (get "/" :home/index)
+    (get "/posts" :post/index)
+    (get "/posts/:id" :post/view)
+    (get "/posts/build" :post/build)
+    (post "/posts" :post/create)
+    (get "/posts/:id/edit" :post/edit)
+    (post "/posts/:id/edit" :post/change)
+    (post "/posts/:id/delete" :post/delete)
 ```
 
 Before you had to wrap all vectors in another vector, that's now optional, it makes things a little cleaner. Also multiple layout support per batch of routes is easier as well since you no longer have to pass layout in `app`.
+
+Since the vector of vectors confusion is gone now, routes more naturally lend themselves to function helpers and resource-style url formats:
+
+
+```clojure
+(ns routes
+  (:require [coast]
+            [components]))
+
+(defn routes []
+  (coast/wrap-with-layout components/layout
+    (get "/" :home/index)
+    (resource :posts)
+    ; is equal to all of the below routes
+    (get "/posts" :post/index)
+    (get "/posts/build" :post/build)
+    (get "/posts/:id" :post/view)
+    (post "/posts" :post/create)
+    (get "/posts/:id/edit" :post/edit)
+    (post "/posts/:id/edit" :post/change)
+    (post "/posts/:id/delete" :post/delete)
+```
 
 ## Views
 
