@@ -15,6 +15,11 @@
   ([tz]
    (LocalDateTime/now (ZoneId/of tz))))
 
+
+(defn offset []
+  (OffsetDateTime/now))
+
+
 (defn local
   ([d tz]
    (when (instance? java.util.Date d)

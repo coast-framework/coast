@@ -20,8 +20,9 @@
         headers (->> (:headers response)
                      (utils/map-vals string/lower-case))
         content-type (get headers "content-type")
-        route (:coast.router/name request)]
-    (str method " " uri " " route " " status " " content-type " " ms "ms")))
+        route (:coast.router/name request)
+        timestamp (time/fmt (time/offset) "yyyy-MM-dd HH:mm:ss xx")]
+    (str timestamp " " method " \"" uri "\" " route " " status " " content-type " " ms "ms")))
 
 (defn log [request response start-time]
   (println (log-str request response start-time)))
