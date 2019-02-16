@@ -92,24 +92,25 @@
 
 (defn table-html [ks]
   (str "[:table
-     [:thead
-      [:tr
-       " (string/join "\n       "
-          (map #(str "[:th \"" (name %) "\"]" ) ks)) "
-       [:th]
-       [:th]
-       [:th]]]
-     [:tbody
-       (for [row rows]
-        [:tr
-         " (string/join "\n         "
-             (map #(str "[:td (" (str %) " row)]") ks)) "
-         [:td
-          [:a {:href (coast/url-for ::view row)} \"View\"]]
-         [:td
-          [:a {:href (coast/url-for ::edit row)} \"Edit\"]]
-         [:td
-          [:a {:href (coast/url-for ::delete row)} \"Delete\"]]])]]"))
+      [:thead
+       [:tr
+        " (string/join "\n        "
+           (map #(str "[:th \"" (name %) "\"]" ) ks)) "
+        [:th]
+        [:th]
+        [:th]]]
+      [:tbody
+        (for [row rows]
+         [:tr
+          " (string/join "\n          "
+              (map #(str "[:td (" (str %) " row)]") ks)) "
+          [:td
+           [:a {:href (coast/url-for ::view row)} \"View\"]]
+          [:td
+           [:a {:href (coast/url-for ::edit row)} \"Edit\"]]
+          [:td
+           (coast/form-for ::delete row {:style \"display: inline-block\"}
+            [:input {:type \"submit\" :value \"Delete\"}])]])]]"))
 
 (defn write [table]
   (let [filename (str "src/" table ".clj")

@@ -3,19 +3,25 @@
 
 
 (defn index [request]
-  (let [rows (coast/q '[:pull [__index-pull-symbols__]
-                        :order __table__/id])]
-    __table-html__))
+  (let [rows (coast/q '[:select *
+                        :from __table__
+                        :order id
+                        :limit 10])]
+    [:div
+     [:a {:href (coast/url-for ::build)} "New"]
+     __table-html__]))
 
 
 (defn view [request]
-  (let [__table__ (coast/fetch :__table__/id (-> request :params :__table__-id))]
+  (let [id (-> request :params :author-id)
+        __table__ (coast/fetch :__table__ id)]
     [:div
       __dl-elements__
      [:div
       [:a {:href (coast/url-for ::index) :style "margin-right: 5px"} "List"]
       [:a {:href (coast/url-for ::edit (:params request)) :style "margin-right: 5px"} "Edit"]
-      [:a {:href (coast/url-for ::delete (:params request))} "Delete"]]]))
+      (coast/form-for ::delete (:params request) {:style "display: inline-block"}
+       [:input {:type "submit" :value "Delete"}])]]))
 
 
 (defn build [request]
@@ -37,7 +43,7 @@
 
 
 (defn edit [request]
-  (let [__table__ (merge (coast/fetch :__table__/id (-> request :params :__table__-id)) (:params request))]
+  (let [__table__ (merge (coast/fetch :__table__ (-> request :params :__table__-id)) (:params request))]
     (coast/form-for ::change __table__
       __edit-elements__
 
@@ -47,7 +53,7 @@
 
 
 (defn change [request]
-  (let [__table__ (coast/fetch :__table__/id (-> request :params :__table__-id))
+  (let [__table__ (coast/fetch :__table__ (-> request :params :__table__-id))
         [_ errors] (-> (select-keys __table__ [:__table__/id])
                        (merge (:params request))
                        (coast/validate [[:required [__change-keywords__]]])
@@ -60,7 +66,7 @@
 
 
 (defn delete [request]
-  (let [[_ errors] (-> (coast/fetch :__table__/id (-> request :params :__table__-id))
+  (let [[_ errors] (-> (coast/fetch :__table__ (-> request :params :__table__-id))
                        (coast/delete)
                        (coast/rescue))]
     (if (nil? errors)
