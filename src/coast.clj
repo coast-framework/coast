@@ -35,7 +35,6 @@
    transact
    delete
    insert
-   update*
    update
    first!
    pluck
