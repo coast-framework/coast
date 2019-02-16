@@ -4,15 +4,14 @@
             [clojure.walk :as walk]
             [clojure.data.json :as json]
             [clojure.instant :as instant]
-            [coast.env :as env]
             [coast.db.queries :as queries]
             [coast.db.transact :as db.transact]
             [coast.db.connection :as db.connection :refer [connection spec]]
             [coast.db.update :as db.update]
             [coast.db.insert :as db.insert]
-            [coast.db.delete :as db.delete]
-            [coast.db.query :as db.query]
             [coast.db.schema :as db.schema]
+            [coast.db.sql :as sql]
+            [coast.db.helpers :as helpers]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]]
             [clojure.java.shell :as shell])
@@ -154,18 +153,53 @@
     [(first val) (json/read-str (second val) :key-fn qualify-col)]
     val))
 
+
+(def col-query
+  {"sqlite" ["select
+               m.name as table_name,
+               p.name as column_name
+              from sqlite_master m
+              left outer join pragma_table_info((m.name)) p on m.name <> p.name
+              order by table_name, column_name"]
+   "postgres" ["select table_name, column_name
+                from information_schema.columns
+                order by table_name, column_name"]})
+
+
+(defn col-map [adapter]
+  (let [rows (jdbc/query (connection) (get col-query adapter))]
+    (->> (group-by :table_name rows)
+         (mapv (fn [[k v]]
+                 [(keyword (utils/kebab-case k)) (->> (map :column_name v)
+                                                      (map utils/kebab-case)
+                                                      (map #(keyword (utils/kebab-case k) %)))]))
+         (into {}))))
+
 (defn q
   ([v params]
-   (let [schema (db.schema/fetch)
+   (let [adapter (db.connection/spec :adapter)
+         associations ((load-file "db/associations.clj"))
+         col-map (col-map adapter)
          rows (query (connection)
-                     (db.query/sql-vec v params)
+                     (sql/sql-vec adapter col-map associations v params)
                      {:keywordize? false
                       :identifiers qualify-col})]
      (walk/postwalk #(-> % coerce-inst coerce-timestamp-inst)
-        (walk/prewalk #(->> (one-first schema %) (parse-json schema))
+        (walk/prewalk #(->> (one-first associations %) (parse-json associations))
           rows))))
   ([v]
    (q v nil)))
+
+
+(defn execute!
+  ([v params]
+   (let [adapter (db.connection/spec :adapter)
+         sql-vec (sql/sql-vec adapter {} {} v params)]
+      (jdbc/execute!
+       (connection)
+       sql-vec)))
+  ([v]
+   (execute! v {})))
 
 
 (defn pluck
@@ -178,17 +212,15 @@
 
 
 (defn fetch [k id]
-  (when (and (qualified-ident? k)
+  (when (and (ident? k)
              (some? id))
-    (let [sql-vec [(str "select " (namespace k) ".*"
-                    " from " (namespace k)
-                    " where " (name k) " = ? limit 1") id]]
-      (first
-        (jdbc/query
-         (connection)
-         sql-vec
-         {:keywordize? false
-          :identifiers #(keyword (namespace k) %)})))))
+    (first
+      (q '[:select *
+           :from ?from
+           :where [id ?id]
+           :limit 1]
+         {:from k
+          :id id}))))
 
 
 (defn select-rels [m]
@@ -316,34 +348,23 @@
         rel-rows (upsert-rels row m-rels)]
     (merge row rel-rows)))
 
+
 (defn insert [arg]
-  (let [m (if (sequential? arg) (first arg) arg)
-        k-ns (-> m keys first namespace utils/snake)]
-    (->> (db.insert/sql-vec arg)
-         (query (connection))
-         (map #(qualify-map k-ns %))
-         (single))))
-
-(defn update* [m]
-  (let [k-ns (-> m keys first namespace utils/snake)]
-    (->> (db.update/sql-vec m)
-         (query (connection))
-         (map #(qualify-map k-ns %))
-         (single))))
+  (first
+    (execute!
+      (helpers/insert arg))))
 
 
-(defn update [m]
-  (update* m))
+(defn update [arg]
+  (first
+    (execute!
+      (helpers/update arg))))
 
 
 (defn delete [arg]
-  (let [v (db.delete/sql-vec arg)
-        k-ns (if (sequential? arg)
-               (-> arg first keys first namespace utils/snake)
-               (-> arg keys first namespace utils/snake))]
-    (->> (query (connection) v)
-         (map #(qualify-map k-ns %))
-         (single))))
+  (first
+   (execute!
+     (helpers/delete arg))))
 
 
 (defn pull [v ident]

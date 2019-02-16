@@ -14,7 +14,7 @@
                   :join/left (keyword (:table-name m) (name (or (:foreign-key m) table)))
                   :join/right (keyword table (or (:pk m) "id"))}])]
     {(keyword table (:rel-name m)) {:joins joins
-                                    :has-many true}}))
+                                    :has-many (keyword table)}}))
 
 
 (defn belongs-to-map [table m]
@@ -22,7 +22,7 @@
    {:joins [{:join/table (keyword (:table-name m))
              :join/left (keyword (:table-name m) (name (or (:pk m) table)))
              :join/right (keyword table (or (:foreign-key m) "id"))}]
-    :belongs-to true}})
+    :belongs-to (keyword table)}})
 
 
 (defn primary-key [k]

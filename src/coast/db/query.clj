@@ -1,7 +1,6 @@
 (ns coast.db.query
   (:require [clojure.string :as string]
             [clojure.walk]
-            [clojure.java.jdbc :as jdbc]
             [coast.db.schema :as db.schema]
             [coast.utils :as utils]))
 
