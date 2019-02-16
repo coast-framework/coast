@@ -49,7 +49,7 @@ Here's how the new clj migrations work
 coast gen migration create-table-member email:text nick-name:text password:text photo:text
 ```
 
-This generates a file in the db that looks like this:
+This generates a file in the db folder that looks like this:
 
 ```clojure
 (ns migrations.20190926190239-create-table-member
