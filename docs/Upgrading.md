@@ -7,6 +7,7 @@
 * [Exception Handling](#user-content-exception-handling)
 * [Routing](#user-content-routing)
 * [Views](#user-content-views)
+* [Environment](#user-content-environment)
 
 The **theta** release contains a number of bug fixes and API improvements to keep the code base simple. Breaking changes were kept to a minimum, however, they could not be eliminated entirely.
 
@@ -301,3 +302,11 @@ There's also `form-for`
 This is a combination of `coast/form` and `action-for`.
 
 Those are it for the major changes in coast.theta. Hope you like it!
+
+## Environment
+
+While `.env` continues to work, there's now another option when it comes to configuring the app's envrionment: `env.edn`.
+
+This is similar to .env except instead of `key=value` it's just edn and this can be checked in to the repo since the datbase configuration is now separate in `db.edn` and uses the `env` variables in production by default.
+
+Just remember to change the session key and set the database values in the environment in production!

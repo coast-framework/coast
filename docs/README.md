@@ -8,8 +8,6 @@
 
 ### Concept
 * [Request Lifecycle](Request-Lifecycle.md)
-* [Uniform Data Structures](Uniform-Data-Structures.md)
-* [Functional Web Development](Functional-Web-Development.md)
 
 ### Getting Started
 * [Installation](Installation.md)
