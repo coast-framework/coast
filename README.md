@@ -6,7 +6,10 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (ns my-project
   (:require [coast]))
 
-(def routes [[:get "/" :home]])
+(def routes
+  (coast/routes
+    (coast/site-routes
+      [:get "/" :home])))
 
 (defn home [req]
   [:h1 "You're coasting on clojure!"])
@@ -99,8 +102,10 @@ This will show you the layout of a default coast project:
 │   └── public
 │       ├── css
 │       │   └── app.css
+│       │   └── tachyons.min.css
 │       └── js
 │           └── app.js
+│           └── jquery.js
 ├── src
 │   ├── components.clj
 │   ├── home.clj
@@ -182,7 +187,7 @@ That file looks like this
 (ns todo
   (:require [coast]))
 
-(defn view [request]
+(defn index [request]
   (let [rows (coast/q '[:select *
                         :from todo
                         :order id
@@ -210,17 +215,19 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
   (:require [coast]
             [components])
 
-(defn routes []
-  (coast/wrap-with-layout components/layout
-    [:get "/"       :home/index]
-    [:get "/404"    :home/not-found    :404]
-    [:get "/500"    :home/server-error :500]
-    [:get "/todos"  :todo/index]))
+(def routes
+  (coast/routes
+    (coast/site-routes components/layout
+      [:get "/"      :home/index]
+      [:get "/todos" :todo/index]
+
+      [:404 :home/not-found]
+      [:500 :home/server-error])))
 ```
 
 The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.
 
-Let's check it out from the terminal run this
+Let's check it out from the terminal. Run this
 
 ```bash
 make server
@@ -236,6 +243,8 @@ or navigate to the `src/server.clj` file and type this:
 Then put your cursor somewhere inside of `(-main)` and send this over to the running repl server (made with `make repl` from the terminal).
 
 I currently use [proto-repl](https://github.com/jasongilman/proto-repl), check it out if you want a smooth clojure REPL experience.
+
+Finally, navigate to http://localhost:1337/todos and check out your handiwork.
 
 ## But Wait There's More Docs!
 
