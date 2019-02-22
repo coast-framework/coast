@@ -1,10 +1,16 @@
 (ns coast.responses)
 
+(def content-type-headers {:html {"content-type" "text/html"}
+                           :json {"content-type" "application/json"}})
+
 (defn response
   ([status body headers]
-   {:status status
-    :body body
-    :headers headers})
+   (let [m {:status status
+            :body body
+            :headers headers}]
+     (if (contains? #{:html :json} headers)
+       (assoc m :headers (get content-type-headers headers))
+       m)))
   ([status body]
    (response status body {})))
 
