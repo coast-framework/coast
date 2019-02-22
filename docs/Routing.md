@@ -13,32 +13,30 @@ Routes are defined inside of the `src/routes.clj` file.
 
 ## Basic Routing
 
-The most basic route definition requires an http method, a url and a function:
+The most basic route definition requires an http method, a url and a "pointer" to a function:
 
 ```clojure
 ; src/routes.clj
 (ns routes
   (:require [coast]))
 
-(coast/defroutes
-  [:get "/" (fn [request] {:status 200 :body "hello world")])
+(defn home [request])
+  {:status 200 :body "hello world!" :headers {"content-type" "text/html"}}
 
-; this is just syntactic sugar for
-
-(defn routes []
+(def routes
   (coast/routes
-    [:get "/" (fn [request] {:status 200 :body "hello world"})]))
+    [:get "/" ::home]))
 ```
 
 The return value of the function will be sent back to the client as a response.
 
-You can also "bind" a route to a function using a `namespace.function` signature:
+You'll mostly be "binding" a route to a function using a `:namespace/function` signature:
 
 ```clojure
 [:get "/" :post/index]
 ```
 
-The above keyword `post/index` refers to the `src/post.clj` file's `index` function.
+The above keyword `:post/index` refers to the `src/post.clj` file's `index` function.
 
 ### Available Router Methods
 
@@ -57,8 +55,11 @@ Resourceful routes use different HTTP verbs to indicate the type of request:
 Route parameters are defined like so:
 
 ```clojure
-[:get "/posts/:id" (fn [{:keys [params]}]
-                     (str "Post " (:id params)))]
+(defn view [{:keys [params]}])
+  {:status 200
+   :body (str "post " (:id params))}
+
+[:get "/posts/:id" ::view]
 ```
 
 In the example above, `:id` is a route parameter.
@@ -82,6 +83,9 @@ This will enable you to use `route` helpers in your code, like so:
 
 ; after
 [:a {:href (url-for :posts)} "List of posts"]
+
+; you can also call the original name of the function as well
+[:a {:href (url-for :post/index)} "List of posts"]
 ```
 
 ```clojure
@@ -95,19 +99,18 @@ This will enable you to use `route` helpers in your code, like so:
 ; or more verbose
 
 (defn index [request]
-  (coast/redirect (coast/url-for :posts)))
+  (coast/redirect (coast/url-for :posts))
 ```
 
-Both `route` helpers share the same signature and accept optional parameters map as their second argument:
+Both `route` helpers share the same signature and accept an optional parameters map as their second argument:
 
 ```clojure
-[:get "/posts/:id" :post/view :posts/show]
+[:get "/posts/:id" :post/view :post]
+
+(url-for :post {:id 1})
+
+(redirect-to :post {:id 1})
 ```
-
-(url-for :posts/show {:id 1})
-
-(redirect-to :posts/show {:id 1})
-----
 
 Namespaced keywords are supported as well
 
@@ -118,8 +121,7 @@ Namespaced keywords are supported as well
 
 (redirect-to :post/view {:author/id 1 :id 2})
 
-; or you can use the exact parameter name as well
-
+; or you can use the exact parameter name with a - instead of a /
 (url-for :post/view {:author-id 1 :id 2})
 ```
 
@@ -139,7 +141,14 @@ Routes don't have to just respond with [hiccup vectors](https://github.com/weave
 overrides any layouts or the coast default of rendering with html.
 
 ```clojure
-[:get "/" (fn [request] (coast/ok {:message "ok"}))] ; this responds with json by default {"message": "ok"}
+(defn json [request]
+  {:status 200 :body {:message "ok"} :headers {"content-type" "application/json"}}) ; this responds with json
+
+(defn json [request]
+  (coast/ok {:message "ok"} :json)) ; same as above, but shorter
+
+(coast/api-routes
+  [:get "/" ::json)])
 ```
 
 You can define separate routes for an api and a site:
@@ -148,21 +157,23 @@ You can define separate routes for an api and a site:
 (ns your-app
   (:require [coast]))
 
-; this route corresponds to the src/www/home.clj index function
-(coast/defroutes
-  [:get "/" :home/index :www.home/index])
+(def routes
+  (coast/routes
+    ; this route corresponds to the src/site/home.clj index function
+    (coast/site-routes
+      [:get "/" :home/index :site.home/index])
 
-; these route correspond to the src/api/home.clj index and status functions
-(coast/defroutes api
-  [:get "/api" :api.home/index]
-  [:get "/api/status" :api.home/status])
+    ; these routes correspond to the src/api/home.clj index and status functions
+    (coast/api-routes
+      [:get "/api" :api.home/index]
+      [:get "/api/status" :api.home/status])))
 
-(def app (coast/app {:routes/site site :routes/api api}))
+(def app (coast/app {:routes routes}))
 ```
 
 Coast uses a different set of middleware functions when responding to an api request vs a site request.
 
-The api requests do not check for layouts and a host of other things, making them lighter weight than their site counterparts.
+The `api-routes` do not check for layouts and a host of other things, making them lighter-weight than their site counterparts.
 
 ## Route Resources
 
@@ -172,16 +183,16 @@ You will often create resourceful routes to do CRUD operations on a resource.
 
 ```clojure
 ; This...
-(resource :posts)
+[:resource :post]
 
 ; ...equates to this:
-[:get "/posts" :post/index]
-[:get "/posts/build" :post/build]
-[:post "/posts" :post/create]
-[:get "/posts/:id" :post/view]
-[:get "/posts/:id/edit" :post/edit]
-[:put "/posts/:id" :post/change]
-[:delete "/posts/:id" :post/delete]
+[:get    "/posts"          :post/index]
+[:get    "/posts/build"    :post/build]
+[:post   "/posts"          :post/create]
+[:get    "/posts/:id"      :post/view]
+[:get    "/posts/:id/edit" :post/edit]
+[:put    "/posts/:id"      :post/change]
+[:delete "/posts/:id"      :post/delete]
 ```
 
 NOTE: This feature is only available when binding routes to a namespace.
@@ -196,7 +207,7 @@ Removes `GET resource/create` and `GET resource/:id/edit` routes:
 
 ```clojure
 ; src/routes.clj
-(resource :posts :except [:create :edit])
+[:resource :post :except [:create :edit])
 ```
 
 #### only
@@ -205,7 +216,7 @@ Keeps only the passed routes:
 
 ```clojure
 ; src/routes.clj
-(resource :posts :only [:index :view])
+[:resource :post :only [:index :view])
 ```
 
 ### Resource Middleware
@@ -223,9 +234,8 @@ You can wrap middleware around any resource as you would with a single route:
       (handler request)
       (coast/unauthorized [:h1 "HAL9000 says, \"Sorry Dave, I can't let you do that\""]))))
 
-(defroutes
-  (coast/wrap-routes wrap-auth
-    (resource :posts)))
+(coast/wrap-routes wrap-auth
+  [:resource :post]))
 ```
 
 ## Route Prefixes
@@ -234,8 +244,8 @@ If your application routes share common urls, instead of repeating the same urls
 
 ```clojure
 ; no prefix
-[:get "/api/v1/members" fn]
-[:post "/api/v1/members" fn]
+[:get "/api/v1/members" :api.v1.members/index]
+[:post "/api/v1/members" :api.v1.members/create]
 
 ; with prefix
 (coast/prefix-routes "/api/v1"
