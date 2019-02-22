@@ -1,11 +1,16 @@
-(ns coast.eta-test
-  (:require [coast.eta :as coast]
+(ns coast.theta-test
+  (:require [coast.theta :as coast]
+            [coast.router :as router]
+            [coast.middleware :as middleware]
             [clojure.test :refer [deftest testing is]]))
 
-(def routes [[:get "/" ::home]
-             [:post "/" ::home-action]
-             [:get "/hello" ::hello]
-             [:get "/hello/:id" ::hello-id]])
+(def routes
+  (router/routes
+   (coast.middleware/site-routes
+     [:get "/" ::home]
+     [:post "/" ::home-action]
+     [:get "/hello" ::hello]
+     [:get "/hello/:id" ::hello-id])))
 
 (def app (coast/app {:routes routes}))
 

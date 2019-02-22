@@ -2,7 +2,7 @@
   (:require [potemkin :refer [import-vars]]
             [hiccup2.core]
             [coast.db]
-            [coast.eta]
+            [coast.theta]
             [coast.env]
             [coast.time]
             [coast.components]
@@ -11,8 +11,7 @@
             [coast.error]
             [coast.router]
             [coast.jobs]
-            [coast.validation]
-            [coast.middleware.site])
+            [coast.validation])
   (:refer-clojure :exclude [update]))
 
 (import-vars
@@ -50,14 +49,17 @@
    css]
 
   [coast.router
+   routes
    wrap-routes
    prefix-routes]
 
-  [coast.middleware.site
+  [coast.middleware
+   wrap-with-layout
    wrap-layout
-   wrap-with-layout]
+   site-routes
+   api-routes]
 
-  [coast.eta
+  [coast.theta
    server
    app
    url-for
