@@ -20,7 +20,7 @@
         headers (->> (:headers response)
                      (utils/map-vals string/lower-case))
         content-type (get headers "content-type")
-        route (:coast.router/name request)
+        route (:coast.router/name response)
         timestamp (time/fmt (time/offset) "yyyy-MM-dd HH:mm:ss xx")]
     (str timestamp " " method " \"" uri "\" " route " " status " " content-type " " ms "ms")))
 
