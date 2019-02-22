@@ -1,7 +1,5 @@
 (ns coast.components
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [clojure.java.io :as io]
-            [clojure.edn :as edn]
             [coast.env :refer [env]]
             [coast.assets :as assets]))
 
@@ -14,8 +12,10 @@
    (csrf {})))
 
 (defn form [params & body]
-  [:form params
+  [:form (dissoc params :_method)
    (csrf)
+   (when (contains? #{:patch :put :delete} (:_method params))
+     [:input {:type "hidden" :name "_method" :value (:_method params)}])
    body])
 
 (defn css
