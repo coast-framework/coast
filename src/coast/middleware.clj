@@ -209,7 +209,9 @@
   (fn [request]
     (let [params (:params request)
           coerced-params (utils/map-vals coerce-params params)
-          request (assoc request :params coerced-params)]
+          request (assoc request :params coerced-params
+                                 :coerced-params coerced-params
+                                 :raw-params params)]
       (handler request))))
 
 
@@ -223,7 +225,8 @@
     (let [method (if (= :post (:request-method request))
                    (get simulated-methods (get-in request [:params :_method]) (:request-method request))
                    (:request-method request))]
-      (handler (assoc request :request-method method)))))
+      (handler (assoc request :request-method method
+                              :original-request-method (:request-method request))))))
 
 
 (defn wrap-params [handler]
