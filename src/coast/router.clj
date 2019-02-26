@@ -412,9 +412,12 @@
   (println (string/join "\n" (map pretty-route routes))))
 
 
-(defn routes [& routes]
-  (->> routes
-       (apply concat)
+(defn routes [& args]
+  (->> (filter sequential? args)
+       (flatten)
+       (partition-by verb?)
+       (partition 2)
+       (mapv #(vec (apply concat %)))
        (mapcat expand-resource)
        (filter #(not (resource-route? %)))
        (vec)))
