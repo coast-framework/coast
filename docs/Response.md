@@ -1,7 +1,7 @@
 # Response
 
 * [Basic Example](#user-content-basic-example)
-* [Making Responses](#user-content-making response)
+* [Making Responses](#user-content-making-responses)
 * [Headers](#user-content-headers)
 * [Cookies](#user-content-cookies)
 * [Redirects](#user-content-redirects)
