@@ -19,6 +19,7 @@
         (middleware/wrap-absolute-redirects)
         (middleware/wrap-resource "public")
         (middleware/wrap-content-type)
+        (middleware/wrap-json-response-with-content-type)
         (middleware/wrap-default-charset "utf-8")
         (middleware/wrap-not-modified)
         (middleware/wrap-simulated-methods)

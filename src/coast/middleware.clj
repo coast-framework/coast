@@ -258,6 +258,18 @@
           (assoc-in [:headers "content-type"] "application/json")))))
 
 
+(defn wrap-json-response-with-content-type [handler]
+  (fn [request]
+    (let [{:keys [body headers] :as response} (handler request)
+          content-type (-> (utils/map-keys string/lower-case headers)
+                           (get "content-type"))]
+      (if (and (some? body)
+               (not (string? body))
+               (string/starts-with? content-type "application/json"))
+        (assoc response :body (json/write-str body))
+        (handler request)))))
+
+
 (defn api-defaults [opts]
   (utils/deep-merge ring.middleware.defaults/api-defaults opts))
 
