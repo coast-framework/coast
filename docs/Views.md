@@ -5,14 +5,10 @@
 * [Helpers](#user-content-helpers)
 * [View Logic](#user-content-view-logic)
 * [Components](#user-content-components)
+* [Layout](#user-content-layout)
 * [Syntax](#user-content-syntax)
 
 Coast uses [hiccup](https://github.com/weavejester/hiccup) as its rendering engine, which is pretty darn fast and comes with an elegant API to create dynamic views.
-
-Under the hood, hiccup supports:
-1. Layouts & partials
-2. Components
-3. Terse Syntax
 
 ## Basic example
 Let's start with the classic **Hello World** example by rendering a hiccup vector.
@@ -260,6 +256,43 @@ Use the `modal` component like this:
 ```
 
 This is assuming you have the requisite js somewhere.
+
+## Layout
+
+Layouts in coast are specified alongside the routes which makes supporting multiple layouts a little easier
+
+Here's an example:
+
+```clojure
+(defn my-layout-function [request body]
+  [:html
+    [:head
+     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+     (coast/css "bundle.css")
+     (coast/js "bundle.js")]
+    [:body
+     body]])
+
+
+(defn my-other-layout-function [request body]
+ [:html
+   [:head
+    [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+    (coast/css "bundle.css")
+    (coast/js "bundle.js")]
+   [:body
+    body]])
+
+
+(def routes
+  (coast/routes
+    (coast/site-routes my-layout-function
+      [:get "/" :home/index]
+      [:resource :customer]
+
+    (coast/site-routes my-other-layout-function
+      [:get "/other-route" :other/route]))))
+```
 
 ## Syntax
 
