@@ -245,7 +245,8 @@
   (fn [{:keys [body params] :as request}]
     (if (some? body)
       (let [json-params (-> body slurp json/read-str)]
-        (handler (assoc request :params (merge params json-params))))
+        (handler (assoc request :params (merge params json-params)
+                                :json-params json-params)))
       (handler request))))
 
 
