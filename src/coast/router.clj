@@ -423,12 +423,41 @@
   (println (string/join "\n" (map pretty-route routes))))
 
 
+(defn recreate-middleware-fns [val]
+  (let [[method url] val
+        fns (filter fn? val)
+        k (if (>= (count val) 3)
+            (nth val 2)
+            nil)
+        route-name (if (and (some? k)
+                            (not= (last val) k))
+                     (last val)
+                     nil)
+        new-route [method url]
+        new-route (if (empty? fns)
+                    (conj new-route k)
+                    (conj new-route (vec (concat [k] fns))))
+        new-route (if (ident? route-name)
+                    (conj new-route route-name)
+                    new-route)]
+    (vec
+      (filter some? new-route))))
+
+
 (defn routes [& args]
-  (->> (filter sequential? args)
-       (flatten)
-       (partition-by verb?)
-       (partition 2)
-       (mapv #(vec (apply concat %)))
-       (mapcat expand-resource)
-       (filter #(not (resource-route? %)))
-       (vec)))
+  (if (and (every? vector? args)
+           (every? true? (->> (mapcat identity args)
+                              (map route?))))
+    (->> (apply concat args)
+         (mapcat expand-resource)
+         (filter #(not (resource-route? %)))
+         (vec))
+    (->> (filter sequential? args)
+         (flatten)
+         (partition-by verb?)
+         (partition 2)
+         (mapv #(vec (apply concat %)))
+         (mapcat expand-resource)
+         (filter #(not (resource-route? %)))
+         (mapv recreate-middleware-fns)
+         (vec))))
