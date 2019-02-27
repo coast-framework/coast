@@ -244,9 +244,10 @@
 (defn wrap-json-params [handler]
   (fn [{:keys [body params] :as request}]
     (if (some? body)
-      (let [json-params (-> body slurp json/read-str)]
-        (handler (assoc request :params (merge params json-params)
-                                :json-params json-params)))
+      (let [json-params (-> body slurp json/read-str)
+            response (handler (assoc request :params (merge params json-params)
+                                             :json-params json-params))]
+        response)
       (handler request))))
 
 
