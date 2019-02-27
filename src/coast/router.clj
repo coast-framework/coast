@@ -388,14 +388,24 @@
 
 (defn pretty-route [route]
   (let [[method uri val route-name] route
-        f (if (vector? val) (first val) val)]
+        f (if (vector? val) (first val) val)
+        middleware (if (vector? val)
+                     (string/join
+                      (map #(if-let [meta (-> % :meta)]
+                              (name meta)
+                              "")
+                           val)
+                      " ")
+                     "")]
     (str (-> method name string/upper-case)
          " "
          uri
          " "
          f
          " "
-         route-name)))
+         route-name
+         " "
+         middleware)))
 
 (defn prefix-route [s route]
   (if (>= (count route) 3)
