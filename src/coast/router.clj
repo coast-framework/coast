@@ -77,7 +77,7 @@
 
 (defn route? [val]
   (and (vector? val)
-       (or (contains? verbs (first val)))))
+       (contains? verbs (first val))))
 
 (defn routes? [val]
   (every? route? val))
