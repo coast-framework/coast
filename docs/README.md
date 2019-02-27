@@ -23,7 +23,7 @@
 * [Views](Views.md)
 * [Sessions](Sessions.md)
 * [Validator](Validator.md)
-* [Error Handling](Errors-Handling.md)
+* [Error Handling](Error-Handling.md)
 * [Logger](Logger.md)
 
 ### Security
