@@ -327,13 +327,14 @@
           middleware (route-middleware-fn f)
           route-name (if (sequential? f) (first f) f)
           request (assoc request ::name route-name
-                                 ::handler route-handler
                                  :coast/opts opts
                                  :params (merge params route-params))
           response (if (some? middleware)
                      ((middleware route-handler) request)
                      (route-handler request))]
-      (assoc response ::name route-name))))
+      (if (vector? response)
+        {:status 200 :body response ::name route-name}
+        (assoc response ::name route-name)))))
 
 
 (defn matches-route-identifier? [route k]
