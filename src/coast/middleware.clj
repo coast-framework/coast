@@ -268,7 +268,7 @@
                (not (string? body))
                (string/starts-with? content-type "application/json"))
         (assoc response :body (json/write-str body))
-        (handler request)))))
+        response))))
 
 
 (defn api-defaults [opts]
