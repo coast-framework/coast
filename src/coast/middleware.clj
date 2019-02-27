@@ -312,3 +312,14 @@
                       wrap-json-params
                       wrap-json-response
                       routes))
+
+(defn wrap-plain-text-content-type [handler]
+  (fn [request]
+    (let [response (handler request)
+          headers (:headers response)
+          headers (utils/map-keys string/lower-case headers)
+          content-type (get headers "content-type")]
+      (if (or (string/blank? content-type)
+              (= "application/octet-stream" content-type))
+        (assoc-in response [:headers "Content-Type"] "text/plain")
+        response))))
