@@ -31,7 +31,7 @@
 * [Authentication](Authentication.md)
 * [CSRF Protection](CSRF-Protection.md)
 * [Password Hashing](Password-Hashing.md)
-* [XSS, Sniffing, XFrame](Malware.md)
+* [XSS, Sniffing, XFrame](Security-Outro.md)
 
 ### Database
 * [Getting Started](Database-Getting-Started.md)
