@@ -38,6 +38,7 @@
 * [Getting Started](Database-Getting-Started.md)
 * [Query Builder](Query-Builder.md)
 * [Migrations](Migrations.md)
+* [Relationships](Relationships.md)
 * [Pull](Pull.md)
 
 ### Testing
