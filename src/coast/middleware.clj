@@ -64,6 +64,7 @@
    {:session {:cookie-name "id"
               :store (ring.middleware.session.cookie/cookie-store {:key (or (env/env :secret)
                                                                             (env/env :session-key))})}
+    :security {:frame-options :deny}
     :params nil}
    opts))
 
@@ -74,7 +75,8 @@
 
 (defn wrap-site-defaults [handler]
   (fn [request]
-    (let [f (wrap-defaults handler (site-defaults (:coast/opts request)))]
+    (let [coast-defaults (site-defaults (:coast/opts request))
+          f (wrap-defaults handler coast-defaults)]
       (f request))))
 
 
@@ -114,8 +116,8 @@
       (let [response (handler request)]
         (if (response-map? response)
           (if (vector? (:body response))
-            (assoc response :body (str (h/html (:body response)))
-                            :headers {"content-type" "text/html"})
+            (-> (assoc response :body (str (h/html (:body response))))
+                (assoc-in [:headers "content-type"] "text/html; charset=utf-8"))
             response)
           (throw (Exception. (str "Coast error. Expected a response map. Got " response)))))
       (catch Exception e
