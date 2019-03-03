@@ -30,8 +30,7 @@
 * [Introduction](Security-Intro.md)
 * [Authentication](Authentication.md)
 * [CSRF Protection](CSRF-Protection.md)
-* [Encryption and Hashing](Encryption-Hashing.md)
-* [Content Security Policy](CSP.md)
+* [Password Hashing](Password-Hashing.md)
 * [XSS, Sniffing, XFrame](Malware.md)
 
 ### Database
