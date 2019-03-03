@@ -21,6 +21,8 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 
 ## Getting Started
 
+Getting started with Coast is detailed below, but if you want to really get into it, [there are some docs too](docs/README.md)
+
 ### Installation on Mac
 
 1. Make sure clojure is installed first
@@ -245,12 +247,6 @@ Then put your cursor somewhere inside of `(-main)` and send this over to the run
 I currently use [proto-repl](https://github.com/jasongilman/proto-repl), check it out if you want a smooth clojure REPL experience.
 
 Finally, navigate to http://localhost:1337/todos and check out your handiwork.
-
-## But Wait There's More Docs!
-
-The docs are always under construction, but there should be enough to get you started
-
-[Read the docs](docs/README.md)
 
 ## Contributing
 
