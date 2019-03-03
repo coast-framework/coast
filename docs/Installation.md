@@ -19,7 +19,7 @@ TIP: You can use tools like [jabba](https://github.com/shyiko/jabba) to help man
 
 ## Installing Coast
 
-### Via Coast CLI
+### From Coast CLI
 
 Coast CLI is a command line tool to help you install Coast.
 
@@ -31,7 +31,7 @@ curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/c
 
 Make sure to add the `/usr/local/bin` directory to your `$PATH`.
 
-Once installed, you can use the `coast new` command to create fresh installations of Coast.
+Once installed, you can use the `coast new` command to create new Coast apps.
 
 For example, to create a new application called `zero`, simply:
 
@@ -41,6 +41,8 @@ coast new zero
 
 ## Serving the application
 
+### From the CLI
+
 Once the installation process has completed, you can `cd` into your new application directory and run the following command to start the server:
 
 ```bash
@@ -48,6 +50,8 @@ make server
 ```
 
 This command starts the server on the `:port` defined inside the `env.edn` file (1337 by default): `https://localhost:1337`
+
+### From the REPL
 
 Or you can run `(server/-main)` from your REPL. The REPL server can be started from the terminal with:
 
@@ -70,4 +74,4 @@ After the editor is connected to the running REPL server, add this to the bottom
   (-main))
 ```
 
-And move your text editor's cursor over any of the letters in `-main` and press the keyboard shortcut for sending the text under the cursor to the REPL server. The http server will start and you can navigate to `https://localhost:1337`
+And move your text editor's cursor over any of the letters in `-main` and press the keyboard shortcut for "sending the text under the cursor" to the REPL server. The http server will start and you can navigate to `https://localhost:1337`
