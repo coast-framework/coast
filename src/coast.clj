@@ -37,7 +37,8 @@
    update
    first!
    pluck
-   fetch]
+   fetch
+   connection]
 
   [coast.validation
    validate]
