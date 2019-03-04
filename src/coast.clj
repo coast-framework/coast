@@ -2,6 +2,7 @@
   (:require [potemkin :refer [import-vars]]
             [hiccup2.core]
             [coast.db]
+            [coast.db.connection]
             [coast.theta]
             [coast.env]
             [coast.time]
@@ -37,7 +38,9 @@
    update
    first!
    pluck
-   fetch
+   fetch]
+
+  [coast.db.connection
    connection]
 
   [coast.validation
