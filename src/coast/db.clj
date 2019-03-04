@@ -180,8 +180,12 @@
    (let [adapter (db.connection/spec :adapter)
          associations ((load-file "db/associations.clj"))
          col-map (col-map adapter)
+         sql-vec (sql/sql-vec adapter col-map associations v params)
+         _ (when (or (= "true" (db.connection/spec :debug))
+                     (true? (db.connection/spec :debug)))
+             (println sql-vec))
          rows (query (connection)
-                     (sql/sql-vec adapter col-map associations v params)
+                     sql-vec
                      {:keywordize? false
                       :identifiers qualify-col})]
      (walk/postwalk #(-> % coerce-inst coerce-timestamp-inst)
@@ -195,6 +199,9 @@
   ([v params]
    (let [adapter (db.connection/spec :adapter)
          sql-vec (sql/sql-vec adapter {} {} v params)]
+      (when (or (= "true" (db.connection/spec :debug))
+                (true? (db.connection/spec :debug)))
+        (println sql-vec))
       (jdbc/execute!
        (connection)
        sql-vec)))
