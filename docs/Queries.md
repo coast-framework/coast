@@ -81,8 +81,6 @@ The following query:
  {:person/id 2 :person/screen-name "sean1" :person/email "sean1@example.com" :person/password "hashed"}]
 ```
 
-The ... in the above example represents the `updated_at` and `created_at` keys.
-
 ### Convention 2
 
 The second thing you'll notice is that column names are automatically converted between kebab-case to camel_case and back again in the response.
