@@ -38,7 +38,8 @@
    update
    first!
    pluck
-   fetch]
+   fetch
+   execute!]
 
   [coast.db.connection
    connection]
