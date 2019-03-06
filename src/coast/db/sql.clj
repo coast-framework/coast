@@ -6,7 +6,11 @@
   (:import (java.time LocalDateTime)))
 
 
-(def ops #{:select :from :update :set :insert :delete :pull :joins :where :order :limit :offset :group :values})
+(def ops #{:select :from :update :set :insert
+           :delete :pull :join :left-join :right-join
+           :left-outer-join :right-outer-join :outer-join
+           :full-outer-join :full-join :cross-join
+           :where :order :limit :offset :group :values})
 
 
 (defn op? [k]
@@ -29,16 +33,14 @@
   (cond
     (sequential? val) "not"
     (nil? val) "is not"
-    :else "!="))
+    :else (name val)))
 
 
 (defn op [val]
   (cond
     (sequential? val) "in"
     (nil? val) "is"
-    (= 'like val) "like"
-    (= :like val) "like"
-    :else "="))
+    :else (name val)))
 
 
 (defn select-col [k]
@@ -50,10 +52,15 @@
 
 
 (defn select [v]
-  (let [s (->> (map select-col v)
+  (let [distinct (first (filter #(= (name %) "distinct") v))
+        distinct (if (ident? distinct)
+                   (str "distinct ")
+                   "")
+        columns (filter #(not= (name %) "distinct") v)
+        s (->> (map select-col columns)
                (string/join ", "))]
     (if (not (string/blank? s))
-      {:select (str "select " s)
+      {:select (str "select " distinct s)
        :select-ks v}
       (throw (Exception. (str "select needs at least one argument."))))))
 
@@ -176,23 +183,53 @@
                                 (string/join ", ")))})
 
 
-(defn join [m]
-  (str "join " (name (:join/table m))
-       " on " (utils/sqlize (:join/left m))
-       " = " (utils/sqlize (:join/right m))))
+(defn join [s m]
+  (if (map? m)
+    (str s " " (name (:join/table m))
+         " on " (utils/sqlize (:join/left m))
+         " = " (utils/sqlize (:join/right m)))
+    (str s " " m)))
 
 
-(defn join-map [from k]
-  {:join/table (utils/sqlize k)
-   :join/left (utils/sqlize (keyword (name k) from))
-   :join/right (utils/sqlize (keyword from "id"))})
+(defn join-map [from val]
+  (cond
+    (ident? val) {:join/table (utils/sqlize val)
+                  :join/left (utils/sqlize (keyword (name val) from))
+                  :join/right (utils/sqlize (keyword from "id"))}
+    (vector? val) {:join/table (first val)
+                   :join/left (second val)
+                   :join/right (nth val 2)}
+    :else val))
 
 
-(defn joins [m]
-  (let [from (utils/sqlize (first (:from m)))]
-    (assoc m :joins (->> (map #(join-map from %) (:joins m))
-                         (map join)
-                         (string/join " ")))))
+(def join-sql-map {:join "join"
+                   :left-join "left join"
+                   :right-join "right join"
+                   :left-outer-join "left outer join"
+                   :right-outer-join "right outer join"
+                   :outer-join "outer join"
+                   :full-outer-join "full outer join"
+                   :full-join "full join"
+                   :cross-join "cross join"})
+
+
+(defn joins [k m]
+  (let [from (utils/sqlize (first (:from m)))
+        join-str (get join-sql-map k)]
+    (assoc m k (->> (map #(join-map from %) (get m k))
+                    (map #(join join-str %))
+                    (string/join " ")))))
+
+
+(defn all-joins [m]
+  (->> (joins :join m)
+       (joins :left-outer-join)
+       (joins :left-join)
+       (joins :right-join)
+       (joins :right-outer-join)
+       (joins :outer-join)
+       (joins :full-join)
+       (joins :cross-join)))
 
 
 (defn no-asterisks? [m]
@@ -246,7 +283,7 @@
           (not (contains? m :select)))
     m
     (let [from-tables (map ns-or-name (:from m))
-          joins-tables (map ns-or-name (:joins m))
+          joins-tables (mapcat #(ns-or-name (get m %)) (keys join-sql-map))
           select-tables (map namespace (filter qualified-ident? (:select m)))
           tables (->> (concat from-tables joins-tables select-tables)
                       (filter some?)
@@ -257,6 +294,22 @@
       (assoc m :select (->> (concat (:select m) columns)
                             (filter #(not= (name %) "*"))
                             (vec))))))
+
+
+(defn qualify-col [table k]
+  (if (= (name k) "distinct")
+    :distinct
+    (if (qualified-ident? k)
+      k
+      (keyword (name table) (name k)))))
+
+
+(defn expand-select [m]
+  (if (contains? m :select)
+    (let [columns (:select m)
+          from (-> m :from first)]
+      (assoc m :select (mapv #(qualify-col from %) columns)))
+    m))
 
 
 (defn replace-val [q params val]
@@ -281,13 +334,20 @@
         args (filter #(not (contains? (set ops) %)) parts)]
     (zipmap (map first ops) (map vec args))))
 
+
 (defn sql-part [adapter [k v]]
   (condp = k
     :select (select v)
     :from (from v)
     ;:pull {:pull v}
-    :joins {:joins v}
-    :where (where v)
+    :join {:join v}
+    :cross-join {:cross-join v}
+    :left-join {:left-join v}
+    :right-join {:right-join v}
+    :outer-join {:outer-join v}
+    :full-join {:full-join v}
+    :left-outer-join {:left-outer-join v}
+    :right-outer-join {:right-outer-join v}
     :order (order v)
     :limit (limit v)
     :offset (offset v)
@@ -299,6 +359,7 @@
     :set (update-set v)
     nil))
 
+
 (defn sql-vec
   "Generates a jdbc sql vector from an ident sql vector"
   [adapter col-map associations v params]
@@ -306,14 +367,22 @@
                (sql-map)
                (expand-select-asterisks col-map)
                (expand-pull-asterisk associations col-map)
-               (joins)
+               (expand-select)
+               (all-joins)
                (map #(sql-part adapter %))
                (apply merge))
-        {:keys [select pull joins
+        {:keys [select pull join left-join right-join
+                left-outer-join right-outer-join full-join
+                full-join cross-join full-outer-join
                 where order offset
                 limit group args delete
                 insert values update from
                 update-set update-set-args]} m
-        sql (->> (filter some? [select pull delete from update update-set insert values joins where order offset limit group])
+        sql (->> (filter #(not (string/blank? %)) [select pull delete from
+                                                   update update-set insert values
+                                                   join left-join right-join
+                                                   left-outer-join right-outer-join
+                                                   full-join cross-join full-outer-join
+                                                   where order offset limit group])
                  (string/join " "))]
     (apply conj [sql] (concat update-set-args (filter some? (utils/flat args))))))
