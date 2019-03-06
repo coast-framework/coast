@@ -16,7 +16,7 @@
 
 ### Database
 * [Getting Started](Database-Getting-Started.md)
-* [Query Builder](Query.md)
+* [Queries](Queries.md)
 * [Migrations](Migrations.md)
 * [Relationships](Relationships.md)
 * [Pull](Pull.md)
