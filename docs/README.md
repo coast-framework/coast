@@ -14,6 +14,13 @@
 * [Configuration](Configuration.md)
 * [Directory Structure](Directory-Structure.md)
 
+### Database
+* [Getting Started](Database-Getting-Started.md)
+* [Query Builder](Query.md)
+* [Migrations](Migrations.md)
+* [Relationships](Relationships.md)
+* [Pull](Pull.md)
+
 ### Basics
 * [Routing](Routing.md)
 * [Middleware](Middleware.md)
@@ -32,13 +39,6 @@
 * [CSRF Protection](CSRF-Protection.md)
 * [Password Hashing](Password-Hashing.md)
 * [XSS, Sniffing, XFrame](Security-Outro.md)
-
-### Database
-* [Getting Started](Database-Getting-Started.md)
-* [Query Builder](Query-Builder.md)
-* [Migrations](Migrations.md)
-* [Relationships](Relationships.md)
-* [Pull](Pull.md)
 
 ### Testing
 * [Getting Started](Testing-Getting-Started.md)
