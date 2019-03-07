@@ -208,6 +208,10 @@
   (col :decimal col-name m))
 
 
+(defn json [col-name & {:as m}]
+  (col :json col-name m))
+
+
 (defn drop-table [table]
   (str "drop table " (utils/sqlize table)))
 
@@ -240,12 +244,6 @@
 
 (defn drop-extension [s]
   (str "drop extension " s))
-
-
-(defn drop-column
-  "SQL for dropping a column from a table"
-  [table col]
-  (str "alter table " (utils/sqlize table) " drop column " (utils/sqlize col)))
 
 
 (defn drop-foreign-key [alter-table-name & {:as m}]
