@@ -290,17 +290,17 @@
 (defn rename-index [index-name new-index-name]
   (string/join " "
     ["alter index"
-     index-name
+     (utils/sqlize index-name)
      "rename to"
-     new-index-name]))
+     (utils/sqlize new-index-name)]))
 
 
 (defn rename-table [table-name new-table-name]
   (string/join " "
     ["alter table"
-     table-name
+     (utils/sqlize table-name)
      "rename to"
-     new-table-name]))
+     (utils/sqlize new-table-name)]))
 
 
 (defn timestamps []
