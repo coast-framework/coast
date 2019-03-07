@@ -226,14 +226,21 @@
   (if (true? @rollback?)
     (drop-table table)
     (let [args (if (sequential? args) args '())
+          [opts args] (if (map? (first args))
+                        [(first args) (rest args)]
+                        [{} args])
           index-vectors (filter has-index? @vectors)
-          index-sql-strings (map #(add-index table (nth % 2)) index-vectors)]
+          index-sql-strings (map #(add-index table (nth % 2)) index-vectors)
+          pk-col (or (:primary-key opts) "id")
+          not-exists (if (true? (:if-not-exists opts))
+                       "if not exists "
+                       "")]
       (concat
         [(string/join " "
            (filter some?
-             [(str "create table " (utils/sqlize table) " (")
+             [(str "create table " not-exists (utils/sqlize table) " (")
               (string/join ", "
-               (conj args (str "id " (get-in sql [(spec :adapter) :pk]))))
+               (conj args (str pk-col " " (get-in sql [(spec :adapter) :pk]))))
               ")"]))]
         index-sql-strings))))
 
