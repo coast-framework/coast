@@ -9,7 +9,7 @@
 * [Views](#user-content-views)
 * [Environment](#user-content-environment)
 
-The **theta** release contains a number of bug fixes and API improvements to keep the code base simple. Breaking changes were kept to a minimum, however, they could not be eliminated entirely.
+The **theta** release contains a number of bug fixes and API improvements to keep the code base simple.
 
 ## Getting Started
 
@@ -54,8 +54,7 @@ This generates a file in the db folder that looks like this:
 
 ```clojure
 (ns migrations.20190926190239-create-table-member
-  (:require [coast.db.migrations :refer :all])
-  (:refer-clojure :exclude [boolean]))
+  (:require [coast.db.migrations :refer :all]))
 
 (defn change []
   (create-table :member
@@ -74,7 +73,7 @@ Previously, this was a confusing mess of edn without any clear rhyme or reason. 
 make db/migrate
 ```
 
-This does not generate a `resources/schema.edn` like before because the schema for relationships has been separated out and is now defined by you, which means pull queries not only work with `*` as in
+This does not generate a `resources/schema.edn` like before because the schema for relationships has been separated and is now defined by you, which means pull queries not only work with `*` as in
 
 ```clojure
 (pull '* [:author/id 1])
@@ -212,23 +211,22 @@ There was quite a bit of postgres specific code related to raise/rescue, that is
 
 ## Routing
 
-Routing hasn't changed really, old routing code will still work and continue to work, there have only been syntactic improvements. Before the convention was to `def routes` now the convention is to `defn routes []` and return the route vector like so:
-
+Routing hasn't changed really, old routing code will still work and continue to work, there have only been syntactic improvements.
 ```clojure
 (ns routes
   (:require [coast]
             [components]))
 
-(defn routes []
-  (coast/wrap-with-layout components/layout
-    (get "/" :home/index)
-    (get "/posts" :post/index)
-    (get "/posts/:id" :post/view)
-    (get "/posts/build" :post/build)
-    (post "/posts" :post/create)
-    (get "/posts/:id/edit" :post/edit)
-    (post "/posts/:id/edit" :post/change)
-    (post "/posts/:id/delete" :post/delete)
+(def routes
+  (coast/site-routes components/layout
+    [:get "/" :home/index]
+    [:get "/posts" :post/index]
+    [:get "/posts/:id" :post/view]
+    [:get "/posts/build" :post/build]
+    [:post "/posts" :post/create]
+    [:get "/posts/:id/edit" :post/edit]
+    [:post "/posts/:id/edit" :post/change]
+    [:post "/posts/:id/delete" :post/delete]
 ```
 
 Before you had to wrap all vectors in another vector, that's now optional, it makes things a little cleaner. Also multiple layout support per batch of routes is easier as well since you no longer have to pass layout in `app`.
@@ -241,18 +239,19 @@ Since the vector of vectors confusion is gone now, routes more naturally lend th
   (:require [coast]
             [components]))
 
-(defn routes []
-  (coast/wrap-with-layout components/layout
-    (get "/" :home/index)
-    (resource :posts)
+(def routes
+  (coast/site-routes components/layout
+    [:resource :posts]
+
     ; is equal to all of the below routes
-    (get "/posts" :post/index)
-    (get "/posts/build" :post/build)
-    (get "/posts/:id" :post/view)
-    (post "/posts" :post/create)
-    (get "/posts/:id/edit" :post/edit)
-    (post "/posts/:id/edit" :post/change)
-    (post "/posts/:id/delete" :post/delete)
+
+    [:get "/posts" :post/index]
+    [:get "/posts/build" :post/build]
+    [:get "/posts/:id" :post/view]
+    [:post "/posts" :post/create]
+    [:get "/posts/:id/edit" :post/edit]
+    [:post "/posts/:id/edit" :post/change]
+    [:post "/posts/:id/delete" :post/delete]
 ```
 
 ## Views
@@ -301,12 +300,12 @@ There's also `form-for`
 
 This is a combination of `coast/form` and `action-for`.
 
-Those are it for the major changes in coast.theta. Hope you like it!
-
 ## Environment
 
 While `.env` continues to work, there's now another option when it comes to configuring the app's envrionment: `env.edn`.
 
-This is similar to .env except instead of `key=value` it's just edn and this can be checked in to the repo since the datbase configuration is now separate in `db.edn` and uses the `env` variables in production by default.
+This is similar to .env except instead of `key=value` it's just `edn` and this can be checked in to the repo since the database configuration is now separate in `db.edn` and uses the `env` variables in production by default.
 
 Just remember to change the session key and set the database values in the environment in production!
+
+That's it for the major changes in Coast.
