@@ -352,6 +352,7 @@
     :limit (limit v)
     :offset (offset v)
     :group (group v)
+    :group-by (group v)
     :delete (delete v)
     :values (values v)
     :insert (insert v)
