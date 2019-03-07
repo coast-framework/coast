@@ -83,10 +83,18 @@
   (col :integer col-name (merge {:null false :references (str (utils/sqlize col-name) "(id)") :index true :on-delete "cascade"} m)))
 
 
+(defn drop-column
+  "SQL for dropping a column from a table"
+  [table col]
+  (str "alter table " (utils/sqlize table) " drop column " (utils/sqlize col)))
+
+
 (defn add-column
   "SQL for adding a column to an existing table"
   [table col-name type & {:as m}]
-  (str "alter table " (utils/sqlize table) " add column " (col type col-name m)))
+  (if (true? @rollback?)
+    (drop-column table col-name)
+    (str "alter table " (utils/sqlize table) " add column " (col type col-name m))))
 
 
 (defn add-foreign-key
