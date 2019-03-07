@@ -265,7 +265,6 @@
 (defn drop-index [table-name & {cols :column :as m}]
   (let [cols (if (sequential? cols) cols [cols])
         cols (index-cols cols m)
-        col-name (string/join ", " cols)
         index-col-names (map #(string/replace % #" " "_") cols)
         index-name (or (-> m :name utils/sqlize) (str table-name "_" (string/join "_" index-col-names) "_index"))]
     (str "drop index " index-name)))
