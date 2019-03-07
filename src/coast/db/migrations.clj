@@ -2,8 +2,7 @@
   (:require [coast.utils :as utils]
             [clojure.edn :as edn]
             [clojure.string :as string]
-            [coast.db.connection :refer [spec]])
-  (:refer-clojure :exclude [boolean]))
+            [coast.db.connection :refer [spec]]))
 
 (def rollback? (atom false))
 (def vectors (atom []))
@@ -193,7 +192,7 @@
   (col :integer col-name m))
 
 
-(defn boolean [col-name & {:as m}]
+(defn bool [col-name & {:as m}]
   (col :boolean col-name m))
 
 

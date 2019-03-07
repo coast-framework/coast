@@ -11,8 +11,7 @@
             [clojure.string :as string]
             [clojure.edn :as edn]
             [clojure.set :as set])
-  (:import (java.io File))
-  (:refer-clojure :exclude [boolean]))
+  (:import (java.io File)))
 
 
 (defn migrations-dir []
