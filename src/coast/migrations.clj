@@ -39,8 +39,9 @@
 
 (defn completed-migrations []
   (create-table)
-  (->> (coast.db/q '[:select coast-schema-migrations/version
-                     :order coast-schema-migrations/version])
+  (->> (coast.db/q '[:select version
+                     :from coast-schema-migrations
+                     :order version])
        (map :coast-schema-migrations/version)))
 
 
@@ -59,7 +60,7 @@
         all (set (map version filenames))
         completed (set (completed-migrations))
         versions (sort (set/difference all completed))]
-    (map migration-filename versions)))
+    (mapv migration-filename versions)))
 
 
 (defn statements [filename]

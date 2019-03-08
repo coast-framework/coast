@@ -149,7 +149,7 @@
 
 
 (defn from [v]
-  {:from (str "from " (string/join " " (map name v)))})
+  {:from (str "from " (string/join " " (map utils/sqlize v)))})
 
 
 (defn delete [v]
