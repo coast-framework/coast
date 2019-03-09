@@ -389,32 +389,29 @@
                :join (string/join "\n" joins)))))
 
 
-(def pull-vec-hack (atom nil))
 (defn pull-vec [k p-vec cm am]
   (if (empty? cm)
     p-vec
     (let [next-p-vec (if (empty? p-vec)
                         (get cm k)
                         p-vec)
-          next-p-vec (clojure.walk/postwalk
-                      (fn [val]
-                        (if (contains? am val)
-                          (do
-                            (reset! pull-vec-hack val)
-                            {val (get cm (:has-many (get am val)))})
-                          val))
-                      next-p-vec)]
+          has-many-ks (->> (keys am)
+                           (filter #(= (namespace %) (name k))))
+          has-many-cols (->> (mapv #(hash-map % (get cm (:has-many (get am %)))) has-many-ks)
+                             (filter #(some? (first (vals %)))))
+          next-p-vec (concat next-p-vec has-many-cols)
+          cm (dissoc cm k)]
       (pull-vec (first (keys cm))
         next-p-vec
-        (dissoc cm k)
-        (dissoc am @pull-vec-hack)))))
+        cm
+        (apply dissoc am has-many-ks)))))
 
 
 (defn expand-pull-asterisk [associations col-map m]
   (if (and (contains? m :pull)
            (= "*" (name (first (:pull m))))
            (not (empty? associations)))
-    (let [table (keyword (utils/sqlize (first (:from m))))
+    (let [table (keyword (first (:from m)))
           pull (pull-vec table [] col-map associations)]
       (assoc m :pull pull))
     m))
