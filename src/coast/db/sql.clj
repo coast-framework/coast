@@ -273,13 +273,28 @@
     :else {}))
 
 
-(defn pull-from [o table]
-  (let [order (or o "order by id")]
+(defn join-statement [{:keys [table left right]}]
+  (str (utils/sqlize table)
+       " on "
+       (utils/sqlize left)
+       " = "
+       (utils/sqlize right)))
+
+
+(defn pull-from [pf-joins o table]
+  (let [[first-join second-join] pf-joins
+        order-by-id (or (:left second-join) "id")
+        order (or o (str "order by " order-by-id))
+        select (->> (map :table pf-joins)
+                    (map #(str % ".*,"))
+                    (string/join "\n"))]
     (string/join "\n" ["("
-                       "select"
-                       (str "  " table ".*, ")
-                       (str "   row_number() over (" order ") as rn")
+                       "select " select
+                       (str "    row_number() over (" order ") as rn")
                        (str "from " table)
+                       (if (some? second-join)
+                         (str " join " (join-statement (merge second-join {:table (:table first-join)})))
+                         "")
                        (str ") as " table)])))
 
 
@@ -321,19 +336,12 @@
                                :json-object "json_build_object"}})
 
 
-(defn join-statement [{:keys [table left right]}]
-  (str (utils/sqlize table)
-       " on "
-       (utils/sqlize left)
-       " = "
-       (utils/sqlize right)))
-
-
 (defn pull-join [adapter associations m]
   (let [k (rel-key m)
         association (get associations k)
         {:keys [from col]} association
-        join-map (get-in association [:joins 0])
+        pull-join-map (get-in association [:joins 0])
+        pf-joins (get association :joins)
         {:keys [order limit]} (->> (rel-opts m)
                                    (map pull-sql-part)
                                    (apply merge))
@@ -353,12 +361,12 @@
                (concat child-cols)
                (string/join ","))
           (str ")) as " (pull-col k))
-          (str "from " (pull-from order from))
+          (str "from " (pull-from pf-joins order from))
           (->> (map #(pull-join adapter associations %) maps)
                (string/join "\n"))
           limit
           (str "group by " col)
-          (str ") " (join-statement join-map))]
+          (str ") " (join-statement pull-join-map))]
          (filter some?)
          (string/join "\n"))))
 
