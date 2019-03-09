@@ -17,7 +17,7 @@
                   :right (str parent "." primary-key)}])]
     {(keyword parent has-many)
      {:joins joins
-      :has-many has-many
+      :has-many (keyword (utils/singular has-many))
       :from table-name
       :col (str table-name "." (name (or foreign-key parent)))}}))
 
@@ -28,7 +28,7 @@
      {:joins [{:table belongs-to
                :left (str belongs-to "." primary-key)
                :right (str parent "." (or foreign-key belongs-to))}]
-      :belongs-to belongs-to
+      :belongs-to (keyword belongs-to)
       :from belongs-to
       :col (str belongs-to "." primary-key)}}))
 

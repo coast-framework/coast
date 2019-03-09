@@ -237,13 +237,156 @@
 
 
 (defn ns-or-name [k]
-  (or (namespace k) (name k)))
+  (when (ident? k)
+    (or (namespace k) (name k))))
 
 
 (defn select-ns-keys [key-ns m]
   (->> (filter (fn [[k _]] (qualified-ident? k)) m)
        (filter (fn [[k _]] (= (name key-ns) (namespace k))))
        (into {})))
+
+
+(defn sql-map [v]
+  (let [parts (partition-by op? v)
+        ops (take-nth 2 parts)
+        args (filter #(not (contains? (set ops) %)) parts)]
+    (zipmap (map first ops) (map vec args))))
+
+
+(defn rel-opts [m]
+  (let [k (-> m keys first)]
+    (if (sequential? k)
+      (sql-map (drop 1 k))
+      {})))
+
+
+(defn pull-limit [[i]]
+  (when (pos-int? i)
+    {:limit (str "where rn <= " i)}))
+
+
+(defn pull-sql-part [[k v]]
+  (condp = k
+    :order (order v)
+    :limit (pull-limit v)
+    :else {}))
+
+
+(defn pull-from [o table]
+  (let [order (or o "order by id")]
+    (string/join "\n" ["("
+                       "select"
+                       (str "  " table ".*, ")
+                       (str "   row_number() over (" order ") as rn")
+                       (str "from " table)
+                       (str ") as " table)])))
+
+
+(defn rel-key [m]
+  (let [k (-> m keys first)]
+    (if (sequential? k)
+      (first k)
+      k)))
+
+
+(defn pull-col [k]
+  (str (-> k namespace utils/sqlize) "$" (-> k name utils/sqlize)))
+
+
+(defn json-build-object [k]
+  (str "'" (pull-col k) "', " (utils/sqlize k)))
+
+
+(defn pull-op? [k]
+  (contains? #{:limit :order} k))
+
+
+(defn pull-sql-ops [v]
+  (let [parts (partition-by pull-op? v)
+        ops (take-nth 2 parts)
+        args (filter #(not (contains? (set ops) %)) parts)]
+    (zipmap (map first ops) (map vec args))))
+
+
+(defn rel-col [k]
+  (if (qualified-ident? k)
+    (str "'" (pull-col k) "', " (pull-col k))
+    (str "'" (-> k first pull-col) "', " (-> k first pull-col))))
+
+
+(def pull-sql-map {"sqlite" {:json-agg "json_group_array"
+                             :json-object "json_object"}
+                   "postgres" {:json-agg "json_agg"
+                               :json-object "json_build_object"}})
+
+
+(defn join-statement [{:keys [table left right]}]
+  (str (utils/sqlize table)
+       " on "
+       (utils/sqlize left)
+       " = "
+       (utils/sqlize right)))
+
+
+(defn pull-join [adapter associations m]
+  (let [k (rel-key m)
+        association (get associations k)
+        {:keys [from col]} association
+        join-map (get-in association [:joins 0])
+        {:keys [order limit]} (->> (rel-opts m)
+                                   (map pull-sql-part)
+                                   (apply merge))
+        val (-> m vals first)
+        v (filter qualified-ident? val)
+        maps (filter map? val)
+        child-cols (mapv #(-> % keys first rel-col) maps)]
+    (->> ["left outer join ("
+          "select"
+          (str col
+               ",")
+          (str (get-in pull-sql-map [adapter :json-agg])
+               "("
+              (get-in pull-sql-map [adapter :json-object])
+              "(")
+          (->> (map json-build-object v)
+               (concat child-cols)
+               (string/join ","))
+          (str ")) as " (pull-col k))
+          (str "from " (pull-from order from))
+          (->> (map #(pull-join adapter associations %) maps)
+               (string/join "\n"))
+          limit
+          (str "group by " col)
+          (str ") " (join-statement join-map))]
+         (filter some?)
+         (string/join "\n"))))
+
+
+(defn pull-joins [adapter associations acc v]
+  (let [maps (filter map? v)
+        joins (mapv #(pull-join adapter associations %) maps)
+        acc (concat acc joins)]
+    (if (empty? maps)
+     acc
+     (pull-joins adapter associations acc (map #(-> % vals first) maps)))))
+
+
+(defn pull
+  "Converts the :pull key of a map into a sql map"
+  [adapter associations m]
+  (if (not (contains? m :pull))
+    m
+    (let [v (:pull m)
+          cols (filter qualified-ident? v)
+          maps (filter map? v)
+          rel-cols (->> (mapv rel-key maps)
+                        (mapv pull-col))
+          col-sql (string/join ", " (concat (mapv select-col cols)
+                                            rel-cols))
+          joins (pull-joins adapter associations [] v)]
+      (assoc m :select (str "select " col-sql)
+               :join (string/join "\n" joins)))))
 
 
 (def pull-vec-hack (atom nil))
@@ -266,13 +409,12 @@
         (dissoc cm k)
         (dissoc am @pull-vec-hack)))))
 
+
 (defn expand-pull-asterisk [associations col-map m]
   (if (and (contains? m :pull)
-           (= "*" (name (if (vector? (:pull m))
-                          (first (:pull m))
-                          (:pull m))))
+           (= "*" (name (first (:pull m))))
            (not (empty? associations)))
-    (let [table (keyword (name (first (:from m))))
+    (let [table (keyword (utils/sqlize (first (:from m))))
           pull (pull-vec table [] col-map associations)]
       (assoc m :pull pull))
     m))
@@ -328,18 +470,11 @@
   (walk/prewalk (partial replace-val v params) v))
 
 
-(defn sql-map [v]
-  (let [parts (partition-by op? v)
-        ops (take-nth 2 parts)
-        args (filter #(not (contains? (set ops) %)) parts)]
-    (zipmap (map first ops) (map vec args))))
-
-
 (defn sql-part [adapter [k v]]
   (condp = k
     :select (select v)
     :from (from v)
-    ;:pull {:pull v}
+    :pull {:pull v}
     :join {:join v}
     :cross-join {:cross-join v}
     :left-join {:left-join v}
@@ -360,6 +495,13 @@
     :set (update-set v)
     nil))
 
+(defn fmt-pull [m]
+  (if (contains? m :pull)
+    (if (and (vector? (:pull m))
+             (vector? (first (:pull m))))
+      (assoc m :pull (first (:pull m)))
+      m)
+    m))
 
 (defn sql-vec
   "Generates a jdbc sql vector from an ident sql vector"
@@ -367,19 +509,21 @@
   (let [m (->> (replace-vals v params)
                (sql-map)
                (expand-select-asterisks col-map)
+               (fmt-pull)
                (expand-pull-asterisk associations col-map)
                (expand-select)
                (all-joins)
                (map #(sql-part adapter %))
-               (apply merge))
-        {:keys [select pull join left-join right-join
+               (apply merge)
+               (pull adapter associations))
+        {:keys [select join left-join right-join
                 left-outer-join right-outer-join full-join
                 full-join cross-join full-outer-join
                 where order offset
                 limit group args delete
                 insert values update from
                 update-set update-set-args]} m
-        sql (->> (filter #(not (string/blank? %)) [select pull delete from
+        sql (->> (filter #(not (string/blank? %)) [select delete from
                                                    update update-set insert values
                                                    join left-join right-join
                                                    left-outer-join right-outer-join
