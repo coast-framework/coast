@@ -2,71 +2,65 @@
   (:require [coast.utils :as utils]))
 
 
-(defn has-many-map [table m]
-  (let [joins (if (some? (:through m))
-                [{:join/table (utils/singular (:through m))
-                  :join/left (keyword (utils/singular (:through m)) table)
-                  :join/right (keyword table (or (:pk m) "id"))}
-                 {:join/table (keyword (:table-name m))
-                  :join/left (keyword (:table-name m) "id")
-                  :join/right (keyword (utils/singular (:through m)) (:table-name m))}]
-                [{:join/table (keyword (:table-name m))
-                  :join/left (keyword (:table-name m) (name (or (:foreign-key m) table)))
-                  :join/right (keyword table (or (:pk m) "id"))}])]
-    {(keyword table (:rel-name m)) {:joins joins
-                                    :has-many (keyword table)}}))
+(defn has-many-map [parent m]
+  (let [{:keys [has-many table-name foreign-key through primary-key]} m
+        table-name (or table-name (utils/singular has-many))
+        joins (if (some? through)
+                [{:table (utils/singular through)
+                  :left (str (utils/singular through) "." parent)
+                  :right (str parent "." primary-key)}
+                 {:table table-name
+                  :left (str table-name ".id")
+                  :right (str (utils/singular through) "." table-name)}]
+                [{:table table-name
+                  :left (str table-name "." (name (or foreign-key parent)))
+                  :right (str parent "." primary-key)}])]
+    {(keyword parent has-many)
+     {:joins joins
+      :has-many has-many
+      :from table-name
+      :col (str table-name "." (name (or foreign-key parent)))}}))
 
 
-(defn belongs-to-map [table m]
-  {(keyword table (:rel-name m))
-   {:joins [{:join/table (keyword (:table-name m))
-             :join/left (keyword (:table-name m) (name (or (:pk m) table)))
-             :join/right (keyword table (or (:foreign-key m) "id"))}]
-    :belongs-to (keyword table)}})
+(defn belongs-to-map [parent m]
+  (let [{:keys [belongs-to foreign-key primary-key]} m]
+    {(keyword parent belongs-to)
+     {:joins [{:table belongs-to
+               :left (str belongs-to "." primary-key)
+               :right (str parent "." (or foreign-key belongs-to))}]
+      :belongs-to belongs-to
+      :from belongs-to
+      :col (str belongs-to "." primary-key)}}))
 
 
 (defn primary-key [k]
-  (if (ident? k)
-    {:pk (name k)}
-    {:pk k}))
+  {:primary-key (or k "id")})
 
 
 (defn table [k & args]
   (let [t (name k)
-        pk (first
-            (filter #(contains? % :pk) args))
-        has-many-maps (->> (map :has-many args)
-                           (filter some?)
+        pk (or (-> (filter #(contains? % :primary-key) args)
+                   (first))
+               {:primary-key "id"})
+        has-many-maps (->> (filter #(contains? % :has-many) args)
                            (map #(merge pk %))
                            (map #(has-many-map t %)))
-        belongs-to-maps (->> (map :belongs-to args)
-                             (filter some?)
+        belongs-to-maps (->> (filter #(contains? % :belongs-to) args)
                              (map #(merge pk %))
                              (map #(belongs-to-map t %)))]
     (apply merge (concat has-many-maps belongs-to-maps))))
 
 
 (defn belongs-to [k & {:as m}]
-  (let [rel-name (name k)
-        table-name (or (:table-name m) (utils/singular rel-name))
-        foreign-key (:foreign-key m)]
-    (merge
-      (primary-key (:primary-key m))
-      {:belongs-to {:rel-name rel-name
-                    :foreign-key foreign-key
-                    :table-name table-name}})))
+  (->> (select-keys m [:foreign-key])
+       (merge {:belongs-to k})
+       (utils/map-vals utils/sqlize)))
 
 
 (defn has-many [k & {:as m}]
-  (let [rel-name (name k)
-        table-name (or (:table-name m) (utils/singular rel-name))
-        foreign-key (:foreign-key m)
-        through (when (some? (:through m))
-                  (name (:through m)))]
-    {:has-many {:rel-name rel-name
-                :foreign-key foreign-key
-                :table-name table-name
-                :through through}}))
+  (->> (select-keys m [:table-name :foreign-key :through])
+       (merge {:has-many k})
+       (utils/map-vals utils/sqlize)))
 
 
 (defn tables [& args]
