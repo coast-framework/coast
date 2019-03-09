@@ -102,12 +102,14 @@
     coll))
 
 (defn qualify-col [s]
-  (let [parts (string/split s #"\$")
-        k-ns (first (map #(string/replace % #"_" "-") parts))
-        k-n (->> (rest parts)
-                 (map #(string/replace % #"_" "-"))
-                 (string/join "-"))]
-    (keyword k-ns k-n)))
+  (if (.contains s "$")
+    (let [parts (string/split s #"\$")
+          k-ns (first (map #(string/replace % #"_" "-") parts))
+          k-n (->> (rest parts)
+                   (map #(string/replace % #"_" "-"))
+                   (string/join "-"))]
+      (keyword k-ns k-n))
+    (keyword s)))
 
 (defn qualify-map [k-ns m]
   (->> (map (fn [[k v]] [(keyword k-ns (name k)) v]) m)
@@ -144,11 +146,11 @@
 
 (defn parse-json
   "Parses json from pull queries"
-  [schema val]
+  [associations val]
   (if (and (sequential? val)
            (= 2 (count val))
-           (or (= :many (get-in schema [(first val) :db/type]))
-               (= :one (get-in schema [(first val) :db/type])))
+           (or (contains? (get associations (first val)) :has-many)
+               (contains? (get associations (first val)) :belongs-to))
            (string? (second val)))
     [(first val) (json/read-str (second val) :key-fn qualify-col)]
     val))
@@ -178,7 +180,10 @@
 (defn q
   ([v params]
    (let [adapter (db.connection/spec :adapter)
-         associations ((load-file "db/associations.clj"))
+         associations-fn (load-file "db/associations.clj")
+         associations (if (some? associations-fn)
+                        (associations-fn)
+                        {})
          col-map (col-map adapter)
          sql-vec (sql/sql-vec adapter col-map associations v params)
          _ (when (or (= "true" (db.connection/spec :debug))
@@ -375,7 +380,10 @@
 
 
 (defn pull [v ident]
-  (first (q [:pull v :where ident])))
+  (first
+    (q [:pull v
+        :from (-> ident first namespace)
+        :where ident])))
 
 
 (defn -main [& [action db-name]]
