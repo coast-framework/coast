@@ -332,9 +332,11 @@
           response (if (some? middleware)
                      ((middleware route-handler) request)
                      (route-handler request))]
-      (if (vector? response)
-        {:status 200 :body response ::name route-name}
-        (assoc response ::name route-name)))))
+      (cond
+        (vector? response) {:status 200 :body response ::name route-name}
+        (map? response) (assoc response ::name route-name)
+        (string? response) {:status 200 :body response ::name route-name}
+        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
 
 (defn matches-route-identifier? [route k]

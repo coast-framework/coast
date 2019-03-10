@@ -3,16 +3,13 @@
 Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the server without javascript which allows you to ship your web applications faster
 
 ```clojure
-(ns my-project
+(ns server
   (:require [coast]))
 
-(def routes
-  (coast/routes
-    (coast/site-routes
-      [:get "/" :home])))
+(def routes [[:get "/" ::home]])
 
-(defn home [req]
-  [:h1 "You're coasting on clojure!"])
+(defn home [request]
+  "You're coasting on clojure!")
 
 (def app (coast/app {:routes routes}))
 

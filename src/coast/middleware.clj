@@ -135,7 +135,7 @@
            [:h1 "500 Internal server error"]]]))))
 
 (defn wrap-site-errors [handler routes]
-  (if (= "dev" (env/env :coast-env))
+  (if (not= "prod" (env/env :coast-env))
     (wrap-exceptions handler)
     (fn [request]
       (let [error-fn (router/server-error-fn routes)]
