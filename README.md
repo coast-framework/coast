@@ -67,7 +67,7 @@ when you visit `http://localhost:1337`
 
 ## Quickstart
 
-This doc will take you from a fresh coast installation to a working todo list.
+This will take you from a fresh coast installation to a working todo list app.
 
 ### New Project
 
@@ -124,7 +124,7 @@ make db/create
 # Database todos_dev.sqlite3 created successfully
 ```
 
-This will create a sqlite database with the name of your project and whatever `COAST_ENV` is set to, which by default is `dev`. So the database name will be `todos_dev`.
+This will create a sqlite database with the name of the database defined in `db.edn` and the `COAST_ENV` or `:cost-env` environment variable defined in `env.edn`.
 
 ### Migrations
 
