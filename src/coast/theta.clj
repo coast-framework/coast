@@ -112,5 +112,5 @@
         body (if (map? (first body))
                (drop 1 body)
                body)]
-    (components/form (merge (action-for k m) opts)
+    (coast.components/form (merge (action-for k m) opts)
       body)))
