@@ -79,7 +79,8 @@
    queue]
 
   [coast.utils
-   uuid]
+   uuid
+   intern-var]
 
   [coast.time
    now]

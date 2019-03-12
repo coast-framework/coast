@@ -179,3 +179,9 @@
          (keep #(replace-pattern s %))
          (first))
     s))
+
+(defn intern-var [name value]
+  (intern *ns*
+          (with-meta (symbol name)
+                     (meta value))
+          value))
