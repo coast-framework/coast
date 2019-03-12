@@ -93,18 +93,19 @@ This will show you the layout of a default coast project:
 ├── bin
 │   └── repl.clj
 ├── db
-│   └── migrations
 │   └── associations.clj
+├── db.edn
 ├── deps.edn
+├── env.edn
 ├── resources
 │   ├── assets.edn
 │   └── public
 │       ├── css
-│       │   └── app.css
+│       │   ├── app.css
 │       │   └── tachyons.min.css
 │       └── js
-│           └── app.js
-│           └── jquery.js
+│           ├── app.js
+│           └── jquery.min.js
 ├── src
 │   ├── components.clj
 │   ├── home.clj
@@ -124,7 +125,7 @@ make db/create
 # Database todos_dev.sqlite3 created successfully
 ```
 
-This will create a sqlite database with the name of the database defined in `db.edn` and the `COAST_ENV` or `:cost-env` environment variable defined in `env.edn`.
+This will create a sqlite database with the name of the database defined in `db.edn` and the `COAST_ENV` or `:coast-env` environment variable defined in `env.edn`.
 
 ### Migrations
 
@@ -139,8 +140,7 @@ This will create a file in `db/migrations` with a timestamp and whatever name yo
 
 ```clojure
 (ns migrations.20190926190239-create-table-todo
-  (:require [coast.db.migrations :refer :all])
-  (:refer-clojure :exclude [boolean]))
+  (:require [coast.db.migrations :refer :all]))
 
 (defn change []
   (create-table :todo
@@ -153,18 +153,15 @@ This is clojure, not sql, although plain sql migrations would work just fine. Ti
 
 ```bash
 make db/migrate
-# clj -A\:db/migrate
+# clj -m coast.migrations migrate
 #
-# -- Migrating:  20190926190239-create-table-todo ---------------------
+# -- Migrating:  20190310121319_create_table_todo ---------------------
 #
-#  (create-table :todo
-#    (text :name)
-#    (timestamp :finished-at)
-#    (timestamps)))
+# create table todo ( id integer primary key, name text, finished_at timestamp, updated_at timestamp, created_at timestamp not null default current_timestamp )
 #
-# -- 20190926190239-create-table-todo ---------------------
+# -- 20190310121319_create_table_todo ---------------------
 #
-# 20190926190239-create-table-todo migrated successfully
+# 20190310121319_create_table_todo migrated successfully
 ```
 
 This updates the database schema with a `todo` table. Time to move on to the clojure code.
@@ -217,8 +214,8 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
 (def routes
   (coast/routes
     (coast/site-routes components/layout
-      [:get "/"      :home/index]
-      [:get "/todos" :todo/index]
+      [:get "/" :home/index]
+      [:resource :todo]
 
       [:404 :home/not-found]
       [:500 :home/server-error])))
@@ -226,24 +223,43 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
 
 The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.
 
+### Start the server
+
+#### From the command line
+
 Let's check it out from the terminal. Run this
 
 ```bash
 make server
 ```
 
-or navigate to the `src/server.clj` file and type this:
+#### From the REPL
+Navigate to the `src/server.clj` file and type this below the `(defn -main)` part:
 
 ```clojure
 (comment
   (-main))
 ```
 
-Then put your cursor somewhere inside of `(-main)` and send this over to the running repl server (made with `make repl` from the terminal).
-
 I currently use [proto-repl](https://github.com/jasongilman/proto-repl), check it out if you want a smooth clojure REPL experience.
 
-Finally, navigate to http://localhost:1337/todos and check out your handiwork.
+First run, the nrepl server:
+
+```bash
+make repl
+```
+
+Then in your editor, connect to the nrepl server, in atom with proto-repl for example:
+
+Press, `Ctrl+Cmd+Y` and hit `Enter`.
+
+After you're connected, load the `server.clj` file with `Option+Cmd+Shift+F`.
+
+Finally, move your cursor to `(-main)` and evaluate the top block with `Shift+Cmd+B`.
+
+### Check out the page
+
+Navigate to http://localhost:1337/todos and check out your handiwork.
 
 ## Contributing
 
