@@ -1,11 +1,12 @@
 (ns coast.generators.code
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
+            [clojure.java.jdbc :as jdbc]
             [clojure.set :as set]
-            [coast.utils :as utils :refer [kebab snake]]
             [coast.db.connection :refer [connection spec]]
-            [clojure.java.jdbc :as jdbc])
+            [coast.utils :as utils])
   (:import (java.io File)))
+
 
 (def pattern #"__([\w-]+)__")
 
@@ -33,15 +34,11 @@
 
 
 (defn form-element [k]
-  (str "[:div
-     [:label {:for \"" (str (namespace k) "/" (name k)) "\"} \""(name k) "\"]
-     [:input {:type \"text\" :name \"" (str (namespace k) "/" (name k)) "\" :value (-> request :params "(str k)")}]]"))
+  (str "(label {:for \"" (str (namespace k) "/" (name k)) "\"} \""(name k) "\")\n      (input {:type \"text\" :name \"" (str (namespace k) "/" (name k)) "\" :value (-> request :params "(str k)")})"))
 
 
 (defn edit-element [k]
-  (str "[:div
-       [:label {:for \"" (str (namespace k) "/" (name k)) "\"} \""(name k) "\"]
-       [:input {:type \"text\" :name \"" (str (namespace k) "/" (name k)) "\" :value ("(str k) " " (namespace  k)")}]]"))
+  (str "(label {:for \"" (str (namespace k) "/" (name k)) "\"} \""(name k) "\")\n        (input {:type \"text\" :name \"" (str (namespace k) "/" (name k)) "\" :value ("(str k) " " (namespace  k)")})"))
 
 
 (defn columns [table]
@@ -63,16 +60,17 @@
                                       order by table_name, column_name" table])
     :else []))
 
-
-(defn cols! [resource]
-  (let [excluded-cols #{"id" "updated-at" "created-at"}
-        cols (columns (snake resource))
+(defn cols! [table exclude?]
+  (let [excluded-cols (if exclude?
+                        #{"id" "updated-at" "created-at"}
+                        #{})
+        cols (columns (utils/sqlize table))
         cols (->> cols
                   (map :column_name)
-                  (map kebab)
+                  (map utils/kebab-case)
                   (set))
         cols (set/difference cols excluded-cols)]
-    (map #(keyword resource %) cols)))
+    (map #(keyword table %) cols)))
 
 
 (defn spit! [f s]
@@ -85,54 +83,39 @@
 
 
 (defn dl-element [k]
-  (str "[:dl
-       [:dt \""(name k)"\"]
-       [:dd (" (str k) " " (namespace k) ")]]"))
+  (str "(dt \"" (name k) "\")\n        (dd (" (str k) " " (namespace k) "))"))
 
 
-(defn table-html [ks]
-  (str "[:table
-      [:thead
-       [:tr
-        " (string/join "\n        "
-           (map #(str "[:th \"" (name %) "\"]" ) ks)) "
-        [:th]
-        [:th]
-        [:th]]]
-      [:tbody
-        (for [row rows]
-         [:tr
-          " (string/join "\n          "
-              (map #(str "[:td (" (str %) " row)]") ks)) "
-          [:td
-           [:a {:href (coast/url-for ::view row)} \"View\"]]
-          [:td
-           [:a {:href (coast/url-for ::edit row)} \"Edit\"]]
-          [:td
-           (coast/form-for ::delete row {:style \"display: inline-block\"}
-            [:input {:type \"submit\" :value \"Delete\"}])]])]]"))
+(defn table-headers [cols]
+  (string/join "\n            "
+    (map #(str "(th \"" (name %) "\")") cols)))
+
+
+(defn table-data [cols]
+  (string/join "\n              "
+    (map #(str "(td (" (str %) " row))") cols)))
+
 
 (defn write [table]
   (let [filename (str "src/" table ".clj")
         template "generators/code.clj.txt"]
     (if (overwrite? filename)
-      (let [cols (cols! table)]
+      (let [cols (cols! table true)
+            all-cols (cols! table false)]
         (->> (io/resource template)
              (slurp)
-             (fill {:index-pull-symbols (string/join " " (conj
-                                                          (map utils/keyword->symbol cols)
-                                                          (symbol table "id")))
-                    :qualified-keywords (string/join " " cols)
+             (fill {:qualified-keywords (string/join " " cols)
                     :qualified-symbols (string/join " " (map utils/keyword->symbol cols))
                     :change-keywords (string/join " " (conj cols (keyword table "id")))
-                    :form-elements (string/join "\n\n    "
+                    :form-elements (string/join "\n\n      "
                                     (map form-element cols))
-                    :edit-elements (string/join "\n\n      "
+                    :edit-elements (string/join "\n\n        "
                                     (map edit-element cols))
-                    :dl-elements (string/join "\n\n     "
-                                   (map dl-element cols))
-                    :table (kebab table)
-                    :table-html (table-html cols)})
+                    :data-elements (string/join "\n\n        "
+                                     (map dl-element cols))
+                    :table (utils/kebab-case table)
+                    :table-headers (table-headers all-cols)
+                    :table-data (table-data all-cols)})
              (spit! filename))
         (println filename "created successfully"))
       (println table "skipped"))))

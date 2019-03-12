@@ -1,5 +1,6 @@
 (ns __table__
-  (:require [coast]))
+  (:require [coast]
+            [components :refer [container link-to table thead tbody td th tr button-to text-muted mr2 dl dd dt submit input label]]))
 
 
 (defn index [request]
@@ -7,29 +8,63 @@
                         :from __table__
                         :order id
                         :limit 10])]
-    [:div
-     [:a {:href (coast/url-for ::build)} "New"]
-     __table-html__]))
+    (container {:mw 8}
+     (link-to (coast/url-for ::build) "New")
+
+     (when (empty? rows)
+      (text-muted "No rows"))
+
+     (when (not (empty? rows))
+       (table
+        (thead
+          (tr
+            __table-headers__))
+        (tbody
+          (for [row rows]
+            (tr
+              __table-data__
+              (td
+                (link-to (coast/url-for ::view row) "View"))
+              (td
+                (link-to (coast/url-for ::edit row) "Edit"))
+              (td
+                (button-to (coast/action-for ::delete row) {:data-confirm "Are you sure?"} "Delete"))))))))))
 
 
 (defn view [request]
-  (let [id (-> request :params :author-id)
+  (let [id (-> request :params :__table__-id)
         __table__ (coast/fetch :__table__ id)]
-    [:div
-      __dl-elements__
-     [:div
-      [:a {:href (coast/url-for ::index) :style "margin-right: 5px"} "List"]
-      [:a {:href (coast/url-for ::edit (:params request)) :style "margin-right: 5px"} "Edit"]
-      (coast/form-for ::delete (:params request) {:style "display: inline-block"}
-       [:input {:type "submit" :value "Delete"}])]]))
+    (container {:mw 8}
+      (dl
+        __data-elements__)
+      (mr2
+        (link-to (coast/url-for ::index) "List"))
+      (mr2
+        (link-to (coast/url-for ::edit {::id id}) "Edit"))
+      (mr2
+        (button-to (coast/action-for ::delete {::id id}) {:data-confirm "Are you sure?"} "Delete")))))
+
+
+(defn errors [m]
+  [:div {:class "bg-red white pa2 mb4 br1"}
+   [:h2 {:class "f4 f-subheadline"} "Errors Detected"]
+   [:dl
+    (for [[k v] m]
+      [:div {:class "mb3"}
+       (dt (str k))
+       (dd v)])]])
 
 
 (defn build [request]
-  (coast/form-for ::create
-    __form-elements__
+  (container {:mw 6}
+    (when (some? (:errors request))
+     (errors (:errors request)))
 
-    [:a {:href (coast/url-for ::index)} "Cancel"]
-    [:input {:type "submit" :value "New __table__"}]))
+    (coast/form-for ::create
+      __form-elements__
+
+      (link-to (coast/url-for ::index) "Cancel")
+      (submit "New __table__"))))
 
 
 (defn create [request]
@@ -43,13 +78,16 @@
 
 
 (defn edit [request]
-  (let [__table__ (merge (coast/fetch :__table__ (-> request :params :__table__-id)) (:params request))]
-    (coast/form-for ::change __table__
-      __edit-elements__
+  (let [__table__ (coast/fetch :__table__ (-> request :params :__table__-id))]
+    (container {:mw 6}
+      (when (some? (:errors request))
+        (errors (:errors request)))
 
-      [:div
-       [:a {:href (coast/url-for ::index)} "Cancel"]
-       [:input {:type "submit" :value "Update __table__"}]])))
+      (coast/form-for ::change __table__
+        __edit-elements__
+
+        (link-to (coast/url-for ::index) "Cancel")
+        (submit "Update __table__")))))
 
 
 (defn change [request]
