@@ -70,7 +70,10 @@
     (throw (Exception. (str "where requires vectors to work. You typed: " v)))
     (if (utils/sql-vec? v)
       (first v)
-      (let [[k op* val] v
+      (let [k (first v)
+            [op* val] (if (> 2 (count v))
+                        [(second v) (nth v 2)]
+                        ['= (second v)])
             parts (if (= '!= op*)
                     [(utils/sqlize k) (not-op val) (? val)]
                     [(utils/sqlize k) (op op*) (? op*)])]
@@ -488,6 +491,7 @@
     :full-join {:full-join v}
     :left-outer-join {:left-outer-join v}
     :right-outer-join {:right-outer-join v}
+    :where (where v)
     :order (order v)
     :limit (limit v)
     :offset (offset v)
