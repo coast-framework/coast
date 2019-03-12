@@ -62,6 +62,7 @@
         (middleware/wrap-coerce-params)
         (middleware/wrap-keyword-params)
         (middleware/wrap-params)
+        (middleware/wrap-not-found routes)
         (middleware/wrap-site-errors routes)
         (middleware/wrap-reload))))
 
