@@ -4,15 +4,50 @@
             [coast.dev.server :as dev.server]
             [coast.prod.server :as prod.server]
             [coast.env :as env]
-            [coast.components :as components]))
+            [coast.components]))
+
+
+(defn route-handler [v]
+  (let [handler (if (= 2 (count v))
+                  (second v)
+                  (nth v 2))]
+    (if (vector? handler)
+      (or (first handler) (nth v 1))
+      handler)))
+
+
+(defn resolve-routes
+  "Eager require route namespaces when app is called for uberjar compat"
+  [routes]
+  (->> (map route-handler routes)
+       (map namespace)
+       (distinct)
+       (filter some?)
+       (map symbol)
+       (apply require)))
+
+
+(defn resolve-components
+  "Eager require components"
+  []
+  (try
+    (require 'components)
+    (catch Exception e)))
+
 
 (defn app
   "The main entry point for coast apps"
   [opts]
   (let [routes (:routes opts)
         opts (dissoc opts :routes)]
+
+    ; eager require routes and components
+    (resolve-routes routes)
+    (resolve-components)
+
     ; hack for url-for and action-for
     (def routes routes)
+
     (-> (router/handler routes opts)
         (middleware/wrap-logger)
         (middleware/wrap-file opts)
