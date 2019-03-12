@@ -1,14 +1,13 @@
 (ns coast.db.migrations
   (:require [coast.utils :as utils]
-            [clojure.edn :as edn]
             [clojure.string :as string]
             [coast.db.connection :refer [spec]]))
 
 (def rollback? (atom false))
 (def vectors (atom []))
 
-(def sql {"sqlite" {:timestamp "timestamp"
-                    :now "current_timestamp"
+(def sql {"sqlite" {:timestamp "integer"
+                    :now "(strftime('%s', 'now'))"
                     :pk "integer primary key"}
           "postgres" {:timestamp "timestamptz"
                       :now "now()"

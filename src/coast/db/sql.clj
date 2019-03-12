@@ -1,9 +1,9 @@
 (ns coast.db.sql
   (:require [clojure.string :as string]
             [clojure.walk :as walk]
-            [coast.utils :as utils])
-  (:refer-clojure :exclude [update])
-  (:import (java.time LocalDateTime)))
+            [coast.utils :as utils]
+            [coast.time2 :as time2])
+  (:refer-clojure :exclude [update]))
 
 
 (def ops #{:select :from :update :set :insert
@@ -143,7 +143,7 @@
 
 
 (defn update-set [v]
-  (let [v (conj v [:updated-at (LocalDateTime/now)])
+  (let [v (conj v [:updated-at (time2/now)])
         args (filter #(not= "id" (-> % first name)) v)]
     {:update-set (str "set " (->> (map (fn [[k _]] (str (-> k name utils/snake-case) " = ?")) args)
                                   (distinct)

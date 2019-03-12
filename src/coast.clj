@@ -5,7 +5,7 @@
             [coast.db.connection]
             [coast.theta]
             [coast.env]
-            [coast.time]
+            [coast.time2]
             [coast.components]
             [coast.responses]
             [coast.utils]
@@ -82,8 +82,11 @@
    uuid
    intern-var]
 
-  [coast.time
-   now]
+  [coast.time2
+   now
+   datetime
+   instant
+   strftime]
 
   [hiccup2.core
    raw
