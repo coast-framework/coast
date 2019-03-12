@@ -16,9 +16,13 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (coast/server app {:port 1337})
 ```
 
-## Getting Started
+## The Docs
 
-Getting started with Coast is detailed below, but if you want to really get into it, [there are some docs too](docs/README.md)
+[More comprehensive docs are available here](docs/README.md)
+
+## Quickstart
+
+If you don't want to read the docs, and just want to jump in, you're in the right place.
 
 ### Installation on Mac
 
@@ -61,11 +65,6 @@ sudo curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framew
 ```bash
 coast new myapp && cd myapp
 ```
-
-You should be greeted with the text "You're coasting on clojure!"
-when you visit `http://localhost:1337`
-
-## Quickstart
 
 This will take you from a fresh coast installation to a working todo list app.
 
@@ -125,14 +124,14 @@ make db/create
 # Database todos_dev.sqlite3 created successfully
 ```
 
-This will create a sqlite database with the name of the database defined in `db.edn` and the `COAST_ENV` or `:coast-env` environment variable defined in `env.edn`.
+This will create a sqlite database by default with the name of the database defined in `db.edn` and the `COAST_ENV` or `:coast-env` environment variable defined in `env.edn`.
 
 ### Migrations
 
 Now that the database is created, let's generate a migration:
 
 ```bash
-coast gen migration create-table-todo name:text finished-at:timestamp
+coast gen migration create-table-todo name:text finished:bool
 # db/migrations/20190926190239_create_table_todo.clj created
 ```
 
@@ -145,7 +144,7 @@ This will create a file in `db/migrations` with a timestamp and whatever name yo
 (defn change []
   (create-table :todo
     (text :name)
-    (timestamp :finished-at)
+    (bool :finished)
     (timestamps)))
 ```
 
@@ -177,30 +176,7 @@ coast gen code todo
 # src/todo.clj created successfully
 ```
 
-That file looks like this
-
-```clojure
-(ns todo
-  (:require [coast]))
-
-(defn index [request]
-  (let [rows (coast/q '[:select *
-                        :from todo
-                        :order id
-                        :limit 10])]
-    [:table
-     [:thead
-      [:tr
-       [:th "name"]
-       [:th "completed-at"]]]
-     [:tbody
-       (for [row rows]
-        [:tr
-         [:td (:todo/name row)]
-         [:td (:todo/completed-at row)]])]]))
-```
-
-There's more to the file, but you can check it out yourself. Just from this example, coast is using clojure's vectors and a library called `hiccup` to generate html, and it's also using vectors to generate sql with coast's own internal library for parsing/querying the database.
+Coast uses a library under the hood called [hiccup](https://github.com/weavejester/hiccup) to generate html.
 
 ### Routes
 
@@ -215,7 +191,7 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
   (coast/routes
     (coast/site-routes components/layout
       [:get "/" :home/index]
-      [:resource :todo]
+      [:resource :todo] ; add this line
 
       [:404 :home/not-found]
       [:500 :home/server-error])))
