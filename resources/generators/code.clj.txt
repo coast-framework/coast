@@ -1,6 +1,6 @@
 (ns __table__
   (:require [coast]
-            [components :refer [container link-to table thead tbody td th tr button-to text-muted mr2 dl dd dt submit input label]]))
+            [components :refer [container tc link-to table thead tbody td th tr button-to text-muted mr2 dl dd dt submit input label]]))
 
 
 (defn index [request]
@@ -9,10 +9,12 @@
                         :order id
                         :limit 10])]
     (container {:mw 8}
-     (link-to (coast/url-for ::build) "New")
+     (when (not (empty? rows))
+      (link-to (coast/url-for ::build) "New __table__"))
 
      (when (empty? rows)
-      (text-muted "No rows"))
+      (tc
+        (link-to (coast/url-for ::build) "New __table__")))
 
      (when (not (empty? rows))
        (table
@@ -99,7 +101,7 @@
                        (coast/update)
                        (coast/rescue))]
     (if (nil? errors)
-      (coast/redirect-to ::view __table__)
+      (coast/redirect-to ::index)
       (edit (merge request errors)))))
 
 
