@@ -1,5 +1,3 @@
-# Table of Contents
-
 ### Preface
 * [About](/docs/about.md)
 * [Credits](Credits.md)
