@@ -1,7 +1,7 @@
 # Table of Contents
 
 ### Preface
-* [About](About.md)
+* [About](/docs/about.md)
 * [Credits](Credits.md)
 * [Upgrading from eta](Upgrading.md)
 * [Contribution Guide](Contribution.md)
