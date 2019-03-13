@@ -38,8 +38,5 @@
 * [Password Hashing](Password-Hashing.md)
 * [XSS, Sniffing, XFrame](Security-Outro.md)
 
-### Testing
-* [Getting Started](Testing-Getting-Started.md)
-
 ### Miscellaneous
 * [Older Versions](OlderVersions.md)
