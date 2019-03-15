@@ -247,15 +247,10 @@
           :message "404 uri not found"}
    :headers {"content-type" "application/json"}})
 
-(defn keyword->symbol [k]
-  (let [kns (namespace k)
-        kn (name k)]
-    (symbol kns kn)))
-
 (defn resolve-route-fn [f]
   (cond
     (symbol? f) (resolve f)
-    (keyword? f) (-> f keyword->symbol resolve)
+    (keyword? f) (-> f utils/keyword->symbol utils/resolve-safely)
     :else f))
 
 (defn resolve-route [val]
