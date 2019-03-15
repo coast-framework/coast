@@ -185,7 +185,9 @@
                         (associations-fn)
                         {})
          col-map (col-map adapter)
-         sql-vec (sql/sql-vec adapter col-map associations v params)
+         sql-vec (if (sql-vec? v)
+                   v
+                   (sql/sql-vec adapter col-map associations v params))
          _ (when (or (= "true" (db.connection/spec :debug))
                      (true? (db.connection/spec :debug)))
              (println sql-vec))
