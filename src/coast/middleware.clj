@@ -159,7 +159,8 @@
   (if (nil? layout)
     handler
     (fn [request]
-      (let [response (handler request)]
+      (let [layout (-> layout utils/keyword->symbol resolve)
+            response (handler request)]
         (cond
           (map? response) response
           (layout? response layout) (-> (layout request response)
@@ -186,13 +187,13 @@
 
 
 (defn site-routes [& args]
-  (let [[layout routes] (if (fn? (first args))
-                          [(first args) (rest args)]
-                          [nil args])]
+  (let [[layout-kw routes] (if (keyword? (first args))
+                             [(first args) (rest args)]
+                             [nil args])]
     (router/wrap-routes #(wrap-site-errors % routes)
                         #(wrap-not-found % routes)
                         wrap-site-defaults
-                        #(wrap-layout % layout)
+                        #(wrap-layout % layout-kw)
                         routes)))
 
 (defn coerce-params [val]
