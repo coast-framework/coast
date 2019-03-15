@@ -211,22 +211,23 @@ There was quite a bit of postgres specific code related to raise/rescue, that is
 
 ## Routing
 
-Routing hasn't changed really, old routing code will still work and continue to work, there have only been syntactic improvements.
+Routing has changed in a few ways, old routing code will still work and continue to work, but there have been some improvements surrounding nested vectors.
+
 ```clojure
 (ns routes
-  (:require [coast]
-            [components]))
+  (:require [coast]))
 
 (def routes
-  (coast/site-routes components/layout
-    [:get "/" :home/index]
-    [:get "/posts" :post/index]
-    [:get "/posts/:id" :post/view]
-    [:get "/posts/build" :post/build]
-    [:post "/posts" :post/create]
-    [:get "/posts/:id/edit" :post/edit]
-    [:post "/posts/:id/edit" :post/change]
-    [:post "/posts/:id/delete" :post/delete]
+  (coast/routes
+    (coast/site-routes :components/layout
+      [:get "/" :home/index]
+      [:get "/posts" :post/index]
+      [:get "/posts/:id" :post/view]
+      [:get "/posts/build" :post/build]
+      [:post "/posts" :post/create]
+      [:get "/posts/:id/edit" :post/edit]
+      [:post "/posts/:id/edit" :post/change]
+      [:post "/posts/:id/delete" :post/delete])))
 ```
 
 Before you had to wrap all vectors in another vector, that's now optional, it makes things a little cleaner. Also multiple layout support per batch of routes is easier as well since you no longer have to pass layout in `app`.
@@ -236,22 +237,22 @@ Since the vector of vectors confusion is gone now, routes more naturally lend th
 
 ```clojure
 (ns routes
-  (:require [coast]
-            [components]))
+  (:require [coast]))
 
 (def routes
-  (coast/site-routes components/layout
-    [:resource :posts]
+  (coast/routes
+    (coast/site-routes :components/layout
+      [:resource :posts]
 
-    ; is equal to all of the below routes
+      ; is equal to all of the below routes
 
-    [:get "/posts" :post/index]
-    [:get "/posts/build" :post/build]
-    [:get "/posts/:id" :post/view]
-    [:post "/posts" :post/create]
-    [:get "/posts/:id/edit" :post/edit]
-    [:post "/posts/:id/edit" :post/change]
-    [:post "/posts/:id/delete" :post/delete]
+      [:get "/posts" :post/index]
+      [:get "/posts/build" :post/build]
+      [:get "/posts/:id" :post/view]
+      [:post "/posts" :post/create]
+      [:get "/posts/:id/edit" :post/edit]
+      [:post "/posts/:id/edit" :post/change]
+      [:post "/posts/:id/delete" :post/delete])))
 ```
 
 ## Views

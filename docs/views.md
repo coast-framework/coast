@@ -286,11 +286,11 @@ Here's an example:
 
 (def routes
   (coast/routes
-    (coast/site-routes my-layout-function
+    (coast/site-routes :my-layout-function
       [:get "/" :home/index]
       [:resource :customer]
 
-    (coast/site-routes my-other-layout-function
+    (coast/site-routes :my-other-layout-function
       [:get "/other-route" :other/route]))))
 ```
 

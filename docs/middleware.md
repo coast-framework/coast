@@ -81,7 +81,7 @@ Coast calls four functions on every route defined underneath `site-routes`:
 ```clojure
 (def routes
   (coast/routes
-    (coast/site-routes option-layout-fn
+    (coast/site-routes :option-layout-fn
       [:get "/posts" :post/index]
       [:post "/posts" :post/create]
       [:404 :home/not-found]
@@ -95,7 +95,6 @@ Coast calls four functions on every route defined underneath `site-routes`:
 
 #### `wrap-layout`
 This function wraps any [hiccup](https://github.com/weavejester/hiccup) vector returned from functions that you write in the `function` you specify as the fist argument to `site-routes`.
-
 
 #### `wrap-site-defaults`
 This function wraps common website options, csrf protection, content-type headers, etc. from [ring's own defaults](https://github.com/ring-clojure/ring-defaults)
