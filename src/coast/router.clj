@@ -294,6 +294,7 @@
 
 (defn server-error-fn [routes]
   (-> (filter #(= :500 (first %)) routes)
+      (first)
       (nth 1)
       (utils/keyword->symbol)
       (utils/resolve-safely)))
