@@ -238,10 +238,12 @@
 
 (def reloader #'ring.middleware.reload/reloader)
 (defn wrap-reload [handler]
-  (let [reload! (reloader ["src"] true)]
-    (fn [request]
-      (reload!)
-      (handler request))))
+  (if (not= "dev" (env/env :coast-env))
+    handler
+    (let [reload! (reloader ["db" "src"] true)]
+      (fn [request]
+        (reload!)
+        (handler request)))))
 
 
 (defn wrap-json-params [handler]
