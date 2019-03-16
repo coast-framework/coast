@@ -16,6 +16,11 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (coast/server app {:port 1337})
 ```
 
+## Tested on Different Platforms
+
+## Tested on Clojure 1.10.0 on OSX El Capitan using brew to install Clojure
+
+
 ## The Docs
 
 [More comprehensive docs are available here](docs/readme.md)
@@ -235,6 +240,12 @@ Finally, move your cursor to `(-main)` and evaluate the top block with `Shift+Cm
 ### Check out the page
 
 Navigate to http://localhost:1337/todos and check out your handiwork.
+
+### Tested on Different Platforms 
+
+#### Tested on Clojure 1.10.0 on OSX El Capitan using brew to install Clojure
+
+readline versions might clash depending on your setup. You might need to downgrade to a lower version of readline depending on your version of clojure. For example... readline version 7.0 for clojure 1.9
 
 ## Contributing
 
