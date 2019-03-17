@@ -84,8 +84,8 @@ Here's a quick walk through of defining a database migration with two tables and
 
 This first migration defines an `author` table that looks like this:
 
-| column  | type  |
-|:--------|:------|
+| column    | type   |
+| :-------- | :------ |
 | id     | integer primary key |
 | screen_name | text |
 | email  | text |
@@ -106,7 +106,7 @@ The second migration defines a `post` table:
 ```
 
 | column | type |
-|:--------|:------|
+| :-------- | :------ |
 | id     | integer primary key |
 | author   | integer references author(id) |
 | title  | text |

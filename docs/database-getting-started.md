@@ -18,7 +18,7 @@ NOTE: Coast uses the [java.jdbc](https://github.com/clojure/java.jdbc) and hikar
 The list of supported databases and their drivers:
 
 | database   | driver                                               |
-|:------------|:------------------------------------------------------|
+| :------------ | :------------------------------------------------------ |
 | postgresql | [pgjdbc](https://github.com/pgjdbc/pgjdbc)           |
 | sqlite3    | [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) |
 

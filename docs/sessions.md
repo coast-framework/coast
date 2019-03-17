@@ -20,7 +20,7 @@ You can change the current store by adding one to your `deps.edn` file and speci
 Note: The [redis](https://github.com/paraseba/rrss) and [jdbc](https://github.com/luminus-framework/jdbc-ring-session) stores are not included with coast by default.
 
 | Name          | Function       | Description                                                         |
-| ------------- |:--------------:| -------------------------------------------------------------------:|
+| :------------ | :--------------: | :------------------------------------------------------------------: |
 | Cookie        | `cookie-store` | The default store used by coast, stores sessions in encrypted cookie|
 | Memory        | `memory-store` | In-memory store, all sessions will be reset on server restart       |
 | JDBC          | `jdbc-store`   | Stores the sessions in a database table                             |
