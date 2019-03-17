@@ -10,7 +10,7 @@
 
 This guide outlines how to use the response map to respond to incoming requests.
 
-Coast passes the current HTTP response map as part of the [request-lifecycle](Request-Lifecycle.md) which is sent to all route handlers and middleware.
+Coast passes the current HTTP response map as part of the [request-lifecycle](/docs/request-lifecycle.md) which is sent to all route handlers and middleware.
 
 ```clojure
 ; routes.clj

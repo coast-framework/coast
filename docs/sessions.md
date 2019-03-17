@@ -28,7 +28,7 @@ Note: The [redis](https://github.com/paraseba/rrss) and [jdbc](https://github.co
 
 
 ## Basic example
-The `session` object is passed as part of the [request map](Request.md)
+The `session` object is passed as part of the [request map](/docs/request.md)
 
 Here's a quick example of how to use sessions during the HTTP lifecycle:
 

@@ -65,7 +65,7 @@ This generates a file in the db folder that looks like this:
     (timestamps)))
 ```
 
-There are also a lot more helpers for database-agnostic columns and references, which are detailed in [Migrations](Migrations.md)
+There are more helpers for columns and references detailed in [Migrations](/docs/migrations.md)
 
 Previously, this was a confusing mess of edn without any clear rhyme or reason. Hopefully this is an improvement over that. Running migrations is the same as before:
 

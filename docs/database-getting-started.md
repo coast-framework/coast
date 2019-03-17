@@ -104,7 +104,7 @@ Postgres can be set similarly:
 ```
 
 ## Basic Example
-Coast [queries](Queries.md) has a data-driven API, meaning all queries are clojure vectors, similar to [views](Views.md) and the [routes](Routes.md).
+Coast [queries](/docs/queries.md) has a data-driven API, meaning all queries are clojure vectors, similar to [views](/docs/views.md) and the [routes](/doc/routes.md).
 
 NOTE: Coast uses the singular version of all words for table names which is in opposition to most other full stack frameworks.
 
@@ -150,7 +150,7 @@ Multiple where clauses OR'd together? prefix with the `or` symbol:
                      ["age > ?" 18]])
 ```
 
-See the [queries](Queries.md) documentation for the complete API reference.
+See the [queries](/docs/queries.md) documentation for the complete API reference.
 
 ## Connection Pooling
 

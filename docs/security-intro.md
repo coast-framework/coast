@@ -34,7 +34,7 @@ These are Coast's default settings in development and production
 ## Form Method Spoofing
 As HTML forms are only capable of making `GET` and `POST` requests, you cannot use HTTP verbs like `PUT` or `DELETE` to perform resourceful operations via a form's `method` attribute.
 
-To work around this, Coast implements [method spoofing](Request.md#method-spoofing), enabling you to send your intended HTTP method via the request's hidden `_method` input (in a form):
+To work around this, Coast implements [method spoofing](/docs/request.md#user-content-method-spoofing), enabling you to send your intended HTTP method via the request's hidden `_method` input (in a form):
 
 ```clojure
 [:put "/customers/:customer-id" :customer/update]

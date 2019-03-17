@@ -9,7 +9,7 @@
 
 This guide outlines how to use the request map to read request data.
 
-Coast passes the current HTTP request object as part of the [request lifecycle](Request-Lifecycle.md) which is sent to all route handlers and middleware:
+Coast passes the current HTTP request object as part of the [request lifecycle](/docs/request-lifecycle.md) which is sent to all route handlers and middleware:
 
 ```clojure
 (defn index [{:keys [params session errors uri request-method] :as request}])

@@ -26,7 +26,7 @@ You must respond to the request in your route handler. Once terminated, Coast ex
 
 Coast provides an **HTTP Context** map in the form of ring's request map to each route handler.
 
-This map contains everything you need to handle the request, like the `:uri` of the route, any url or form `:params` or the `:session` values and can be easily extended via [Middleware](Middleware.md)
+This map contains everything you need to handle the request, like the `:uri` of the route, any url or form `:params` or the `:session` values and can be easily extended via [Middleware](/docs/middleware.md)
 
 ```clojure
 (defn index [{:keys [params session uri method] :as request}]

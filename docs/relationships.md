@@ -6,7 +6,7 @@
 
 In Coast relationships allow you to do more sophisticated queries than you would be able to otherwise.
 
-If you never find yourself needing [pull queries](Pull.md) you can skip this section altogether.
+If you never find yourself needing [pull queries](/docs/pull.md) you can skip this section altogether.
 
 ## Basic Example
 
@@ -148,4 +148,4 @@ Has many through allows you to shortcut through database tables and pull data ou
             {:author/id 1})
 ```
 
-For more information on pull syntax and how it works and relates to `db/associations.clj` check out the [pull syntax doc](Pull.md)
+For more information on pull syntax and how it works and relates to `db/associations.clj` check out the [pull syntax doc](/docs/pull.md)

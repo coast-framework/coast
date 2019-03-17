@@ -62,7 +62,7 @@ For example:
 [:get "/a-deep-path" :a.deep.path.file/create]
 ```
 
-As your defined handler functions are route handlers, they will receive the [request map](Request-Lifecycle.md) as an argument.
+As your defined handler functions are route handlers, they will receive the [request map](/docs/request-lifecycle.md) as an argument.
 
 ```clojure
 ; src/author.clj

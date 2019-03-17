@@ -91,7 +91,7 @@ So `screen_name` in the database becomes `:screen-name` in your code.
 
 The third thing is that each table on creation uses "id" as it's primary key. This makes generating joins easier.
 
-See [Migrations](Migrations.md) for more details.
+See [Migrations](/docs/migrations.md) for more details.
 
 ## Basic Example
 Below is a basic example of a query
