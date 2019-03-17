@@ -142,11 +142,12 @@
         (try
           (handler request)
           (catch Exception e
-            (res/server-error
-              ((or error-fn server-error)
-               (assoc request :exception e
-                              :stacktrace (with-out-str
-                                           (st/print-stack-trace e)))))))))))
+            (let [response ((or error-fn server-error)
+                            (assoc request :exception e
+                                           :stacktrace (with-out-str
+                                                        (st/print-stack-trace e))))]
+              (-> (assoc response :body (-> (:body response) h/html str))
+                  (assoc-in [:headers "content-type"] "text/html; charset=utf-8")))))))))
 
 
 (defn layout? [response layout]
