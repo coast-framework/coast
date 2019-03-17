@@ -60,7 +60,7 @@ The first thing you'll notice is that every response back from the database uses
 Given this table named `person`
 
 | column      | type      |
-|-------------|-----------|
+|:-------------|:-----------|
 | id          | integer   |
 | screen_name | text      |
 | email       | text      |

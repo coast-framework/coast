@@ -82,7 +82,7 @@ This is the full list of column types supported by Coast migrations:
 ### Column Types
 
 | function    | description |
-|-------------|-------------|
+|:-------------|:-------------|
 | text        | adds a text column |
 | timestamp   | adds a timestamp column |
 | datetime    | adds a datetime column |
@@ -98,7 +98,7 @@ This is the full list of column types supported by Coast migrations:
 This is the full list of column attributes you can pass into each column function
 
 | key         | value      | description |
-|-------------|------------|-------------|
+|:-------------|:------------|:-------------|
 | :collate    | string     | sets the column collation (e.g. `utf8_unicode`) |
 | :null       | true/false | adds "not null" if null is set to false |
 | :unique     | true/false | creates a unique constraint for this column |
@@ -115,7 +115,7 @@ Below is the list of available migration commands.
 
 ### Command List
 | command | description |
-|---------|-------------|
+|:---------|:-------------|
 | `coast gen migration ` | creates a new migration file in `db/migrations` |
 | `make db/migrate` | runs all pending migration files |
 | `make db/rollback` | rolls back the most recent migration file |
