@@ -24,6 +24,7 @@ To create a new middleware, Coast's convention is to define a [ring middleware](
     (if (some? (:session request))
       (handler request)
       (coast/unauthorized "No"))))
+```
 
 In the example `auth` middleware, we want to show a 401 unauthorized response if there is no session
 
