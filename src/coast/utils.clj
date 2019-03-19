@@ -164,6 +164,7 @@
    [#"(?i)sis$" "ses"]
    [#"(?i)(?:([^f])fe|([lr])f)$" "$1$2ves"]
    [#"(?i)(hive)$" "$1s"]
+   [#"(?i)(person)$" "people"]
    [#"(?i)([^aeiouy]|qu)y$" "$1ies"]
    [#"(?i)(x|ch|ss|sh)$" "$1es"]
    [#"(?i)(matr|vert|ind)(?:ix|ex)$" "$1ices"]
