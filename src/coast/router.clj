@@ -139,10 +139,10 @@
                 routes
                 [])
         only? (and (not (empty? (filter #(= % :only) ks)))
-                   (vector? (last ks))
+                   (sequential? (last ks))
                    (not (empty? (last ks))))
         except? (and (not (empty? (filter #(= % :except) ks)))
-                     (vector? (last ks))
+                     (sequential? (last ks))
                      (not (empty? (last ks))))
         filter-resources (when (or only? except?) (last ks))
         route-ks (if (or only? except?)
@@ -211,12 +211,26 @@
          (filter some?)
          (vec))))
 
+(defn resource-fmt [coll]
+  (apply conj (vec (first coll))
+              (rest coll)))
+
+(defn resource-args [val]
+  (if (or (= val '(:only))
+          (= val '(:except)))
+    (first val)
+    val))
+
 (defn resource-route? [route]
   (= :resource (first route)))
 
 (defn expand-resource [route]
   (if (resource-route? route)
-    (resource (second route))
+    (->> (partition-by #(contains? #{:only :except} %) route)
+         (map resource-args)
+         (resource-fmt)
+         (drop 1)
+         (apply resource))
     [route]))
 
 (defn wrap-routes
