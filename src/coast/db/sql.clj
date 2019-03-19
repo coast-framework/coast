@@ -29,18 +29,18 @@
     :else "?"))
 
 
-(defn not-op [val]
+(defn not-op [op* val]
   (cond
     (sequential? val) "not"
     (nil? val) "is not"
-    :else (name val)))
+    :else (name op*)))
 
 
-(defn op [val]
+(defn op [op* val]
   (cond
     (sequential? val) "in"
     (nil? val) "is"
-    :else (name val)))
+    :else (name op*)))
 
 
 (defn select-col [k]
@@ -66,7 +66,7 @@
 
 
 (defn where-part [v]
-  (if (not (vector? v))
+  (if (not (sequential? v))
     (throw (Exception. (str "where requires vectors to work. You typed: " v)))
     (if (utils/sql-vec? v)
       (first v)
@@ -75,35 +75,18 @@
                         [(second v) (nth v 2)]
                         ['= (second v)])
             parts (if (= '!= op*)
-                    [(utils/sqlize k) (not-op val) (? val)]
-                    [(utils/sqlize k) (op op*) (? op*)])]
+                    [(utils/sqlize k) (not-op op* val) (? val)]
+                    [(utils/sqlize k) (op op* val) (? val)])]
         (string/join " " parts)))))
 
 
-(defn where-clause [[k v]]
-  (string/join (str " " (name k) " ")
-               (map where-part v)))
-
-
-(defn where-op? [k]
-  (contains? '#{and or} k))
-
-
-(defn where-vec [v]
-  (let [v (if (vector? (first v))
-            (into '[and] v)
-            v)
-        parts (partition-by where-op? v)
-        ops (take-nth 2 parts)
-        args (filter #(not (contains? (set ops) %)) parts)]
-    (map vector (map first ops) (map vec args))))
-
-
-(defn where-clauses [v]
-  (let [wv (where-vec v)]
-    (if (empty? wv)
-      (throw (Exception. (str "where only accepts and & or. You typed: " (if (nil? v) "nil" v))))
-      (map where-clause wv))))
+(defn depth
+  ([val]
+   (depth val 0))
+  ([val idx]
+   (if (sequential? val)
+     (depth (first val) (inc idx))
+     idx)))
 
 
 (defn last-or-rest [v]
@@ -116,11 +99,14 @@
   (if (utils/sql-vec? v)
     {:where (str "where " (first v))
      :args (rest v)}
-    {:where (str "where " (string/join " and " (map #(utils/surround "()" %) (where-clauses v))))
-     :args (->> (filter vector? v)
-                (mapv last-or-rest)
-                (filter some?)
-                (utils/flat))}))
+    (let [v (if (> (depth v) 2)
+              (first v)
+              v)]
+      {:where (str "where " (string/join " and " (mapv #(utils/surround "()" %) (mapv where-part v))))
+       :args (->> (filter vector? v)
+                  (mapv last-or-rest)
+                  (filter some?)
+                  (utils/flat))})))
 
 
 (defn insert [v]
