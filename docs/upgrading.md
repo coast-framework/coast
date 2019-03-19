@@ -211,7 +211,7 @@ There was quite a bit of postgres specific code related to raise/rescue, that is
 
 ## Routing
 
-Routing has changed in a few ways, old routing code will still work and continue to work, but there have been some improvements surrounding nested vectors.
+Routing has changed in a few ways, before you had to nest route vectors in another vector, which was confusing, now you call routes on the individual route vectors and coast does some formatting magic to get it into the right format.
 
 ```clojure
 (ns routes
@@ -230,7 +230,7 @@ Routing has changed in a few ways, old routing code will still work and continue
       [:post "/posts/:id/delete" :post/delete])))
 ```
 
-Before you had to wrap all vectors in another vector, that's now optional, it makes things a little cleaner. Also multiple layout support per batch of routes is easier as well since you no longer have to pass layout in `app`.
+Before you had to wrap all vectors in another vector, now you don't it makes things a little cleaner. Also multiple layout support per batch of routes is easier as well since you no longer have to pass layout in `app`.
 
 Since the vector of vectors confusion is gone now, routes more naturally lend themselves to function helpers and resource-style url formats:
 
