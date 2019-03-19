@@ -186,3 +186,12 @@
           (with-meta (symbol name)
                      (meta value))
           value))
+
+
+(defn depth
+  ([val]
+   (depth val 0))
+  ([val idx]
+   (if (sequential? val)
+     (depth (first val) (inc idx))
+     idx)))
