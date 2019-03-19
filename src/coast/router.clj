@@ -164,11 +164,11 @@
                    {:method :get
                     :route (str route-str "/build")
                     :handler (keyword resource-name "build")
-                    :name :fresh}
+                    :name :build}
                    {:method :get
                     :route (str route-str "/:" resource-name "-id")
                     :handler (keyword resource-name "view")
-                    :name :show}
+                    :name :view}
                    {:method :post
                     :route route-str
                     :handler (keyword resource-name "create")
