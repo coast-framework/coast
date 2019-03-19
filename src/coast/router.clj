@@ -204,9 +204,17 @@
   [route middleware]
   (let [[method uri val route-name] route
         val (if (vector? val) val [val])
-        new-val (if (sequential? middleware)
-                   (apply conj val middleware)
-                   (conj val middleware))]
+        middleware (if (sequential? middleware)
+                    middleware
+                    [middleware])
+        [route mw] val
+        mw (if (or (sequential? mw)
+                   (nil? mw))
+             mw
+             [mw])
+        new-val (-> (concat middleware mw)
+                    (conj route)
+                    (vec))]
     (->> [method uri new-val route-name]
          (filter some?)
          (vec))))
@@ -226,25 +234,28 @@
 
 (defn expand-resource [route]
   (if (resource-route? route)
-    (->> (partition-by #(contains? #{:only :except} %) route)
-         (map resource-args)
-         (resource-fmt)
-         (drop 1)
-         (apply resource))
+    (apply resource (drop 1 route))
     [route]))
+
+
+(defn flatten-wrapped-routes [x]
+  (if (> (coast.utils/depth x) 1)
+    (mapcat flatten-wrapped-routes x)
+    [x]))
+
 
 (defn wrap-routes
   "Wraps a given set of routes in the given functions"
   [& args]
-  (let [routes (->> (filter sequential? args)
-                    (flatten)
-                    (partition-by verb?)
-                    (partition 2)
-                    (mapv #(vec (apply concat %)))
-                    (mapcat expand-resource)
+  (let [fns (filter #(or (fn? %) (ident? %)) args)
+        routes (filter sequential? args)
+        routes (if (> (utils/depth routes) 2)
+                 (first routes)
+                 routes)
+        routes (flatten-wrapped-routes routes)
+        routes (->> (mapcat expand-resource routes)
                     (filter #(not (resource-route? %)))
-                    (vec))
-        fns (filter fn? args)]
+                    (vec))]
     (mapv #(wrap-route % fns) routes)))
 
 (defn fallback-not-found [_]
@@ -457,19 +468,9 @@
 
 
 (defn routes [& args]
-  (if (and (every? vector? args)
-           (every? true? (->> (mapcat identity args)
-                              (map route?))))
-    (->> (apply concat args)
-         (mapcat expand-resource)
+  (let [routes* (if (> (utils/depth args) 2)
+                  (first args)
+                  args)]
+    (->> (mapcat expand-resource routes*)
          (filter #(not (resource-route? %)))
-         (vec))
-    (->> (filter sequential? args)
-         (flatten)
-         (partition-by verb?)
-         (partition 2)
-         (mapv #(vec (apply concat %)))
-         (mapcat expand-resource)
-         (filter #(not (resource-route? %)))
-         (mapv recreate-middleware-fns)
          (vec))))
