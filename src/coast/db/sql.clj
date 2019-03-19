@@ -80,15 +80,6 @@
         (string/join " " parts)))))
 
 
-(defn depth
-  ([val]
-   (depth val 0))
-  ([val idx]
-   (if (sequential? val)
-     (depth (first val) (inc idx))
-     idx)))
-
-
 (defn last-or-rest [v]
   (if (utils/sql-vec? v)
     (rest v)
@@ -99,7 +90,7 @@
   (if (utils/sql-vec? v)
     {:where (str "where " (first v))
      :args (rest v)}
-    (let [v (if (> (depth v) 2)
+    (let [v (if (> (utils/depth v) 2)
               (first v)
               v)]
       {:where (str "where " (string/join " and " (mapv #(utils/surround "()" %) (mapv where-part v))))
