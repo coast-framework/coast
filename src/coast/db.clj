@@ -237,6 +237,16 @@
           :id id}))))
 
 
+(defn find-by [k m]
+  (when (and (ident? k)
+             (map? m))
+    (first
+      (q [:select :*
+          :from k
+          :where (map identity m)
+          :limit 1]))))
+
+
 (defn select-rels [m]
   (let [schema (db.schema/fetch)]
     (select-keys m (->> (:joins schema)

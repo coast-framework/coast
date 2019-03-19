@@ -39,7 +39,8 @@
    first!
    pluck
    fetch
-   execute!]
+   execute!
+   find-by]
 
   [coast.db.connection
    connection]
