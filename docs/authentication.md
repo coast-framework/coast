@@ -82,7 +82,7 @@ Let's start with the auth middleware, that checks that a session exists before c
 
 (defn auth [handler]
   (fn [request]
-    (if (some? (:session request))
+    (if (some? (get-in request [:session :member/email))
       (handler request)
       (coast/unauthorized "HAL9000 says: I'm sorry Dave, I can't let you do that"))))
 ```
@@ -94,26 +94,27 @@ Let's start with the auth middleware, that checks that a session exists before c
 
 (ns routes
   (:require [coast]))
+            [middleware]
 
 (def routes
   (coast/routes
-    (coast/site-soutes
-     [:get "/sign-up" :person/build]
-     [:post "/persons" :person/create]
+    (coast/site-routes
+     [:get "/sign-up" :member/build]
+     [:post "/members" :member/create]
      [:get "/sign-in" :session/build]
      [:post "/sessions" :session/create]
 
-     (coast/wrap-routes auth
-      [:get "/dashboard" :person/dashboard]
+     (coast/wrap-routes middleware/auth
+      [:get "/dashboard" :member/dashboard]
       [:delete "/sessions" :sessions/delete]))))
 ```
 
-Now create three new handler function definitions `build` and `create` in the `src/person.clj` file:
+Now create three new handler function definitions `build` and `create` in the `src/member.clj` file:
 
 ```clojure
-; src/person.clj
+; src/member.clj
 
-(ns person
+(ns member
   (:require [coast]
             [buddy.hashers :as hashers]))
 
@@ -127,37 +128,37 @@ Now create three new handler function definitions `build` and `create` in the `s
 Create a simple, unstyled form in the `build` function so people can enter an email and a password:
 
 ```clojure
-; src/person.clj
+; src/member.clj
 
 (defn build [request]
   (coast/form-for ::build
-    [:input {:type "text" :name "person/email"}]
-    [:input {:type "password" :name "person/password"}]
+    [:input {:type "text" :name "member/email"}]
+    [:input {:type "password" :name "member/password"}]
     [:input {:type "submit" :value "Submit"}]))
 ```
 
 And fill in the `create` function to handle the submission of that form:
 
 ```clojure
-; src/person.clj
+; src/member.clj
 
 (defn create [request]
   (let [[_ errors] (-> (:params request)
-                       (select-keys [:person/email :person/password])
-                       (coast/validate [[:email [:person/email]
-                                        [:required [:person/password]]]])
-                       (update :person/password hashers/derive)
+                       (select-keys [:member/email :member/password])
+                       (coast/validate [[:email [:member/email]
+                                        [:required [:member/email :member/password]]]])
+                       (update :member/password hashers/derive)
                        (coast/insert) ; you'll need a database for this to work
                        (coast/rescue))]
     (if (some? errors)
       (build (merge errors request))
-      (-> (coast/redirect ::dashboard)
-          (assoc :session (select-keys (:params request) [:person/email]))))))
+      (-> (coast/redirect-to ::index)
+          (assoc :session (select-keys (:params request) [:member/email]))))))
 ```
 
-Two colons `::` in front of a keyword means use the namespace as the current namespace of the file, in this case `person`.
+NOTE: Two colons `::` in front of a keyword means use the namespace as the current namespace of the file, in this case `::member` really means `:member/index`.
 
-`:person/email` and `::email` in the person namespace are equivalent.
+`:member/email` and `::email` in the member namespace are equivalent.
 
 Now fill in the `dashboard` function with a simple message and a sign out link (which is an actual form):
 
@@ -197,8 +198,8 @@ Now let's fill in the handler to show the sign in form:
     (when (some? (:error/message request))
       [:div (:error/message request)])
     (coast/form-for ::build
-      [:input {:type "text" :name "person/email"}]
-      [:input {:type "password" :name "person/password"}]
+      [:input {:type "text" :name "member/email"}]
+      [:input {:type "password" :name "member/password"}]
       [:input {:type "submit" :value "Submit"}])])
 ```
 
@@ -206,23 +207,20 @@ Now let's fill in the handler to show the sign in form:
 
 ```clojure
 (defn create [request]
-  (let [email (get-in request [:params :person/email])
-        person (first (coast/q '[:select *
-                                 :from person
-                                 :where [email ?email]]
-                               {:email email}))
+  (let [email (get-in request [:params :member/email])
+        member (coast/find-by :member {:email email})
         [valid? errors] (-> (:params request)
-                            (select-keys [:person/email :person/password])
-                            (coast/validate [[:email [:person/email]
-                                             [:required [:person/password]]]]) ; these three lines could be middleware
-                            (get :person/password) ; this returns the plaintext password from the params map
-                            (hashers/check (:person/password person)) ; hashers/check is here
+                            (select-keys [:member/email :member/password])
+                            (coast/validate [[:email [:member/email]
+                                             [:required [:member/email :member/password]]]]) ; these three lines could be middleware
+                            (get :member/password) ; this returns the plaintext password from the params map
+                            (hashers/check (:member/password member)) ; hashers/check is here
                             (coast/rescue))]
     (if (or (some? errors)
             (false? valid?))
       (build (merge errors request {:error/message "Invalid email or password"}))
-      (-> (coast/redirect :person/dashboard)
-          (assoc :session (select-keys (:params request) [:person/email]))))))
+      (-> (coast/redirect-to ::dashboard)
+          (assoc :session (select-keys (:params request) [:member/email]))))))
 ```
 
 Notice the use of `hashers/check` to check the plaintext password from the form against the
@@ -232,7 +230,7 @@ password from the existing hashed password in the database.
 
 ```clojure
 (defn delete [request]
-  (-> (coast/redirect ::build)
+  (-> (coast/redirect-to ::build)
       (assoc :session nil)))
 ```
 
