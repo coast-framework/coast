@@ -175,9 +175,11 @@
     (let [[response error] (error/rescue
                             (handler request)
                             :not-found)]
-      (if (nil? error)
-        response
-        ((router/not-found-fn routes) request)))))
+      (let [response (if (nil? error)
+                       response
+                       ((router/not-found-fn routes) request))]
+        (-> (assoc response :body (-> (:body response) h/html str))
+            (assoc-in [:headers "content-type"] "text/html; charset=utf-8"))))))
 
 (defn wrap-with-layout [layout & routes]
   (router/wrap-routes #(wrap-site-errors % routes)
