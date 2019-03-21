@@ -74,6 +74,7 @@ By using the last element of the vector, you can assign your route a unique name
 
 ```clojure
 [:get "/posts" :post/index :posts]
+```
 
 This will enable you to use `route` helpers in your code, like so:
 
