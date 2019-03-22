@@ -35,6 +35,15 @@
     (catch Exception e)))
 
 
+(defn resolve-middleware
+  "Eager require components"
+  []
+  (try
+    (require 'middleware)
+    (catch Exception e)))
+
+
+
 (defn app
   "The main entry point for coast apps"
   [opts]
@@ -44,6 +53,7 @@
     ; eager require routes and components
     (resolve-routes routes)
     (resolve-components)
+    (resolve-middleware)
 
     ; hack for url-for and action-for
     (def routes routes)
