@@ -185,9 +185,7 @@
             (assoc :body body))))))
 
 (defn wrap-with-layout [layout & routes]
-  (router/wrap-routes #(wrap-site-errors % routes)
-                      #(wrap-not-found % routes)
-                      wrap-site-defaults
+  (router/wrap-routes wrap-site-defaults
                       #(wrap-layout % layout)
                       routes))
 
@@ -196,11 +194,12 @@
   (let [[layout-kw routes] (if (keyword? (first args))
                              [(first args) (rest args)]
                              [nil args])]
-    (router/wrap-routes #(wrap-site-errors % routes)
-                        #(wrap-not-found % routes)
-                        wrap-site-defaults
-                        #(wrap-layout % layout-kw)
-                        routes)))
+    (if (some? layout-kw)
+      (router/wrap-routes wrap-site-defaults
+                          #(wrap-layout % layout-kw)
+                          routes)
+      (router/wrap-routes wrap-site-defaults
+                          routes))))
 
 (defn coerce-params [val]
   (cond
