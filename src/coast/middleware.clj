@@ -107,13 +107,7 @@
 (defn wrap-exceptions [handler]
   (fn [request]
     (try
-      (let [response (handler request)]
-        (if (response-map? response)
-          (if (vector? (:body response))
-            (-> (assoc response :body (str (h/html (:body response))))
-                (assoc-in [:headers "content-type"] "text/html; charset=utf-8"))
-            response)
-          (throw (Exception. (str "Coast error. Expected a response map. Got " response)))))
+      (handler request)
       (catch Exception e
         (res/server-error (exception-page request e) :html)))))
 
