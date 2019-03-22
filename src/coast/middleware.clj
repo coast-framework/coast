@@ -333,3 +333,15 @@
               (= "application/octet-stream" content-type))
         (assoc-in response [:headers "Content-Type"] "text/plain")
         response))))
+
+
+(defn wrap-html-response [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (and (vector? (:body response))
+               (or (string/starts-with? (get-in response [:headers "content-type"])
+                                        "text/html")
+                   (string/starts-with? (get-in response [:headers "Content-Type"])
+                                        "text/html")))
+        (assoc response :body (-> response :body h/html str))
+        response))))

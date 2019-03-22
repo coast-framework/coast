@@ -74,6 +74,7 @@
         (middleware/wrap-params)
         (middleware/wrap-not-found routes)
         (middleware/wrap-site-errors routes)
+        (middleware/wrap-html-response)
         (middleware/wrap-reload))))
 
 
