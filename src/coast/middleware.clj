@@ -50,14 +50,6 @@
     handler))
 
 
-(defn wrap-route-middleware [handler]
-  (fn [request]
-    (let [middleware (get request :coast.router/middleware)]
-      (if (nil? middleware)
-        (handler request)
-        ((middleware handler) request)))))
-
-
 (defn site-defaults [opts]
   (utils/deep-merge
    ring.middleware.defaults/site-defaults
