@@ -140,24 +140,6 @@
               (res/server-error response :html))))))))
 
 
-(defn resolve-fn [val]
-  (cond
-    (keyword? val) (-> val utils/keyword->symbol resolve)
-    (fn? val) val
-    :else nil))
-
-
-(defn wrap-layout [handler layout]
-  (if (nil? layout)
-    handler
-    (fn [request]
-      (let [layout (resolve-fn layout)
-            response (handler request)]
-        (if (map? response)
-          response
-          (res/ok (layout request response) :html))))))
-
-
 (defn wrap-not-found [handler routes]
   (fn [request]
     (let [[response error] (error/rescue
@@ -170,28 +152,63 @@
          :html)))))
 
 
+(defn resolve-fn [val]
+  (cond
+    (keyword? val) (-> val utils/keyword->symbol resolve)
+    (fn? val) val
+    :else nil))
+
+
+(defn wrap-layout [handler layout]
+  (fn [request]
+    (let [response (handler request)]
+      (if (vector? response)
+        (layout request response)
+        response))))
+
+
 (defn wrap-with-layout [layout & routes]
-  (router/wrap-routes wrap-site-defaults
-                      #(wrap-layout % layout)
-                      routes))
-
-
-(defn site-routes [& args]
-  (let [[layout-kw routes] (if (keyword? (first args))
-                             [(first args) (rest args)]
-                             [nil args])]
-    (if (some? layout-kw)
-      (router/wrap-routes wrap-site-defaults
-                          #(wrap-layout % layout-kw)
-                          routes)
-      (router/wrap-routes wrap-site-defaults
-                          routes))))
-(defn site [& args]
-  (apply site-routes args))
+  (let [layout-fn (resolve-fn layout)]
+    (if (nil? layout-fn)
+      (throw (Exception. "with-layout requires a layout function in the first argument"))
+      (router/wrap-routes #(wrap-layout % layout-fn) routes))))
 
 
 (defn with-layout [layout & routes]
   (apply (partial wrap-with-layout layout) routes))
+
+
+(defn wrap-ring-response [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (vector? response)
+        (res/ok response :html)
+        response))))
+
+
+(defn content-type-html? [response]
+  (string/starts-with?
+   (or (get-in response [:headers "Content-Type"])
+       (get-in response [:headers "content-type"]))
+   "text/html"))
+
+
+(defn wrap-html-response [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (vector? (:body response))
+        (update response :body #(-> % h/html str))
+        response))))
+
+
+(defn site-routes [& args]
+  (router/wrap-routes wrap-site-defaults
+                      wrap-ring-response
+                      args))
+
+
+(defn site [& args]
+  (apply site-routes args))
 
 
 (defn coerce-params [val]
@@ -326,16 +343,4 @@
       (if (or (string/blank? content-type)
               (= "application/octet-stream" content-type))
         (assoc-in response [:headers "Content-Type"] "text/plain")
-        response))))
-
-
-(defn wrap-html-response [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (if (and (vector? (:body response))
-               (or (string/starts-with? (get-in response [:headers "content-type"])
-                                        "text/html")
-                   (string/starts-with? (get-in response [:headers "Content-Type"])
-                                        "text/html")))
-        (assoc response :body (-> response :body h/html str))
         response))))
