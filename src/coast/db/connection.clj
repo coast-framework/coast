@@ -1,13 +1,14 @@
 (ns coast.db.connection
   (:require [coast.env :refer [env]]
-            [clojure.edn :as edn])
+            [clojure.edn :as edn]
+            [clojure.java.io :as io])
   (:import (com.zaxxer.hikari HikariConfig HikariDataSource)
            (java.util Properties)))
 
 
 (defn spec
   ([]
-   (let [m (->> (slurp "db.edn")
+   (let [m (->> (slurp (or (io/resource "db.edn") "db.edn"))
                 (edn/read-string {:readers {'env env}})
                 (mapv (fn [[k v]] [k v]))
                 (into {}))]
