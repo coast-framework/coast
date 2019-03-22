@@ -29,8 +29,8 @@
 (def wrap-content-type ring.middleware.content-type/wrap-content-type)
 (def wrap-default-charset ring.middleware.default-charset/wrap-default-charset)
 (def wrap-absolute-redirects ring.middleware.absolute-redirects/wrap-absolute-redirects)
+(def wrap-params ring.middleware.params/wrap-params)
 (def wrap-resource ring.middleware.resource/wrap-resource)
-
 
 (defn wrap-keyword-params [handler]
   (ring.middleware.keyword-params/wrap-keyword-params handler {:keywordize? true :parse-namespaces? true}))
