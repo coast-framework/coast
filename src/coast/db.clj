@@ -14,7 +14,8 @@
             [coast.db.helpers :as helpers]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]]
-            [clojure.java.shell :as shell])
+            [clojure.java.shell :as shell]
+            [clojure.java.io :as io])
   (:import (java.io File)
            (java.time Instant)
            (java.text SimpleDateFormat))
@@ -180,7 +181,8 @@
 (defn q
   ([v params]
    (let [adapter (db.connection/spec :adapter)
-         associations-fn (load-file "db/associations.clj")
+         associations-fn (load-string (slurp (or (io/resource "associations.clj")
+                                                 "db/associations.clj")))
          associations (if (some? associations-fn)
                         (associations-fn)
                         {})
