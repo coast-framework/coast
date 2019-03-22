@@ -152,11 +152,18 @@
            (string? response))))
 
 
+(defn resolve-fn [val]
+  (cond
+    (keyword? val) (-> val utils/keyword->symbol resolve)
+    (fn? val) val
+    :else nil))
+
+
 (defn wrap-layout [handler layout]
   (if (nil? layout)
     handler
     (fn [request]
-      (let [layout (-> layout utils/keyword->symbol resolve)
+      (let [layout (resolve-fn layout)
             response (handler request)]
         (cond
           (map? response) response
