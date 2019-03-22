@@ -125,14 +125,11 @@
 
 
 (defn server-error [request]
-  (res/server-error
-    (str
-      (h/html
-        [:html
-          [:head
-           [:title "Internal Server Error"]]
-          [:body
-           [:h1 "500 Internal server error"]]]))))
+  [:html
+    [:head
+     [:title "Internal Server Error"]]
+    [:body
+     [:h1 "500 Internal server error"]]])
 
 (defn wrap-site-errors [handler routes]
   (if (not= "prod" (env/env :coast-env))
@@ -142,12 +139,11 @@
         (try
           (handler request)
           (catch Exception e
-            (let [response ((or error-fn server-error)
-                            (assoc request :exception e
-                                           :stacktrace (with-out-str
-                                                        (st/print-stack-trace e))))]
-              (-> (assoc response :body (-> (:body response) h/html str))
-                  (assoc-in [:headers "content-type"] "text/html; charset=utf-8")))))))))
+            (let [f (or error-fn server-error)
+                  response (f (assoc request :exception e
+                                             :stacktrace (with-out-str
+                                                          (st/print-stack-trace e))))]
+              (res/server-error response :html))))))))
 
 
 (defn layout? [response layout]
