@@ -178,14 +178,12 @@
     (let [[response error] (error/rescue
                             (handler request)
                             :not-found)]
-      (let [response (if (nil? error)
-                       response
-                       ((router/not-found-fn routes) request))
-            body (if (vector? (:body response))
-                    (-> (:body response) h/html str)
-                    (:body response))]
-        (-> (assoc-in response [:headers "content-type"] "text/html; charset=utf-8")
-            (assoc :body body))))))
+      (if (nil? error)
+        response
+        (res/not-found
+         ((router/not-found-fn routes) request)
+         :html)))))
+
 
 (defn wrap-with-layout [layout & routes]
   (router/wrap-routes wrap-site-defaults
