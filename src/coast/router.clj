@@ -245,11 +245,8 @@
   "Wraps a given set of routes in the given functions"
   [& args]
   (let [fns (filter #(or (fn? %) (ident? %)) args)
-        routes (filter sequential? args)
-        routes (if (> (utils/depth routes) 2)
-                 (first routes)
-                 routes)
-        routes (flatten-wrapped-routes routes)
+        routes (->> (filter sequential? args)
+                    (flatten-wrapped-routes))
         routes (->> (mapcat expand-resource routes)
                     (filter #(not (resource-route? %)))
                     (vec))]
@@ -465,9 +462,7 @@
 
 
 (defn routes [& args]
-  (let [routes* (if (> (utils/depth args) 2)
-                  (first args)
-                  args)]
-    (->> (mapcat expand-resource routes*)
-         (filter #(not (resource-route? %)))
-         (vec))))
+  (->> (flatten-wrapped-routes args)
+       (mapcat expand-resource)
+       (filter #(not (resource-route? %)))
+       (vec)))
