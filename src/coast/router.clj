@@ -252,6 +252,11 @@
                     (vec))]
     (mapv #(wrap-route % fns) routes)))
 
+
+(defn with [& args]
+  (apply wrap-routes args))
+
+
 (defn fallback-not-found [_]
   (res/not-found
     [:html
