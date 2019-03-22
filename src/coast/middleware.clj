@@ -201,6 +201,13 @@
                           routes)
       (router/wrap-routes wrap-site-defaults
                           routes))))
+(defn site [& args]
+  (apply site-routes args))
+
+
+(defn with-layout [layout & routes]
+  (apply (partial wrap-with-layout layout) routes))
+
 
 (defn coerce-params [val]
   (cond
@@ -323,6 +330,11 @@
                       wrap-json-params
                       wrap-json-response
                       routes))
+
+
+(defn api [& routes]
+  (apply api-routes routes))
+
 
 (defn wrap-plain-text-content-type [handler]
   (fn [request]

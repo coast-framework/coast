@@ -62,9 +62,12 @@
 
   [coast.middleware
    wrap-with-layout
+   with-layout
    wrap-layout
    site-routes
-   api-routes]
+   site
+   api-routes
+   api]
 
   [coast.theta
    server
