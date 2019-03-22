@@ -138,12 +138,6 @@
               (res/server-error response :html))))))))
 
 
-(defn layout? [response layout]
-  (and (some? layout)
-       (or (vector? response)
-           (string? response))))
-
-
 (defn resolve-fn [val]
   (cond
     (keyword? val) (-> val utils/keyword->symbol resolve)
@@ -157,13 +151,10 @@
     (fn [request]
       (let [layout (resolve-fn layout)
             response (handler request)]
-        (cond
-          (map? response) response
-          (layout? response layout) (-> (layout request response)
-                                        (h/html)
-                                        (str)
-                                        (res/ok :html))
-          :else (res/ok response))))))
+        (if (map? response)
+          response
+          (res/ok (layout request response) :html))))))
+
 
 (defn wrap-not-found [handler routes]
   (fn [request]
