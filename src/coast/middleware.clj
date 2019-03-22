@@ -57,7 +57,9 @@
               :store (ring.middleware.session.cookie/cookie-store {:key (or (env/env :secret)
                                                                             (env/env :session-key))})}
     :security {:frame-options :deny}
-    :params nil}
+    :static nil
+    :params nil
+    :responses nil}
    opts))
 
 
