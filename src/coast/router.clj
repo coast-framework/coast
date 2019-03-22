@@ -207,11 +207,8 @@
         middleware (if (sequential? middleware)
                     middleware
                     [middleware])
-        [route mw] val
-        mw (if (or (sequential? mw)
-                   (nil? mw))
-             mw
-             [mw])
+        route (first val)
+        mw (rest val)
         new-val (-> (concat middleware mw)
                     (conj route)
                     (vec))]
