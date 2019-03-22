@@ -92,8 +92,8 @@ This will show you the layout of a default coast project:
 ├── bin
 │   └── repl.clj
 ├── db
+│   ├── db.edn
 │   └── associations.clj
-├── db.edn
 ├── deps.edn
 ├── env.edn
 ├── resources
@@ -156,7 +156,7 @@ make db/migrate
 #
 # -- Migrating:  20190310121319_create_table_todo ---------------------
 #
-# create table todo ( id integer primary key, name text, finished_at timestamp, updated_at timestamp, created_at timestamp not null default current_timestamp )
+# create table todo ( id integer primary key, name text, finished boolean, updated_at timestamp, created_at timestamp not null default current_timestamp )
 #
 # -- 20190310121319_create_table_todo ---------------------
 #
@@ -169,7 +169,7 @@ This updates the database schema with a `todo` table. Time to move on to the clo
 
 Now that the database has been migrated, this is where coast's generators come in. Rather than you having to type everything out by hand and read docs as you go, generators are a way to get you started and you can customize what you need from there.
 
-This will create a file in the `src` directory with the name of a table. Coast is a pretty humble web framework, there's no FRP or graph query languages or anything. There are just files with seven functions each: `build`, `create`, `view`, `edit`, `change`, `delete` and `index`.
+This will create a file in the `src` directory with the name of a table. Coast is a pretty humble web framework, there's no FRP or ~~graph query languages~~ or anything. There are just files with seven functions each: `build`, `create`, `view`, `edit`, `change`, `delete` and `index`.
 
 ```bash
 coast gen code todo
@@ -183,17 +183,17 @@ Coast uses a library under the hood called [hiccup](https://github.com/weavejest
 One thing coast doesn't do yet is update the routes file, let's do that now:
 
 ```clojure
-(ns routes)
+(ns routes
   (:require [coast]))
 
 (def routes
-  (coast/routes
-    (coast/site-routes :components/layout
+  (coast/site
+    (coast/with-layout :components/layout
       [:get "/" :home/index]
       [:resource :todo] ; add this line
 
-      [:404 :home/not-found]
-      [:500 :home/server-error])))
+    [:404 :home/not-found]
+    [:500 :home/server-error])))
 ```
 
 The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.
@@ -207,6 +207,8 @@ Let's check it out from the terminal. Run this
 ```bash
 make server
 ```
+
+and visit `http://localhost:1337/todos` to see the app in action.
 
 #### From the REPL
 Navigate to the `src/server.clj` file and type this below the `(defn -main)` part:
