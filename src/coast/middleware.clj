@@ -230,10 +230,6 @@
                               :original-request-method (:request-method request))))))
 
 
-(defn wrap-params [handler]
-  (ring.middleware.params/wrap-params handler))
-
-
 (def reloader #'ring.middleware.reload/reloader)
 (defn wrap-reload [handler]
   (if (not= "dev" (env/env :coast-env))
