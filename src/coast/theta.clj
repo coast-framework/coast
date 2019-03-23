@@ -59,15 +59,7 @@
     (def routes routes)
 
     (-> (router/handler routes opts)
-        (middleware/wrap-logger)
-        (middleware/wrap-file opts)
-        (middleware/wrap-absolute-redirects)
-        (middleware/wrap-resource "public")
-        (middleware/wrap-content-type)
-        (middleware/wrap-plain-text-content-type)
-        (middleware/wrap-json-response-with-content-type)
-        (middleware/wrap-default-charset "utf-8")
-        (middleware/wrap-not-modified)
+        ; site middleware
         (middleware/wrap-simulated-methods)
         (middleware/wrap-coerce-params)
         (middleware/wrap-keyword-params)
@@ -75,6 +67,19 @@
         (middleware/wrap-not-found routes)
         (middleware/wrap-site-errors routes)
         (middleware/wrap-html-response)
+        (middleware/wrap-json-response-with-content-type)
+        (middleware/wrap-plain-text-content-type)
+        (middleware/wrap-logger)
+
+        ; static file middleware
+        (middleware/wrap-absolute-redirects)
+        (middleware/wrap-resource "public")
+        (middleware/wrap-file opts)
+        (middleware/wrap-content-type)
+        (middleware/wrap-default-charset "utf-8")
+        (middleware/wrap-not-modified)
+
+        ; reload middleware
         (middleware/wrap-reload))))
 
 

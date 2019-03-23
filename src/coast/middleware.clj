@@ -97,13 +97,6 @@
               (string/replace #"\$" "/")))]]])))
 
 
-(defn response-map? [m]
-  (and (map? m)
-       (contains? m :status)
-       (contains? m :body)
-       (contains? m :headers)))
-
-
 (defn wrap-exceptions [handler]
   (fn [request]
     (try
@@ -157,7 +150,10 @@
   (fn [request]
     (let [response (handler request)]
       (if (vector? response)
-        (layout request response)
+        (-> (layout request response)
+            (h/html)
+            (str)
+            (res/ok :html))
         response))))
 
 
@@ -170,14 +166,6 @@
 
 (defn with-layout [layout & routes]
   (apply (partial wrap-with-layout layout) routes))
-
-
-(defn wrap-ring-response [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (if (vector? response)
-        (res/ok response :html)
-        response))))
 
 
 (defn content-type-html? [response]
@@ -196,9 +184,7 @@
 
 
 (defn site-routes [& args]
-  (router/wrap-routes wrap-site-defaults
-                      wrap-ring-response
-                      args))
+  (router/wrap-routes wrap-site-defaults args))
 
 
 (defn site [& args]
