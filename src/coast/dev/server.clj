@@ -4,7 +4,7 @@
             [coast.utils :as utils]
             [org.httpkit.server :as httpkit]))
 
-(def server (atom nil))
+(defonce server (atom nil))
 
 (defn start
   ([app]
