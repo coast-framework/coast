@@ -1,6 +1,8 @@
 (ns coast.utils
   (:require [clojure.string :as string])
-  (:import (java.util UUID)))
+  (:import (java.util UUID Base64)
+           (java.security SecureRandom)))
+
 
 (defn uuid
   ([]
@@ -195,3 +197,16 @@
    (if (sequential? val)
      (depth (first val) (inc idx))
      idx)))
+
+; shamelessly stolen from weavejester/cryptorandom
+(defn gen-bytes
+  "Returns a random byte array of the specified size."
+  [size]
+  (let [seed (byte-array size)]
+    (.nextBytes (SecureRandom.) seed)
+    seed))
+
+(defn base64
+  "Return a random base64 string of the specified size in bytes."
+  [size]
+  (.encodeToString (Base64/getEncoder) (gen-bytes size)))
