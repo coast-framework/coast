@@ -97,16 +97,15 @@ Let's start with the auth middleware, that checks that a session exists before c
             [middleware]
 
 (def routes
-  (coast/routes
-    (coast/site-routes
-     [:get "/sign-up" :member/build]
-     [:post "/members" :member/create]
-     [:get "/sign-in" :session/build]
-     [:post "/sessions" :session/create]
+  (coast/site
+   [:get "/sign-up" :member/build]
+   [:post "/members" :member/create]
+   [:get "/sign-in" :session/build]
+   [:post "/sessions" :session/create]
 
-     (coast/wrap-routes middleware/auth
-      [:get "/dashboard" :member/dashboard]
-      [:delete "/sessions" :sessions/delete]))))
+   (coast/with middleware/auth
+    [:get "/dashboard" :member/dashboard]
+    [:delete "/sessions" :sessions/delete]))))
 ```
 
 Now create three new handler function definitions `build` and `create` in the `src/member.clj` file:

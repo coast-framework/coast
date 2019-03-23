@@ -36,9 +36,8 @@ Make a route that will render some html:
 ```clojure
 ; src/routes.clj
 (def routes
-  (coast/routes
-    (coast/site-routes
-      [:get "/" :home/index])))
+  (coast/site
+    [:get "/" :home/index])))
 ```
 
 ```clojure
@@ -104,14 +103,19 @@ Adds a `script` tag to a JS bundle
 (coast/js "bundle.js")
 
 ; assuming the assets.edn looks like this
-{"bundle.js" ["app.js"]}
+{"bundle.js" ["app.js" "app2.js"]}
 ```
 
 The code above outputs:
 
 ```html
 <script type="text/javascript" src="/app.js"></script>
+<script type="text/javascript" src="/app2.js"></script>
 ```
+
+in development.
+
+NOTE: In production, the assets are bundled and minified into one js file and one css file.
 
 #### url-for
 Returns the URL for a route.
@@ -286,12 +290,13 @@ Here's an example:
 
 (def routes
   (coast/routes
-    (coast/site-routes :my-layout-function
-      [:get "/" :home/index]
-      [:resource :customer]
+    (coast/site
+      (coast/with-layout :my-layout-function
+        [:get "/" :home/index]
+        [:resource :customer]
 
-    (coast/site-routes :my-other-layout-function
-      [:get "/other-route" :other/route]))))
+      (coast/with-layout :my-other-layout-function
+        [:get "/other-route" :other/route])))))
 ```
 
 ## Syntax

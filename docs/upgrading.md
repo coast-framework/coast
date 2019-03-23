@@ -218,8 +218,8 @@ Routing has changed in a few ways, before you had to nest route vectors in anoth
   (:require [coast]))
 
 (def routes
-  (coast/routes
-    (coast/site-routes :components/layout
+  (coast/site
+    (coast/with-layout :components/layout
       [:get "/" :home/index]
       [:get "/posts" :post/index]
       [:get "/posts/:id" :post/view]
@@ -230,7 +230,9 @@ Routing has changed in a few ways, before you had to nest route vectors in anoth
       [:post "/posts/:id/delete" :post/delete])))
 ```
 
-Before you had to wrap all vectors in another vector, now you don't it makes things a little cleaner. Also multiple layout support per batch of routes is easier as well since you no longer have to pass layout in `app`.
+Before you had to wrap all vectors in another vector, now you don't it makes things a little cleaner.
+
+Also multiple layout support per batch of routes is easier as well since you no longer pass `:layout` into app. Simply wrap any routes with `with-layout` and give that a function with two arguments and you're in business.
 
 Since the vector of vectors confusion is gone now, routes more naturally lend themselves to function helpers and resource-style url formats:
 
@@ -240,8 +242,8 @@ Since the vector of vectors confusion is gone now, routes more naturally lend th
   (:require [coast]))
 
 (def routes
-  (coast/routes
-    (coast/site-routes :components/layout
+  (coast/site
+    (coast/with-layout :components/layout
       [:resource :posts]
 
       ; is equal to all of the below routes

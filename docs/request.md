@@ -114,10 +114,10 @@ In Coast you can separate json responses and html responses at the router level
 ; routes.clj
 (def routes
   (coast/routes
-    (coast/site-routes
+    (coast/site
       [:get "/" :home/index])
 
-    (coast/api-routes
+    (coast/api
       [:get "/api" :api.home/index])))
 ```
 

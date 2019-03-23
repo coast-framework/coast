@@ -24,7 +24,7 @@ The most basic route definition requires an http method, a url and a "pointer" t
   {:status 200 :body "hello world!" :headers {"content-type" "text/html"}}
 
 (def routes
-  (coast/routes
+  (coast/site
     [:get "/" ::home]))
 ```
 
@@ -148,7 +148,7 @@ overrides any layouts or the coast default of rendering with html.
 (defn json [request]
   (coast/ok {:message "ok"} :json)) ; same as above, but shorter
 
-(coast/api-routes
+(coast/api
   [:get "/" ::json)])
 ```
 
@@ -161,11 +161,11 @@ You can define separate routes for an api and a site:
 (def routes
   (coast/routes
     ; this route corresponds to the src/site/home.clj index function
-    (coast/site-routes
+    (coast/site
       [:get "/" :home/index :site.home/index])
 
     ; these routes correspond to the src/api/home.clj index and status functions
-    (coast/api-routes
+    (coast/api
       [:get "/api" :api.home/index]
       [:get "/api/status" :api.home/status])))
 
@@ -174,7 +174,7 @@ You can define separate routes for an api and a site:
 
 Coast uses a different set of middleware functions when responding to an api request vs a site request.
 
-The `api-routes` do not check for layouts and a host of other things, making them lighter-weight than their site counterparts.
+The `api` routes do not check for layouts and a host of other things, making them lighter-weight than their site counterparts.
 
 ## Route Resources
 
@@ -229,13 +229,13 @@ You can wrap middleware around any resource as you would with a single route:
 (ns routes
   (:require [coast]))
 
-(defn wrap-auth [handler]
+(defn auth [handler]
   (fn [request]
     (if (some? (:session request))
       (handler request)
       (coast/unauthorized [:h1 "HAL9000 says, \"Sorry Dave, I can't let you do that\""]))))
 
-(coast/wrap-routes wrap-auth
+(coast/with auth
   [:resource :post]))
 ```
 
@@ -260,10 +260,54 @@ If your application routes share common urls, instead of repeating the same urls
 Assign one or many middleware to the route group:
 
 ```clojure
-(coast/wrap-routes wrap-auth
+(coast/with auth
   (coast/prefix-routes "/api/v1"
     [:get "/members"
     [:post "/members"]]))
 ```
 
-NOTE: Route middleware executes before app middleware.
+NOTE: Route middleware executes after app middleware during the request and before app middleware during the response.
+
+Route middleware also executes from top to bottom:
+
+```clojure
+(ns routes
+  (:require [coast]
+            [middleware]))
+
+(def routes
+  (coast/site
+    (coast/with middleware/set-title
+      (coast/with-layout :components/layout
+        [:get "/" :home/index]
+        [:get "/docs" :home/docs]
+        [:get "/docs/:doc.md" :home/doc]
+        [:get "/screencast" :home/screencast]
+
+        [:get "/sign-up" :member/build]
+        [:post "/members" :member/create]
+        [:get "/sign-in" :session/build]
+        [:post "/sessions" :session/create]
+
+        [:resource :invite :only [:build :create]]
+
+        (coast/with middleware/auth
+          [:get "/dashboard" :home/dashboard]
+          [:delete "/sessions" :session/delete]
+          [:resource :member :except [:index :view :build :create]]
+          [:resource :invite :except [:index :view :build :create]]
+          [:resource :post :only [:build :create :edit :change :delete]]
+          [:put "/invite/:invite-id/approve" :invite/approve])
+
+        [:resource :post :only [:view :index]]))
+
+    [:404 :home/not-found]
+    [:500 :home/server-error]))
+```
+
+In this example (from the coast docs site), the route middleware executes in this order:
+
+1. coast/site <-- this wraps the routes in ring defaults functions for html returning routes
+2. middleware/set-title
+3. components/layout
+4. middleware/auth

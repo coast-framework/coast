@@ -18,11 +18,10 @@ Make the routes to show the form and handle the submission:
 ; src/routes.clj
 
 (def routes
-  (coast/routes
-    (coast/site-routes
-      [:get "/posts/:post-id/edit" :post/edit]
-      [:put "/posts/:post-id" :post/change]
-      [:get "/posts/:post-id" :post/view])))
+  (coast/site
+    [:get "/posts/:post-id/edit" :post/edit]
+    [:put "/posts/:post-id" :post/change]
+    [:get "/posts/:post-id" :post/view])))
 ```
 
 Make the handler functions to show the form

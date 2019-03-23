@@ -75,36 +75,28 @@ In fact, while coast is a "web app framework", the `app` function is really just
 
 Route middleware can modify the request before the functions you write and modify the response map after.
 
-Even `404`'s are middleware functions that come from `(coast/site-routes)`.
+Even `404`'s are middleware functions that come from `(coast/site)`.
 
-Coast calls four functions on every route defined underneath `site-routes`:
+Coast calls one function on every route defined underneath `site`:
 
 ```clojure
 (def routes
-  (coast/routes
-    (coast/site-routes :option-layout-fn
+  (coast/site
+    (coast/with-layout :layout-fn
       [:get "/posts" :post/index]
       [:post "/posts" :post/create]
       [:404 :home/not-found]
       [:500 :home/server-error])))
 ```
 
-1. wrap-layout
-2. wrap-site-defaults
-3. wrap-not-found
-4. wrap-site-errors
-
-#### `wrap-layout`
-This function wraps any [hiccup](https://github.com/weavejester/hiccup) vector returned from functions that you write in the `function` you specify as the fist argument to `site-routes`.
-
 #### `wrap-site-defaults`
-This function wraps common website options, csrf protection, content-type headers, etc. from [ring's own defaults](https://github.com/ring-clojure/ring-defaults)
 
-#### `wrap-not-found`
-This function catches any coast exception maps with a `:404` key and returns your specified `[:404 :home/not-found]` 404 function (in this case `:home/not-found` or `home.clj`'s `not-found` function).
+This function wraps common website options, csrf protection, etc. from [ring's own defaults](https://github.com/ring-clojure/ring-defaults)
 
-#### `wrap-site-errors`
-This is similar to not found, except it catches any exceptions thrown by your code and returns your specified `:500` handler, which is by default `:home/server-error`.
+#### `with-layout`
+
+This function wraps all of the routes below it in the layout function defined which takes two arguments,
+the
 
 ### Middleware Options
 Coast can receive several options to the various middleware functions.

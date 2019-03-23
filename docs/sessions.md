@@ -63,7 +63,7 @@ feel free to use middleware:
 ```clojure
 ; src/middleware.clj
 
-(defn wrap-auth [handler]
+(defn auth [handler]
   (fn [request]
     (let [person (get-in request [:session :person/id])]
       (if (some? person)
@@ -77,14 +77,13 @@ Then you can wrap the routes that require auth:
 ; src/routes.clj
 
 (def routes
-  (coast/routes
-    (coast/site-routes
-      [:get "/" :home/index]
-      [:get "/sign-in" :session/build]
-      [:post "/sessions" :sessions/create]
+  (coast/site
+    [:get "/" :home/index]
+    [:get "/sign-in" :session/build]
+    [:post "/sessions" :sessions/create]
 
-      (coast/wrap-routes middleware/wrap-auth
-        [:get "/dashboard" :home/dashboard]))))
+    (coast/with middleware/auth
+      [:get "/dashboard" :home/dashboard]))))
 ```
 
 ## Flash messages
@@ -109,11 +108,10 @@ Then, add the `/customers` routes to validate form data:
 
 ```clojure
 (def routes
-  (coast/routes
-    (coast/site-routes
-      [:get "/customers/build" :customer/build]
-      [:post "/customers" :customer/create])))
-      [:get "/customers/:customer-id" :customer/view])))
+  (coast/site
+    [:get "/customers/build" :customer/build]
+    [:post "/customers" :customer/create]
+    [:get "/customers/:customer-id" :customer/view]))
 ```
 
 ...and implement the handler
