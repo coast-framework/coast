@@ -86,7 +86,8 @@
 
   [coast.utils
    uuid
-   intern-var]
+   intern-var
+   xhr?]
 
   [coast.time2
    now

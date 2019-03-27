@@ -210,3 +210,7 @@
   "Return a random base64 string of the specified size in bytes."
   [size]
   (.encodeToString (Base64/getEncoder) (gen-bytes size)))
+
+
+(defn xhr? [request]
+  (contains? (:headers request) "x-requested-with"))
