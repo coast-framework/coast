@@ -29,8 +29,8 @@
 (defn query
   ([conn v opts]
    (if (and (sql-vec? v) (map? opts))
-     (jdbc/query (connection) v (merge {:keywordize? true
-                                        :identifiers utils/kebab} opts))
+     (jdbc/query conn v (merge {:keywordize? true
+                                :identifiers utils/kebab} opts))
      (empty list)))
   ([conn v]
    (query conn v {})))
@@ -169,8 +169,8 @@
                 order by table_name, column_name"]})
 
 
-(defn col-map [adapter]
-  (let [rows (jdbc/query (connection) (get col-query adapter))]
+(defn col-map [conn adapter]
+  (let [rows (jdbc/query conn (get col-query adapter))]
     (->> (group-by :table_name rows)
          (mapv (fn [[k v]]
                  [(keyword (utils/kebab-case k)) (->> (map :column_name v)
@@ -178,75 +178,100 @@
                                                       (map #(keyword (utils/kebab-case k) %)))]))
          (into {}))))
 
+
+(defmacro transaction [binder & body]
+  `(jdbc/with-db-transaction [~binder (connection)]
+     ~@body))
+
+
 (defn q
-  ([v params]
-   (let [adapter (db.connection/spec :adapter)
+  ([conn v params]
+   (let [conn (or conn (connection))
+         {:keys [adapter debug]} (db.connection/spec)
          associations-fn (load-string (slurp (or (io/resource "associations.clj")
                                                  "db/associations.clj")))
          associations (if (some? associations-fn)
                         (associations-fn)
                         {})
-         col-map (col-map adapter)
+         col-map (col-map conn adapter)
          sql-vec (if (sql-vec? v)
                    v
                    (sql/sql-vec adapter col-map associations v params))
-         _ (when (or (= "true" (db.connection/spec :debug))
-                     (true? (db.connection/spec :debug)))
+         _ (when (true? debug)
              (println sql-vec))
-         rows (query (connection)
+         rows (query conn
                      sql-vec
                      {:keywordize? false
                       :identifiers qualify-col})]
      (walk/postwalk #(-> % coerce-inst coerce-timestamp-inst)
         (walk/prewalk #(->> (one-first associations %) (parse-json associations))
           rows))))
+  ([v params]
+   (if (and (vector? v)
+            (map? params))
+     (q nil v params)
+     (q v params {})))
   ([v]
-   (q v nil)))
+   (q nil v nil)))
 
 
 (defn execute!
-  ([v params]
-   (let [adapter (db.connection/spec :adapter)
+  ([conn v params]
+   (let [conn (or conn (connection))
+         {:keys [adapter debug]} (db.connection/spec)
          sql-vec (sql/sql-vec adapter {} {} v params)]
-      (when (or (= "true" (db.connection/spec :debug))
-                (true? (db.connection/spec :debug)))
+      (when (true? debug)
         (println sql-vec))
-      (jdbc/execute!
-       (connection)
-       sql-vec)))
+      (jdbc/execute! conn sql-vec)))
+  ([v params]
+   (if (and (vector? v)
+            (map? params))
+     (execute! nil v params)
+     (execute! v params {})))
   ([v]
-   (execute! v {})))
+   (execute! nil v {})))
 
 
 (defn pluck
+  ([conn v params]
+   (first
+    (q conn v params)))
   ([v params]
-   (first
-    (q v params)))
+   (if (and (vector? v)
+            (map? params))
+     (pluck nil v params)
+     (pluck v params {})))
   ([v]
-   (first
-    (pluck v nil))))
+   (pluck nil v {})))
 
 
-(defn fetch [k id]
-  (when (and (ident? k)
-             (some? id))
-    (first
-      (q '[:select *
-           :from ?from
-           :where [id ?id]
-           :limit 1]
-         {:from k
-          :id id}))))
+(defn fetch
+  ([conn k id]
+   (when (and (ident? k)
+              (some? id))
+     (first
+       (q conn '[:select *
+                 :from ?from
+                 :where [id ?id]
+                 :limit 1]
+               {:from k
+                :id id}))))
+  ([k id]
+   (fetch nil k id)))
 
 
-(defn find-by [k m]
-  (when (and (ident? k)
-             (map? m))
-    (first
-      (q [:select :*
-          :from k
-          :where (map identity m)
-          :limit 1]))))
+
+(defn find-by
+  ([conn k m]
+   (when (and (ident? k)
+              (map? m))
+     (first
+       (q [:select :*
+           :from k
+           :where (map identity m)
+           :limit 1]))))
+  ([k m]
+   (find-by nil k m)))
 
 
 (defn select-rels [m]
@@ -375,29 +400,66 @@
     (merge row rel-rows)))
 
 
-(defn insert [arg]
-  (first
-    (execute!
-      (helpers/insert arg))))
+(defn insert
+  ([conn arg]
+   (let [{:keys [adapter]} (db.connection/spec)
+         v (helpers/insert arg)]
+     (condp = adapter
+       "sqlite" (if (nil? conn)
+                  (transaction c
+                    (execute! c v)
+                    (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
+                          table (if (sequential? arg)
+                                  (-> arg first keys first namespace)
+                                  (-> arg keys first namespace))]
+                      (fetch c (keyword table) id)))
+                  (execute! conn v))
+       "postgres" (let [v (conj v :returning :*)]
+                    (q conn v)))))
+  ([arg]
+   (insert nil arg)))
 
 
-(defn update [arg]
-  (first
-    (execute!
-      (helpers/update arg))))
+(defn update
+  ([conn arg]
+   (let [{:keys [adapter]} (db.connection/spec)
+         v (helpers/update arg)]
+     (condp = adapter
+       "sqlite" (if (nil? conn)
+                  (transaction c
+                    (execute! c v)
+                    (let [table (if (sequential? arg)
+                                  (-> arg first keys first namespace)
+                                  (-> arg keys first namespace))
+                          id (if (sequential? arg)
+                               (get-in arg [0 (keyword table "id")])
+                               (get arg (keyword table "id")))]
+                      (fetch c (keyword table) id)))
+                  (execute! conn v))
+       "postgres" (let [v (conj v :returning :*)]
+                    (q conn v)))))
+  ([arg]
+   (update nil arg)))
 
 
-(defn delete [arg]
-  (first
-   (execute!
-     (helpers/delete arg))))
+(defn delete
+  ([conn arg]
+   (let [{:keys [adapter]} (db.connection/spec)
+         v (helpers/delete arg)]
+     (condp = adapter
+       "sqlite" (first
+                 (execute! conn v))
+       "postgres" (let [v (conj v :returning :*)]
+                    (q conn v)))))
+  ([arg]
+   (delete nil arg)))
 
 
 (defn pull [v ident]
-  (first
-    (q [:pull v
-        :from (-> ident first namespace)
-        :where ident])))
+  (pluck
+   [:pull v
+    :from (-> ident first namespace)
+    :where ident]))
 
 
 (defn -main [& [action db-name]]

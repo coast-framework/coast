@@ -10,7 +10,8 @@
            :delete :pull :join :left-join :right-join
            :left-outer-join :right-outer-join :outer-join
            :full-outer-join :full-join :cross-join
-           :where :order :limit :offset :group :values})
+           :where :order :limit :offset :group :values
+           :returning})
 
 
 (defn op? [k]

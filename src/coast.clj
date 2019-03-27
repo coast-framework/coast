@@ -40,7 +40,8 @@
    pluck
    fetch
    execute!
-   find-by]
+   find-by
+   transaction]
 
   [coast.db.connection
    connection]
