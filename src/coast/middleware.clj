@@ -237,6 +237,16 @@
         (handler request)))))
 
 
+(defn parse-json-params [handler]
+  (fn [{:keys [headers body params] :as request}]
+    (if (and (some? body)
+             (string/starts-with? (get headers "content-type") "application/json"))
+      (let [json-params (-> body slurp json/read-str)]
+        (handler (assoc request :params (merge params json-params)
+                                :json-params json-params)))
+      (handler request))))
+
+
 (defn wrap-json-params [handler]
   (fn [{:keys [body params] :as request}]
     (if (some? body)

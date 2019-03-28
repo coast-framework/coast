@@ -61,9 +61,10 @@
     (-> (router/handler routes opts)
         ; site middleware
         (middleware/wrap-simulated-methods)
-        (middleware/wrap-coerce-params)
+        (middleware/parse-json-params)
         (middleware/wrap-keyword-params)
         (middleware/wrap-params)
+        (middleware/wrap-coerce-params)
         (middleware/wrap-not-found routes)
         (middleware/wrap-site-errors routes)
         (middleware/wrap-html-response)
