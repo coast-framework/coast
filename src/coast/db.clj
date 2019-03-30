@@ -67,6 +67,7 @@
   (or (first coll)
       (raise "Record not found" {:coast.router/error :404
                                  :404 true
+                                 :not-found true
                                  :type :404
                                  ::error :not-found})))
 
