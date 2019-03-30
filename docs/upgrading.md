@@ -203,7 +203,7 @@ Lesser known but will now work
                  :id [1 2 3]})
 ```
 
-Oh one last thing about insert/update/delete. They no longer return the value that was changed, they just return the number of records changed.
+Oh one last thing about `delete`. It no longer returns the value that was deleted, it just returns the number of rows deleted.
 
 ## Exception Handling
 
