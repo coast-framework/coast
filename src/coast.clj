@@ -68,7 +68,8 @@
    site-routes
    site
    api-routes
-   api]
+   api
+   content-type?]
 
   [coast.theta
    server

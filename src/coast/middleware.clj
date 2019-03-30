@@ -173,6 +173,13 @@
    (or (get-in response [:headers "Content-Type"])
        (get-in response [:headers "content-type"]))
    "text/html"))
+(defn content-type? [m k]
+  (let [headers (utils/map-keys string/lower-case (:headers m))
+        content-type (get headers "content-type" "")]
+    (condp = k
+      :html (string/starts-with? content-type "text/html")
+      :json (string/starts-with? content-type "application/json")
+      false)))
 
 
 (defn wrap-html-response [handler]
