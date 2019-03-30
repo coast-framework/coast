@@ -11,16 +11,22 @@
             [clojure.string :as string]
             [clojure.data.json :as json]
             [ring.middleware.file]
-            [ring.middleware.defaults]
             [ring.middleware.keyword-params]
             [ring.middleware.params]
             [ring.middleware.session.cookie]
+            [ring.middleware.session]
             [ring.middleware.reload]
             [ring.middleware.not-modified]
             [ring.middleware.content-type]
             [ring.middleware.default-charset]
             [ring.middleware.absolute-redirects]
             [ring.middleware.resource]
+            [ring.middleware.anti-forgery]
+            [ring.middleware.cookies]
+            [ring.middleware.multipart-params]
+            [ring.middleware.nested-params]
+            [ring.middleware.flash]
+            [ring.middleware.x-headers :as x]
             [hiccup2.core :as h])
   (:import (clojure.lang ExceptionInfo)
            (java.time Duration)))
@@ -31,9 +37,41 @@
 (def wrap-absolute-redirects ring.middleware.absolute-redirects/wrap-absolute-redirects)
 (def wrap-params ring.middleware.params/wrap-params)
 (def wrap-resource ring.middleware.resource/wrap-resource)
+(def wrap-cookies ring.middleware.cookies/wrap-cookies)
+(def wrap-multipart-params ring.middleware.multipart-params/wrap-multipart-params)
+(def wrap-nested-params ring.middleware.nested-params/wrap-nested-params)
+(def wrap-session ring.middleware.session/wrap-session)
+(def wrap-flash ring.middleware.flash/wrap-flash)
+(def wrap-keyword-params ring.middleware.keyword-params/wrap-keyword-params)
+(def wrap-anti-forgery ring.middleware.anti-forgery/wrap-anti-forgery)
 
-(defn wrap-keyword-params [handler]
-  (ring.middleware.keyword-params/wrap-keyword-params handler {:keywordize? true :parse-namespaces? true}))
+
+(defn wrap-xss-protection [handler options]
+  (x/wrap-xss-protection handler (:enable? options true) (dissoc options :enable?)))
+
+
+(defn wrap [handler middleware options]
+  (if (true? options)
+    (middleware handler)
+    (if options
+      (middleware handler options)
+      handler)))
+
+
+(defn wrap-multi [handler middleware args]
+  (wrap handler
+        (fn [handler args]
+          (if (coll? args)
+            (reduce middleware handler args)
+            (middleware handler args)))
+        args))
+
+
+(defn wrap-x-headers [handler options]
+  (-> handler
+      (wrap wrap-xss-protection         (:xss-protection options false))
+      (wrap x/wrap-frame-options        (:frame-options options false))
+      (wrap x/wrap-content-type-options (:content-type-options options false))))
 
 
 (defn wrap-logger [handler]
@@ -50,28 +88,37 @@
     handler))
 
 
+; credit: ring.middleware.defaults/site-defaults
+(def ring-site-defaults
+ "A default configuration for a browser-accessible website, based on current
+  best practice."
+ {:params    {:urlencoded true
+              :multipart  true
+              :nested     true
+              :keywordize true}
+  :cookies   true
+  :session   {:flash true
+              :cookie-attrs {:http-only true, :same-site :strict}}
+  :security  {:anti-forgery   true
+              :xss-protection {:enable? true, :mode :block}
+              :frame-options  :sameorigin
+              :content-type-options :nosniff}
+  :static    {:resources "public"}
+  :responses {:not-modified-responses true
+              :absolute-redirects     true
+              :content-types          true
+              :default-charset        "utf-8"}})
+
+
 (defn site-defaults [opts]
   (utils/deep-merge
-   ring.middleware.defaults/site-defaults
+   ring-site-defaults
    {:session {:cookie-name "id"
               :store (ring.middleware.session.cookie/cookie-store {:key (or (env/env :secret)
                                                                             (env/env :session-key))})}
     :security {:frame-options :deny}
-    :static nil
-    :params nil
-    :responses nil}
+    :params {:keywordize {:keywordize? true :parse-namespaces? true}}}
    opts))
-
-
-(defn wrap-defaults [handler opts]
-  (ring.middleware.defaults/wrap-defaults handler opts))
-
-
-(defn wrap-site-defaults [handler]
-  (fn [request]
-    (let [coast-defaults (site-defaults (:coast/opts request))
-          f (wrap-defaults handler coast-defaults)]
-      (f request))))
 
 
 (defn exception-page [request e]
@@ -116,7 +163,8 @@
   (if (not= "prod" (env/env :coast-env))
     (wrap-exceptions handler)
     (fn [request]
-      (let [error-fn (router/server-error-fn routes)]
+      (let [error-fn (or (router/server-error-fn routes)
+                         (utils/resolve-safely `home/server-error))]
         (try
           (handler request)
           (catch Exception e
@@ -134,9 +182,11 @@
                             :not-found)]
       (if (nil? error)
         response
-        (res/not-found
-         ((router/not-found-fn routes) request)
-         :html)))))
+        (let [not-found-fn (or (router/not-found-fn routes)
+                               (utils/resolve-safely `home/not-found))]
+          (res/not-found
+           (not-found-fn request)
+           :html))))))
 
 
 (defn resolve-fn [val]
@@ -149,12 +199,19 @@
 (defn wrap-layout [handler layout]
   (fn [request]
     (let [response (handler request)]
-      (if (vector? response)
-        (-> (layout request response)
-            (h/html)
-            (str)
-            (res/ok :html))
-        response))))
+      (cond
+        (vector? response) (-> (layout request response)
+                               (h/html)
+                               (str)
+                               (res/ok :html))
+        (and (map? response)
+             (vector? (:body response)))
+        (let [response (->> (layout request (:body response))
+                            (h/html)
+                            (str)
+                            (assoc response :body))]
+          (assoc-in response [:headers "content-type"] "text/html"))
+        :else response))))
 
 
 (defn wrap-with-layout [layout & routes]
@@ -168,11 +225,6 @@
   (apply (partial wrap-with-layout layout) routes))
 
 
-(defn content-type-html? [response]
-  (string/starts-with?
-   (or (get-in response [:headers "Content-Type"])
-       (get-in response [:headers "content-type"]))
-   "text/html"))
 (defn content-type? [m k]
   (let [headers (utils/map-keys string/lower-case (:headers m))
         content-type (get headers "content-type" "")]
@@ -185,13 +237,37 @@
 (defn wrap-html-response [handler]
   (fn [request]
     (let [response (handler request)]
-      (if (vector? (:body response))
+      (if (and (vector? (:body response))
+               (content-type? response :html))
         (update response :body #(-> % h/html str))
         response))))
 
 
+(defn ring-response [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (cond
+        (vector? response) {:status 200 :body response}
+        (map? response) response
+        (string? response) {:status 200 :body response}
+        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+
+
+(defn site-middleware [handler opts]
+  (-> handler
+      (wrap wrap-anti-forgery (get-in opts [:security :anti-forgery] false))
+      (wrap wrap-flash (get-in opts [:session :flash] false))
+      (wrap wrap-session (get opts :session false))
+      (wrap wrap-cookies (get-in opts [:cookies] false))))
+
+
 (defn site-routes [& args]
-  (router/wrap-routes wrap-site-defaults args))
+  (let [[opts routes] (if (map? (first args))
+                        [(first args) (rest args)]
+                        [{} args])
+        opts (site-defaults opts)]
+    (->> (router/wrap-routes #(site-middleware % opts) routes)
+         (router/wrap-routes ring-response))))
 
 
 (defn site [& args]
@@ -245,22 +321,12 @@
 
 
 (defn parse-json-params [handler]
-  (fn [{:keys [headers body params] :as request}]
+  (fn [{:keys [body params] :as request}]
     (if (and (some? body)
-             (string/starts-with? (get headers "content-type") "application/json"))
+             (content-type? request :json))
       (let [json-params (-> body slurp json/read-str)]
         (handler (assoc request :params (merge params json-params)
                                 :json-params json-params)))
-      (handler request))))
-
-
-(defn wrap-json-params [handler]
-  (fn [{:keys [body params] :as request}]
-    (if (some? body)
-      (let [json-params (-> body slurp json/read-str)
-            response (handler (assoc request :params (merge params json-params)
-                                             :json-params json-params))]
-        response)
       (handler request))))
 
 
@@ -268,30 +334,24 @@
   (fn [request]
     (let [response (handler request)
           body (:body response)]
-      (-> (assoc response :body (json/write-str body))
-          (assoc-in [:headers "content-type"] "application/json")))))
-
-
-(defn wrap-json-response-with-content-type [handler]
-  (fn [request]
-    (let [{:keys [body headers] :as response} (handler request)
-          content-type (-> (utils/map-keys string/lower-case headers)
-                           (get "content-type"))]
       (if (and (some? body)
                (not (string? body))
-               (string/starts-with? content-type "application/json"))
+               (content-type? response :json))
         (assoc response :body (json/write-str body))
         response))))
 
 
-(defn api-defaults [opts]
-  (utils/deep-merge ring.middleware.defaults/api-defaults opts))
-
-
-(defn wrap-api-defaults [handler]
+(defn ring-response-json [handler]
   (fn [request]
-    (let [f (wrap-defaults handler (api-defaults (:coast/opts request)))]
-      (f request))))
+    (let [response (handler request)]
+      (cond
+        (vector? response) (res/ok response :json)
+        (and (map? response)
+             (contains? response :status)
+             (contains? response :headers)) response
+        (string? response) (res/ok response :json)
+        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+
 
 (defn wrap-api-not-found [handler routes]
   (fn [request]
@@ -321,9 +381,7 @@
 (defn api-routes [& routes]
   (router/wrap-routes #(wrap-api-errors % routes)
                       #(wrap-api-not-found % routes)
-                      wrap-api-defaults
-                      wrap-json-params
-                      wrap-json-response
+                      ring-response-json
                       routes))
 
 
@@ -331,7 +389,7 @@
   (apply api-routes routes))
 
 
-(defn wrap-plain-text-content-type [handler]
+(defn wrap-plain-text-response [handler]
   (fn [request]
     (let [response (handler request)
           headers (:headers response)

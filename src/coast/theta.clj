@@ -43,42 +43,56 @@
     (catch Exception e)))
 
 
+(defn resolve-home
+  "Eager require home routes for 404 and 500"
+  []
+  (try
+    (require 'home)
+    (catch Exception e)))
+
 
 (defn app
   "The main entry point for coast apps"
   [opts]
   (let [routes (:routes opts)
-        opts (dissoc opts :routes)]
+        opts (dissoc opts :routes)
+        opts (middleware/site-defaults opts)]
 
-    ; eager require routes and components
+    ; eager require routes, components, middleware and default 404/500 pages
     (resolve-routes routes)
     (resolve-components)
     (resolve-middleware)
+    (resolve-home)
 
     ; hack for url-for and action-for
     (def routes routes)
 
-    (-> (router/handler routes opts)
-        ; site middleware
-        (middleware/wrap-simulated-methods)
+    (-> (router/handler routes)
+        ; ring middleware
+        (middleware/wrap middleware/wrap-keyword-params (get-in opts [:params :keywordize] false))
+        (middleware/wrap middleware/wrap-nested-params (get-in opts [:params :nested] false))
+        (middleware/wrap middleware/wrap-multipart-params (get-in opts [:params :multipart] false))
+        (middleware/wrap middleware/wrap-params (get-in opts [:params :urlencoded] false))
+
+        ; coast middleware
         (middleware/parse-json-params)
-        (middleware/wrap-keyword-params)
-        (middleware/wrap-params)
         (middleware/wrap-coerce-params)
+        (middleware/wrap-simulated-methods)
         (middleware/wrap-not-found routes)
         (middleware/wrap-site-errors routes)
+        (middleware/wrap-json-response)
         (middleware/wrap-html-response)
-        (middleware/wrap-json-response-with-content-type)
-        (middleware/wrap-plain-text-content-type)
+        (middleware/wrap-plain-text-response)
         (middleware/wrap-logger)
 
         ; static file middleware
-        (middleware/wrap-absolute-redirects)
-        (middleware/wrap-resource "public")
-        (middleware/wrap-file opts)
-        (middleware/wrap-content-type)
-        (middleware/wrap-default-charset "utf-8")
-        (middleware/wrap-not-modified)
+        (middleware/wrap middleware/wrap-absolute-redirects (get-in opts [:responses :absolute-redirects] false))
+        (middleware/wrap-multi middleware/wrap-resource (get-in opts [:static :resources] false))
+        (middleware/wrap-multi middleware/wrap-file (get-in opts [:static :files] false))
+        (middleware/wrap middleware/wrap-content-type (get-in opts [:responses :content-types] false))
+        (middleware/wrap middleware/wrap-default-charset (get-in opts [:responses :default-charset] false))
+        (middleware/wrap middleware/wrap-not-modified (get-in opts [:responses :not-modified-responses] false))
+        (middleware/wrap middleware/wrap-x-headers (:security opts))
 
         ; reload middleware
         (middleware/wrap-reload))))

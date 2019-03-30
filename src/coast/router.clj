@@ -282,10 +282,12 @@
     (-> (first val) (resolve-route-fn))
     (resolve-route-fn val)))
 
+
 (defn route-middleware-fn [val]
   (when (vector? val)
     (->> (rest val)
          (map resolve-route-fn)
+         (reverse)
          (apply comp))))
 
 (defn route-name [route]
@@ -332,9 +334,20 @@
       (utils/keyword->symbol)
       (utils/resolve-safely)))
 
+
+(defn ring-response [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (cond
+        (vector? response) {:status 200 :body response}
+        (map? response) response
+        (string? response) {:status 200 :body response}
+        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+
+
 (defn handler
   "Returns a ring handler from routes and any middleware"
-  [routes opts]
+  [routes]
   (fn [request]
     (let [{:keys [request-method uri params]} request
           route (->> (filter #(match [request-method uri] %) routes)
@@ -347,7 +360,6 @@
           middleware (route-middleware-fn f)
           route-name (if (sequential? f) (first f) f)
           request (assoc request ::name route-name
-                                 :coast/opts opts
                                  :params (merge params route-params))
           response (if (some? middleware)
                      ((middleware route-handler) request)
