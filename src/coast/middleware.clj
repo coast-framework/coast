@@ -199,19 +199,7 @@
 (defn wrap-layout [handler layout]
   (fn [request]
     (let [response (handler request)]
-      (cond
-        (vector? response) (-> (layout request response)
-                               (h/html)
-                               (str)
-                               (res/ok :html))
-        (and (map? response)
-             (vector? (:body response)))
-        (let [response (->> (layout request (:body response))
-                            (h/html)
-                            (str)
-                            (assoc response :body))]
-          (assoc-in response [:headers "content-type"] "text/html"))
-        :else response))))
+      (res/ok (layout request response) :html))))
 
 
 (defn wrap-with-layout [layout & routes]
@@ -243,13 +231,13 @@
         response))))
 
 
-(defn ring-response [handler]
+(defn ring-response-html [handler]
   (fn [request]
     (let [response (handler request)]
       (cond
-        (vector? response) {:status 200 :body response}
-        (map? response) response
-        (string? response) {:status 200 :body response}
+        (or (vector? response)
+            (string? response)) (res/ok response :html)
+        (map? response) (assoc-in response [:headers "content-type"] "text/html")
         :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
 
@@ -266,8 +254,10 @@
                         [(first args) (rest args)]
                         [{} args])
         opts (site-defaults opts)]
-    (->> (router/wrap-routes #(site-middleware % opts) routes)
-         (router/wrap-routes ring-response))))
+    (router/wrap-routes ring-response-html
+                        #(site-middleware % opts)
+                        routes)))
+
 
 
 (defn site [& args]
@@ -320,7 +310,7 @@
         (handler request)))))
 
 
-(defn parse-json-params [handler]
+(defn wrap-json-params [handler]
   (fn [{:keys [body params] :as request}]
     (if (and (some? body)
              (content-type? request :json))

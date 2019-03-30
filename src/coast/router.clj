@@ -209,7 +209,7 @@
                     [middleware])
         route (first val)
         mw (rest val)
-        new-val (-> (concat middleware mw)
+        new-val (-> (concat mw middleware) 
                     (conj route)
                     (vec))]
     (->> [method uri new-val route-name]
