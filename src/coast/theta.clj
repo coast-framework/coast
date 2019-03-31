@@ -75,7 +75,7 @@
         (middleware/wrap middleware/wrap-params (get-in opts [:params :urlencoded] false))
 
         ; coast middleware
-        (middleware/wrap-json-params)
+        (middleware/wrap-json-body)
         (middleware/wrap-coerce-params)
         (middleware/wrap-simulated-methods)
         (middleware/wrap-not-found routes)

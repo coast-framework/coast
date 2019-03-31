@@ -310,13 +310,14 @@
         (handler request)))))
 
 
-(defn wrap-json-params [handler]
-  (fn [{:keys [body params] :as request}]
+(defn wrap-json-body [handler]
+  (fn [{:keys [body] :as request}]
     (if (and (some? body)
              (content-type? request :json))
-      (let [json-params (-> body slurp json/read-str)]
-        (handler (assoc request :params (merge params json-params)
-                                :json-params json-params)))
+      (let [json (-> body slurp json/read-str)]
+        (handler (assoc request :body json
+                                :json json
+                                :json-params json)))
       (handler request))))
 
 
@@ -329,18 +330,6 @@
                (content-type? response :json))
         (assoc response :body (json/write-str body))
         response))))
-
-
-(defn ring-response-json [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (cond
-        (vector? response) (res/ok response :json)
-        (and (map? response)
-             (contains? response :status)
-             (contains? response :headers)) response
-        (string? response) (res/ok response :json)
-        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
 
 (defn wrap-api-not-found [handler routes]
@@ -368,11 +357,21 @@
             (res/server-error request :json)))))))
 
 
+(defn ring-response-json [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (cond
+        (vector? response) (res/ok response :json)
+        (and (map? response)
+             (contains? response :status)
+             (contains? response :headers)) (assoc-in response [:headers "content-type"] "application/json")
+        (map? response) (res/ok response :json)
+        (string? response) (res/ok response :json)
+        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+
+
 (defn api-routes [& routes]
-  (router/wrap-routes #(wrap-api-errors % routes)
-                      #(wrap-api-not-found % routes)
-                      ring-response-json
-                      routes))
+  (router/wrap-routes ring-response-json routes))
 
 
 (defn api [& routes]
