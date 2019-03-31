@@ -1,6 +1,6 @@
 # Request
 
-* [Request Body](#user-content-request-body)
+* [Request Map](#user-content-request-map)
 * [Headers](#user-content-headers)
 * [Content Types](#user-content-content-types)
 * [Method Spoofing](#user-content-method-spoofing)
@@ -17,10 +17,10 @@ Coast passes the current HTTP request object as part of the [request lifecycle](
 
 The example above uses [destructuring](https://clojure.org/guides/destructuring) to assign the keys in the request map to variables of the same name.
 
-## Request body
+## Request Map
 The request map is composed of a number of keys that will help you decided what to do on each request
 
-### Comment clojure functions to retrieve values from the request map
+There are quite a few ways to retrieve values out of a clojure map, here are a few examples:
 ```clojure
 ; using clojure's get function
 (get request :params) ; => {}
@@ -42,6 +42,20 @@ The request map is composed of a number of keys that will help you decided what 
 ### Request body keys
 The following list of functions can be used to read any value from the request map.
 
+| function    | description |
+| :------------- | :------------- |
+| :params        | Returns a value containing a mix of query params and form params |
+| :body   | Returns a value in the case of a json request |
+| :coerced-params    | Coast attempts to automatically coerce numbers, booleans and the like |
+| :raw-params | This key holds the value of the params as the http server received them, before coast coerces them |
+| :session     | This is set when a person is said to be logged in |
+| :uri        | This is the url of the incoming request |
+| :request-method     | The simulated method of the incoming request |
+| :original-request-method  | The actual method of the incoming request |
+| :errors        | This is set by you on form errors |
+| :headers        | The request's headers |
+
+
 #### `:params`
 Returns a value containing a mix of query params and form params
 
@@ -62,11 +76,15 @@ Returns a value containing a mix of query params and form params
     (= request-method :put)))
 ```
 
+#### `:body`
+Returns a value in the case of a json request
+
 #### `:coerced-params`
-This is the same as params in most cases
+Coast attempts to automatically coerce numbers, booleans and the like, these are stored here
 
 #### `:raw-params`
 Coast attempts to intelligently coerce params from strings to ints, floats, decimals, booleans, and sequences.
+
 This key holds the value of the params as the http server received them.
 
 #### `:session`

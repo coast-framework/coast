@@ -23,7 +23,7 @@ Coast passes the current HTTP response map as part of the [request-lifecycle](/d
   {:status 200 :body "this returns a string"})
 ```
 
-The above example returns a string from curl, but will return an `application/octet-stream` content-type response header, and the browser won't know how to handle it.
+The above example returns a string with a content type of `text/plain`
 
 ## Basic Example
 The following example returns an array of customers in JSON format:
