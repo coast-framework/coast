@@ -59,7 +59,8 @@
    routes
    wrap-routes
    prefix-routes
-   with]
+   with
+   with-prefix]
 
   [coast.middleware
    wrap-with-layout

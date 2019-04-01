@@ -453,6 +453,10 @@
     (mapv #(prefix-route s %) routes)))
 
 
+(defn with-prefix [& args]
+  (apply prefix-routes args))
+
+
 (defn pretty-routes [routes]
   (println (string/join "\n" (map pretty-route routes))))
 
