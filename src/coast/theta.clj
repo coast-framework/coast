@@ -68,12 +68,6 @@
     (def routes routes)
 
     (-> (router/handler routes)
-        ; ring middleware
-        (middleware/wrap middleware/wrap-keyword-params (get-in opts [:params :keywordize] false))
-        (middleware/wrap middleware/wrap-nested-params (get-in opts [:params :nested] false))
-        (middleware/wrap middleware/wrap-multipart-params (get-in opts [:params :multipart] false))
-        (middleware/wrap middleware/wrap-params (get-in opts [:params :urlencoded] false))
-
         ; coast middleware
         (middleware/wrap-json-body)
         (middleware/wrap-coerce-params)
@@ -84,6 +78,12 @@
         (middleware/wrap-html-response)
         (middleware/wrap-plain-text-response)
         (middleware/wrap-logger)
+
+        ; ring middleware
+        (middleware/wrap middleware/wrap-keyword-params (get-in opts [:params :keywordize] false))
+        (middleware/wrap middleware/wrap-nested-params (get-in opts [:params :nested] false))
+        (middleware/wrap middleware/wrap-multipart-params (get-in opts [:params :multipart] false))
+        (middleware/wrap middleware/wrap-params (get-in opts [:params :urlencoded] false))
 
         ; static file middleware
         (middleware/wrap middleware/wrap-absolute-redirects (get-in opts [:responses :absolute-redirects] false))
