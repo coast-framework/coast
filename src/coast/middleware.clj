@@ -199,7 +199,9 @@
 (defn wrap-layout [handler layout]
   (fn [request]
     (let [response (handler request)]
-      (res/ok (layout request response) :html))))
+      (if (vector? response)
+        (res/ok (layout request response) :html)
+        response))))
 
 
 (defn wrap-with-layout [layout & routes]
@@ -235,8 +237,8 @@
   (fn [request]
     (let [response (handler request)]
       (cond
-        (or (vector? response)
-            (string? response)) (res/ok response :html)
+        (vector? response) (res/ok response :html)
+        (string? response) (res/ok response)
         (map? response) (assoc-in response [:headers "content-type"] "text/html")
         :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
