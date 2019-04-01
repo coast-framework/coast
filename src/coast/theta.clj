@@ -4,7 +4,8 @@
             [coast.dev.server :as dev.server]
             [coast.prod.server :as prod.server]
             [coast.env :as env]
-            [coast.components]))
+            [coast.components]
+            [coast.logger :as logger]))
 
 
 (defn route-handler [v]
@@ -77,7 +78,7 @@
         (middleware/wrap-json-response)
         (middleware/wrap-html-response)
         (middleware/wrap-plain-text-response)
-        (middleware/wrap-logger)
+        (middleware/wrap-logger (:logger opts))
 
         ; ring middleware
         (middleware/wrap middleware/wrap-keyword-params (get-in opts [:params :keywordize] false))

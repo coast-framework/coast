@@ -74,11 +74,14 @@
       (wrap x/wrap-content-type-options (:content-type-options options false))))
 
 
-(defn wrap-logger [handler]
+(defn wrap-logger [handler log-fn]
   (fn [request]
     (let [now (time/now)
-          response (handler request)]
-      (logger/log request response now)
+          response (handler request)
+          f (or log-fn logger/log)]
+      (when (and (fn? f)
+                 (not (false? log-fn)))
+        (f request response now))
       response)))
 
 
