@@ -335,16 +335,6 @@
       (utils/resolve-safely)))
 
 
-(defn ring-response [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (cond
-        (vector? response) {:status 200 :body response}
-        (map? response) response
-        (string? response) {:status 200 :body response}
-        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
-
-
 (defn handler
   "Returns a ring handler from routes and any middleware"
   [routes]
