@@ -372,6 +372,7 @@
              (contains? response :headers)) (assoc-in response [:headers "content-type"] "application/json")
         (map? response) (res/ok response :json)
         (string? response) (res/ok response :json)
+        (nil? response) (res/ok "" :json)
         :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
 
