@@ -203,7 +203,10 @@
   (fn [request]
     (let [response (handler request)]
       (if (vector? response)
-        (res/ok (layout request response) :html)
+        (-> (layout request response)
+            (h/html)
+            (str)
+            (res/ok :html))
         response))))
 
 
@@ -236,16 +239,6 @@
         response))))
 
 
-(defn ring-response-html [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (cond
-        (vector? response) (res/ok response :html)
-        (string? response) (res/ok response)
-        (map? response) (assoc-in response [:headers "content-type"] "text/html")
-        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
-
-
 (defn site-middleware [handler opts]
   (-> handler
       (wrap wrap-anti-forgery (get-in opts [:security :anti-forgery] false))
@@ -259,9 +252,7 @@
                         [(first args) (rest args)]
                         [{} args])
         opts (site-defaults opts)]
-    (router/wrap-routes ring-response-html
-                        #(site-middleware % opts)
-                        routes)))
+    (router/wrap-routes #(site-middleware % opts) routes)))
 
 
 
