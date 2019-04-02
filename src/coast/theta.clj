@@ -4,8 +4,7 @@
             [coast.dev.server :as dev.server]
             [coast.prod.server :as prod.server]
             [coast.env :as env]
-            [coast.components]
-            [coast.logger :as logger]))
+            [coast.components]))
 
 
 (defn route-handler [v]
@@ -20,12 +19,14 @@
 (defn resolve-routes
   "Eager require route namespaces when app is called for uberjar compat"
   [routes]
-  (->> (map route-handler routes)
-       (map namespace)
-       (distinct)
-       (filter some?)
-       (map symbol)
-       (apply require)))
+  (let [kw-routes (->> (map route-handler routes)
+                       (filter qualified-keyword?)
+                       (map namespace)
+                       (distinct)
+                       (filter some?)
+                       (map symbol))]
+    (when (not (empty? kw-routes))
+      (apply require kw-routes))))
 
 
 (defn resolve-components
