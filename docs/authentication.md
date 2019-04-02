@@ -7,7 +7,7 @@
 
 Coast does not have authentication built in. It's up to you to determine how you want to authenticate people.
 
-Typically though for clojure database-backed web applications, there are a few options:
+Typically for clojure database-backed web applications, there are a few options:
 
 - Sessions
 - JWT Tokens (this guide does not cover this)
@@ -43,7 +43,7 @@ Install the `buddy-hashers` dependency in your `deps.edn` file
 {; other keys not shown
  :deps
  {org.clojure/clojure {:mvn/version "1.9.0"}
-  coast-framework/coast.theta {:mvn/version "1.0.0"}
+  coast-framework/coast.theta {:mvn/version "1.4.0"}
   org.xerial/sqlite-jdbc {:mvn/version "3.25.2"}
   buddy/buddy-hashers {:mvn/version "1.3.0"}}}
 ```
@@ -93,8 +93,8 @@ Let's start with the auth middleware, that checks that a session exists before c
 ; src/routes.clj
 
 (ns routes
-  (:require [coast]))
-            [middleware]
+  (:require [coast]
+            [middleware]))
 
 (def routes
   (coast/site
@@ -105,10 +105,10 @@ Let's start with the auth middleware, that checks that a session exists before c
 
    (coast/with middleware/auth
     [:get "/dashboard" :member/dashboard]
-    [:delete "/sessions" :sessions/delete]))))
+    [:delete "/sessions" :sessions/delete])))
 ```
 
-Now create three new handler function definitions `build` and `create` in the `src/member.clj` file:
+Now create three new handler functions `build`, `create` and `dashboard` in the `src/member.clj` file:
 
 ```clojure
 ; src/member.clj
@@ -130,7 +130,7 @@ Create a simple, unstyled form in the `build` function so people can enter an em
 ; src/member.clj
 
 (defn build [request]
-  (coast/form-for ::build
+  (coast/form-for ::create
     [:input {:type "text" :name "member/email"}]
     [:input {:type "password" :name "member/password"}]
     [:input {:type "submit" :value "Submit"}]))
@@ -147,11 +147,10 @@ And fill in the `create` function to handle the submission of that form:
                        (coast/validate [[:email [:member/email]
                                         [:required [:member/email :member/password]]]])
                        (update :member/password hashers/derive)
-                       (coast/insert) ; you'll need a database for this to work
                        (coast/rescue))]
     (if (some? errors)
       (build (merge errors request))
-      (-> (coast/redirect-to ::index)
+      (-> (coast/redirect-to ::dashboard)
           (assoc :session (select-keys (:params request) [:member/email]))))))
 ```
 
@@ -189,7 +188,7 @@ Create a new file in `src` named `session.clj`
 (defn delete [request])
 ```
 
-Now let's fill in the handler to show the sign in form:
+Now let's fill in the handlers to show the sign in form:
 
 ```clojure
 (defn build [request]

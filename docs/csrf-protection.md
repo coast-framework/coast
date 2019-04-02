@@ -20,6 +20,7 @@ Coast makes three components available for easy CSRF integration
 A hidden input with the csrf token:
 
 #### `csrf`
+
 ```clojure
 (ns some-ns
   (:require [coast]))
