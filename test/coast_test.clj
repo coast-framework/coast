@@ -2,10 +2,10 @@
   (:require [coast]
             [clojure.test :refer [deftest testing is]]))
 
-;(def app (coast/app {:routes routes}))
 
 (defn get* [request]
   "get successful")
+
 
 (defn post [request]
   "post successful")
@@ -14,8 +14,10 @@
 (defn api-get [request]
   {:status "up"})
 
+
 (defn api-post [request]
   (:body request))
+
 
 (deftest vec-routes-test
   (let [routes {:routes [[:get "/" ::get*]
@@ -119,3 +121,17 @@
     (testing "post from site routes"
       (is (= 403
              (:status (app {:request-method :post :uri "/"})))))))
+
+
+(deftest simulated-methods-test
+  (let [app (coast/app {:routes [[:put "/" (fn [request] "i'm a put")]
+                                 [:delete "/" (fn [request] "i'm a delete")]]
+                        :logger false})]
+
+    (testing "put request"
+      (is (= "i'm a put"
+             (:body (app {:request-method :put :uri "/"})))))
+
+    (testing "delete request"
+      (is (= "i'm a delete"
+             (:body (app {:request-method :delete :uri "/"})))))))
