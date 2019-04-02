@@ -195,10 +195,6 @@
     (vec (concat routes resources))))
 
 
-(defn slurp* [val]
-  (when (some? val)
-    (slurp val)))
-
 (defn wrap-route
   "Wraps a single route in a ring middleware fn"
   [route middleware]

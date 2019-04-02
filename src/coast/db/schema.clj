@@ -124,10 +124,6 @@
                     (map utils/snake))]
     (map create-table-if-not-exists tables)))
 
-(defn slurp* [filename]
-  (when (.exists (io/file filename))
-    (slurp filename)))
-
 (defn filter-schema-by-key [k schema]
   (->> (filter #(contains? % k) schema)
        (map k)))
