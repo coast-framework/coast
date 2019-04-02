@@ -209,7 +209,7 @@
                     [middleware])
         route (first val)
         mw (rest val)
-        new-val (-> (concat mw middleware)
+        new-val (-> (concat middleware mw)
                     (conj route)
                     (vec))]
     (->> [method uri new-val route-name]
@@ -287,7 +287,6 @@
   (when (vector? val)
     (->> (rest val)
          (map resolve-route-fn)
-         (reverse)
          (apply comp))))
 
 (defn route-name [route]
