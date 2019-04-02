@@ -247,13 +247,25 @@
       (wrap wrap-cookies (get-in opts [:cookies] false))))
 
 
+(defn ring-response-html [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (cond
+        (vector? response) (res/ok response :html)
+        (string? response) (res/ok response)
+        (map? response) response
+        (nil? response) (res/ok "" :html)
+        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+
+
 (defn site-routes [& args]
   (let [[opts routes] (if (map? (first args))
                         [(first args) (rest args)]
                         [{} args])
         opts (site-defaults opts)]
-    (router/wrap-routes #(site-middleware % opts) routes)))
-
+    (router/wrap-routes #(site-middleware % opts)
+                        ring-response-html
+                        routes)))
 
 
 (defn site [& args]
