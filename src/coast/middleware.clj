@@ -322,10 +322,13 @@
   (fn [{:keys [body] :as request}]
     (if (and (some? body)
              (content-type? request :json))
-      (let [json (-> body slurp json/read-str)]
+      (let [s-body (slurp body)
+            json (-> s-body json/read-str)]
         (handler (assoc request :body json
                                 :json json
-                                :json-params json)))
+                                :raw-body s-body
+                                :json-params (when (map? json)
+                                               json))))
       (handler request))))
 
 
