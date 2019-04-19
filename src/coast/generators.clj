@@ -2,20 +2,28 @@
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
             [coast.generators.code :as generators.code]
-            [coast.generators.migration :as generators.migration]))
+            [coast.generators.migration :as generators.migration]
+            [coast.migrations :as migrations]))
 
 
 (defn usage []
   (println "Usage:
   coast new <project-name>
+  coast gen migration <name>
+  coast gen code <table>
+  coast db <migrate|rollback>
 
 Examples:
   coast new foo
   coast new another-foo
 
-  coast gen migration <name>           # Creates a new migration file
-  coast gen migration <name>.sql       # Creates a new plain old sql migration file
-  coast gen code <table>               # Creates a new clj file with handler functions in src/<table>.clj"))
+  coast gen migration create-table-todo     # Creates a new migration file
+  coast gen sql:migration create-table-todo # Creates a new sql migration file
+
+  coast gen code todo                       # Creates a new clj file with handler functions in src/todo.clj
+
+  coast db migrate                          # runs all migrations found in db/migrations
+  coast db rollback                         # rolls back the latest migration"))
 
 
 (defn gen [args]
@@ -30,4 +38,7 @@ Examples:
   (let [[action] args]
     (case action
       "gen" (gen args)
+      "db" (if (contains? #{"migrate" "rollback"} (second args))
+             (migrations/-main (second args))
+             (usage))
       (usage))))
