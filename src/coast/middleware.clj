@@ -10,6 +10,7 @@
             [clojure.stacktrace :as st]
             [clojure.string :as string]
             [clojure.data.json :as json]
+            [clojure.java.io :as io]
             [ring.middleware.file]
             [ring.middleware.keyword-params]
             [ring.middleware.params]
@@ -162,13 +163,22 @@
     [:body
      [:h1 "500 Internal server error"]]])
 
+
+(defn public-server-error [_]
+  (let [r (io/resource "public/500.html")]
+    (if (nil? r)
+      "500 Internal Server Error"
+      (slurp r))))
+
+
 (defn wrap-site-errors [handler routes]
   (if (not= "prod" (env/env :coast-env))
     (wrap-exceptions handler)
     (fn [request]
       (let [error-fn (or (router/server-error-fn routes)
                          (utils/resolve-safely `site.home/server-error)
-                         (utils/resolve-safely `home/server-error))]
+                         (utils/resolve-safely `home/server-error)
+                         public-server-error)]
         (try
           (handler request)
           (catch Exception e
@@ -177,6 +187,13 @@
                                              :stacktrace (with-out-str
                                                           (st/print-stack-trace e))))]
               (res/server-error response :html))))))))
+
+
+(defn public-not-found [_]
+  (let [r (io/resource "public/404.html")]
+    (if (nil? r)
+      "404 Not Found"
+      (slurp r))))
 
 
 (defn wrap-not-found [handler routes]
@@ -188,7 +205,8 @@
         response
         (let [not-found-fn (or (router/not-found-fn routes)
                                (utils/resolve-safely `site.home/not-found)
-                               (utils/resolve-safely `home/not-found))]
+                               (utils/resolve-safely `home/not-found)
+                               public-not-found)]
           (res/not-found
            (not-found-fn request)
            :html))))))
