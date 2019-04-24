@@ -167,6 +167,7 @@
     (wrap-exceptions handler)
     (fn [request]
       (let [error-fn (or (router/server-error-fn routes)
+                         (utils/resolve-safely `site.home/server-error)
                          (utils/resolve-safely `home/server-error))]
         (try
           (handler request)
@@ -186,6 +187,7 @@
       (if (nil? error)
         response
         (let [not-found-fn (or (router/not-found-fn routes)
+                               (utils/resolve-safely `site.home/not-found)
                                (utils/resolve-safely `home/not-found))]
           (res/not-found
            (not-found-fn request)
