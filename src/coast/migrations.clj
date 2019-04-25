@@ -3,13 +3,11 @@
             [coast.migrations.edn :as migrations.edn]
             [coast.db.migrations]
             [coast.db.connection :refer [connection]]
-            [coast.db.queries :as db.queries]
             [coast.db.schema :as schema]
             [coast.db]
             [clojure.java.io :as io]
             [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
-            [clojure.edn :as edn]
             [clojure.set :as set])
   (:import (java.io File)))
 
