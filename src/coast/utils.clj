@@ -214,3 +214,8 @@
 
 (defn xhr? [request]
   (contains? (:headers request) "x-requested-with"))
+
+
+(defn namespace* [arg]
+  (when (qualified-keyword? arg)
+    (namespace arg)))
