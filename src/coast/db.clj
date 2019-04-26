@@ -12,6 +12,7 @@
             [coast.db.schema :as db.schema]
             [coast.db.sql :as sql]
             [coast.db.helpers :as helpers]
+            [coast.migrations :as migrations]
             [coast.utils :as utils]
             [coast.error :refer [raise rescue]]
             [clojure.java.shell :as shell]
@@ -73,28 +74,35 @@
 
 (defn create
  "Creates a new database"
- [s]
- (let [cmd (cond
-             (= (spec :adapter) "sqlite") "touch"
-             (= (spec :adapter) "postgres") "createdb"
-             :else "")
-       m (shell/sh cmd s)]
-   (if (= 0 (:exit m))
-     (str s " created successfully")
-     (:err m))))
+ ([s]
+  (let [s (if (string/blank? s) (spec :database) s)
+        cmd (cond
+              (= (spec :adapter) "sqlite") "touch"
+              (= (spec :adapter) "postgres") "createdb"
+              :else "")
+        m (shell/sh cmd s)]
+    (if (= 0 (:exit m))
+      (str s " created successfully")
+      (:err m))))
+ ([]
+  (create (spec :database))))
 
 
 (defn drop
   "Drops an existing database"
-  [s]
-  (let [cmd (cond
-              (= (spec :adapter) "sqlite") "rm"
-              (= (spec :adapter) "postgres") "dropdb"
-              :else "")
-        m (shell/sh cmd s)]
-    (if (= 0 (:exit m))
-      (str s " dropped successfully")
-      (:err m))))
+  ([s]
+   (let [s (if (string/blank? s) (spec :database) s)
+         cmd (cond
+               (= (spec :adapter) "sqlite") "rm"
+               (= (spec :adapter) "postgres") "dropdb"
+               :else "")
+         m (shell/sh cmd s)]
+     (if (= 0 (:exit m))
+       (str s " dropped successfully")
+       (:err m))))
+  ([]
+   (drop (spec :database))))
+
 
 
 (defn single [coll]
@@ -462,6 +470,8 @@
     :from (-> ident first namespace)
     :where ident]))
 
+(def migrate migrations/migrate)
+(def rollback migrations/rollback)
 (def reconnect! db.connection/reconnect!)
 
 (defn -main [& [action db-name]]

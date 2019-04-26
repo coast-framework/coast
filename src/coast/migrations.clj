@@ -4,7 +4,6 @@
             [coast.db.migrations]
             [coast.db.connection :refer [connection]]
             [coast.db.schema :as schema]
-            [coast.db]
             [clojure.java.io :as io]
             [clojure.java.jdbc :as jdbc]
             [clojure.string :as string]
@@ -37,10 +36,11 @@
 
 (defn completed-migrations []
   (create-table)
-  (->> (coast.db/q '[:select version
-                     :from coast-schema-migrations
-                     :order version])
-       (map :coast-schema-migrations/version)))
+  (->> (jdbc/query
+        (connection)
+        ["select version from coast_schema_migrations order by version"]
+        {:keywordize? true})
+       (map :version)))
 
 
 (defn version [filename]
@@ -48,9 +48,10 @@
 
 
 (defn migration-filename [version]
-  (let [filenames (migration-files)]
-    (first
-     (filter #(string/starts-with? % (str version)) filenames))))
+  (when (some? version)
+    (let [filenames (migration-files)]
+      (first
+       (filter #(string/starts-with? % (str version)) filenames)))))
 
 
 (defn pending []
@@ -81,6 +82,7 @@
 
 (defn migrate []
   (let [migrations (pending)]
+    (reset! coast.db.migrations/rollback? false)
     (doseq [migration migrations]
       (let [statements (statements migration)
             friendly-name (string/replace migration #"\.edn|\.sql|\.clj" "")]
