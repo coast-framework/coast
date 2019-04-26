@@ -1,9 +1,8 @@
 (ns coast.generators
-  (:require [clojure.string :as string]
-            [clojure.java.io :as io]
-            [coast.generators.code :as generators.code]
+  (:require [coast.generators.code :as generators.code]
             [coast.generators.migration :as generators.migration]
-            [coast.migrations :as migrations]))
+            [coast.migrations :as migrations]
+            [coast.db :as db]))
 
 
 (defn usage []
@@ -38,7 +37,8 @@ Examples:
   (let [[action] args]
     (case action
       "gen" (gen args)
-      "db" (if (contains? #{"migrate" "rollback"} (second args))
-             (migrations/-main (second args))
-             (usage))
+      "db" (cond
+             (contains? #{"migrate" "rollback"} (second args)) (migrations/-main (second args))
+             (contains? #{"create" "drop"} (second args)) (db/-main (second args))
+             :else (usage))
       (usage))))
