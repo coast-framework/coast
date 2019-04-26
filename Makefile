@@ -4,7 +4,7 @@ test:
 	clj -A\:test
 
 repl:
-	clj -R:nrepl bin/repl.clj
+	clj -A\:repl
 
 clean:
 	rm -rf target
