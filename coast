@@ -42,7 +42,7 @@ Usage:
   coast new <project-name>
   coast gen migration <name>
   coast gen code <table>
-  coast db <migrate|rollback>
+  coast db <migrate|rollback|create|drop>
 
 Examples:
   coast new foo
@@ -55,6 +55,8 @@ Examples:
 
   coast db migrate                          # runs all migrations found in db/migrations
   coast db rollback                         # rolls back the latest migration
+  coast db create                           # creates a new database
+  coast db drop                             # drops an existing database
 EOF
   exit 0
 }
