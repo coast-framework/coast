@@ -63,6 +63,9 @@
            (.addDataSourceProperty c "serverName" (:host m)))
     {:datasource (HikariDataSource. c)}))
 
-(def pooled-db (delay (pool (spec))))
+(def pooled-db (atom (delay (pool (spec)))))
 
-(defn connection [] @pooled-db)
+(defn connection [] @(deref pooled-db))
+
+(defn reconnect! []
+  (reset! pooled-db (delay (pool (spec)))))

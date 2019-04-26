@@ -462,6 +462,7 @@
     :from (-> ident first namespace)
     :where ident]))
 
+(def reconnect! db.connection/reconnect!)
 
 (defn -main [& [action db-name]]
   (case action
