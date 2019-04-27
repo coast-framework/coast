@@ -11,7 +11,6 @@
             [coast.utils]
             [coast.error]
             [coast.router]
-            [coast.jobs]
             [coast.validation])
   (:refer-clojure :exclude [update]))
 
@@ -83,9 +82,6 @@
 
   [coast.env
    env]
-
-  [coast.jobs
-   queue]
 
   [coast.utils
    uuid
