@@ -11,6 +11,7 @@
            :left-outer-join :right-outer-join :outer-join
            :full-outer-join :full-join :cross-join
            :where :order :limit :offset :group :values
+           :on-conflict :do-update-set
            :returning})
 
 
@@ -129,6 +130,16 @@
      :update-set-args (map second args)}))
 
 
+(defn do-update-set [v]
+  (let [v (conj v [:updated-at "?"])
+        args (filter #(not= "id" (-> % first name)) v)]
+    {:do-update-set (str "do update set " (->> (map (fn [[k v]] (str (-> k name utils/snake-case) " = " v)) args)
+                                               (distinct)
+                                               (map utils/sqlize)
+                                               (string/join ", ")))
+     :do-update-set-args (list (time2/now))}))
+
+
 (defn from [v]
   {:from (str "from " (string/join " " (map utils/sqlize v)))})
 
@@ -162,6 +173,12 @@
                                          %))
                                 (mapv #(str (utils/sqlize (first %)) " " (name (second %))))
                                 (string/join ", ")))})
+
+
+(defn on-conflict [v]
+  (let [conflict-cols (->> (map utils/sqlize v)
+                           (string/join ", "))]
+    {:on-conflict (str "on conflict (" conflict-cols ")")}))
 
 
 (defn join [s m]
@@ -480,6 +497,8 @@
     :insert (insert v)
     :update (update v)
     :set (update-set v)
+    :do-update-set (do-update-set v)
+    :on-conflict (on-conflict v)
     nil))
 
 (defn fmt-pull [m]
@@ -509,12 +528,14 @@
                 where order offset
                 limit group args delete
                 insert values update from
-                update-set update-set-args]} m
+                update-set update-set-args
+                do-update-set on-conflict do-update-set-args]} m
         sql (->> (filter #(not (string/blank? %)) [select delete from
                                                    update update-set insert values
+                                                   on-conflict do-update-set
                                                    join left-join right-join
                                                    left-outer-join right-outer-join
                                                    full-join cross-join full-outer-join
                                                    where order offset limit group])
                  (string/join " "))]
-    (apply conj [sql] (concat update-set-args (filter some? (utils/flat args))))))
+    (apply conj [sql] (concat update-set-args (filter some? (utils/flat args)) do-update-set-args))))

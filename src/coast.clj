@@ -41,7 +41,8 @@
    fetch
    execute!
    find-by
-   transaction]
+   transaction
+   upsert]
 
   [coast.db.connection
    connection]

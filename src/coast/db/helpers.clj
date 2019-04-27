@@ -51,6 +51,35 @@
               :set)))))
 
 
+(defn upsert
+  "Builds an upsert keyword sql vector from a map or sequence of maps.
+   All maps need to have the same keys."
+  [val opts]
+  (when (nil? val)
+    (throw (Exception. "coast/upsert was called with nil")))
+  (let [v (utils/vectorize val)
+        cols (->> (mapcat identity v)
+                  (map first)
+                  (distinct))
+        unqualified-ks (filter #(not (qualified-ident? %)) cols)
+        _ (when (not (empty? unqualified-ks))
+            (throw (Exception. "coast/upsert requires all maps to have qualified keys. The namespace is used to determine the table to insert into.")))
+        distinct-namespaces (distinct
+                             (map namespace cols))
+        _ (when (not= 1 (count distinct-namespaces))
+            (throw (Exception. (str "coast/upsert found multiple namespaces. "
+                                    "Which table did you want to insert into?"
+                                    (string/join ", " distinct-namespaces)))))
+        values (map #(map (fn [x] (second x)) %) v)
+        excluded-cols (->> (filter #(not (contains? (set (:on-conflict opts)) (name %))) cols)
+                           (map #(vector % (str "excluded." (name %)))))]
+    (concat
+     (conj cols :insert)
+     (conj values :values)
+     (conj excluded-cols :do-update-set)
+     (conj (:on-conflict opts) :on-conflict))))
+
+
 (defn delete
   "Builds a keyword sql vector from a map or sequence of maps. All maps need to have one id column specified"
   [val]

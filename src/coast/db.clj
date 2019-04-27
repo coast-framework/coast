@@ -451,6 +451,51 @@
    (update nil arg)))
 
 
+(defn unique-column-names [s]
+  (->> (string/split s #",")
+       (filter #(string/includes? % "unique"))
+       (map string/trim)
+       (map #(string/split % #" "))
+       (map first)))
+
+
+(defn upsert
+  ([conn arg & {:as opts}]
+   (let [table-name (if (sequential? arg)
+                      (-> arg first keys first utils/namespace*)
+                      (-> arg keys first utils/namespace*))
+         {:keys [adapter]} (db.connection/spec)]
+
+     (when (nil? table-name)
+       (throw (Exception. "coast/upsert expects a map with qualified keywords")))
+
+     (condp = adapter
+       "sqlite" (if (nil? conn)
+                  (transaction c
+                    (let [{sql :sql} (pluck c ["select sql from sqlite_master where type = ? and name = ?" "table" table-name])
+                          on-conflict (unique-column-names sql)
+                          v (helpers/upsert arg {:on-conflict on-conflict})]
+                      (execute! c v)
+                      (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
+                            table (if (sequential? arg)
+                                    (-> arg first keys first namespace)
+                                    (-> arg keys first namespace))]
+                        (fetch c (keyword table) id))))
+                  (execute! conn (apply helpers/upsert arg opts)))
+       "postgres" (if (nil? conn)
+                    (transaction c
+                      (let [table-name (re-find #"sqlite_autoindex_(\w+)_\d+"
+                                                (-> arg ffirst utils/namespace*))
+                            {name :name} (pluck c ["pragma index_list(" table-name ")"])
+                            v (helpers/upsert arg {:on-conflict name})
+                            v (conj v :returning :*)]
+                        (q c v)))
+                    (q conn (conj (helpers/upsert arg opts)
+                                  :returning :*))))))
+  ([arg]
+   (upsert nil arg)))
+
+
 (defn delete
   ([conn arg]
    (let [{:keys [adapter]} (db.connection/spec)
