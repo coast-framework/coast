@@ -505,10 +505,11 @@
                   (execute! conn (apply helpers/upsert arg opts)))
        "postgres" (if (nil? conn)
                     (transaction c
-                      (let [table-name (re-find #"sqlite_autoindex_(\w+)_\d+"
-                                                (-> arg ffirst utils/namespace*))
-                            {name :name} (pluck c ["pragma index_list(" table-name ")"])
-                            v (helpers/upsert arg {:on-conflict name})
+                      (let [{indexdef :indexdef} (pluck c ["select indexdef from pg_indexes where tablename = ?" table-name])
+                            on-conflict (-> (re-find #"\((.*)\)" indexdef)
+                                            (last)
+                                            (string/split #","))
+                            v (helpers/upsert arg {:on-conflict on-conflict})
                             v (conj v :returning :*)]
                         (q c v)))
                     (q conn (conj (helpers/upsert arg opts)
