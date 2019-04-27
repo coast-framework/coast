@@ -408,7 +408,6 @@
         rel-rows (upsert-rels row m-rels)]
     (merge row rel-rows)))
 
-
 (defn insert
   ([conn arg]
    (let [{:keys [adapter]} (db.connection/spec)
