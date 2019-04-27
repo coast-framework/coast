@@ -193,6 +193,28 @@
      ~@body))
 
 
+(defn sql-vec
+  ([conn v params]
+   (let [conn (or conn (connection))
+         {:keys [adapter]} (db.connection/spec)
+         associations-fn (load-string (slurp (or (io/resource "associations.clj")
+                                                 "db/associations.clj")))
+         associations (if (some? associations-fn)
+                        (associations-fn)
+                        {})
+         col-map (col-map conn adapter)]
+      (if (sql-vec? v)
+        v
+        (sql/sql-vec adapter col-map associations v params))))
+  ([v params]
+   (if (and (vector? v)
+            (map? params))
+     (sql-vec nil v params)
+     (sql-vec v params {})))
+  ([v]
+   (sql-vec nil v nil)))
+
+
 (defn q
   ([conn v params]
    (let [conn (or conn (connection))
