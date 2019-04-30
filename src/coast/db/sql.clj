@@ -442,11 +442,10 @@
 
 
 (defn qualify-col [table k]
-  (if (= (name k) "distinct")
-    :distinct
-    (if (qualified-ident? k)
-      k
-      (keyword (name table) (name k)))))
+  (cond
+    (= (name k) "distinct") :distinct
+    (qualified-ident? k) (keyword (name table) (name k))
+    :else k))
 
 
 (defn expand-select [m]
