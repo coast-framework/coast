@@ -535,6 +535,6 @@
                                                    join left-join right-join
                                                    left-outer-join right-outer-join
                                                    full-join cross-join full-outer-join
-                                                   where order offset limit group])
+                                                   where group order offset limit])
                  (string/join " "))]
     (apply conj [sql] (concat update-set-args (filter some? (utils/flat args)) do-update-set-args))))
