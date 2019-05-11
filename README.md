@@ -208,13 +208,6 @@ make server
 and visit `http://localhost:1337/todos` to see the app in action.
 
 #### From the REPL
-Navigate to the `src/server.clj` file and type this below the `(defn -main)` part:
-
-```clojure
-(comment
-  (-main))
-```
-
 I currently use [proto-repl](https://github.com/jasongilman/proto-repl), check it out if you want a smooth clojure REPL experience.
 
 First run, the nrepl server:
