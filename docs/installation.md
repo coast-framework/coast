@@ -67,11 +67,11 @@ Then connect to the editor from your REPL with one of these handy guides:
 - [Emacs with Cider](https://github.com/clojure-emacs/cider#connect-to-a-running-nrepl-server)
 - [Vim with Fireplace](https://github.com/tpope/vim-fireplace)
 
-After the editor is connected to the running REPL server, add this to the bottom of the `server.clj` file:
+After the editor is connected to the running REPL server, note this code at the bottom of the `server.clj` file:
 
 ```clojure
 (comment
   (-main))
 ```
 
-And move your text editor's cursor over any of the letters in `-main` and press the keyboard shortcut for "sending the text under the cursor" to the REPL server. The http server will start and you can navigate to `http://localhost:1337`
+Move your text editor's cursor over any of the letters in `-main` and press the keyboard shortcut for "sending the text under the cursor" to the REPL server. The http server will start and you can navigate to `http://localhost:1337`
