@@ -4,7 +4,7 @@
 lowercase() {
   local string="${1}"
 
-  if [[ -z "${string}" ]] && [ ! -t 0 ]; then
+  if [ -z "${string}" ] && [ ! -t 0 ]; then
       string=$(cat <&0)
   fi
 
@@ -14,7 +14,7 @@ lowercase() {
 kebabcase() {
   local string="${1}"
 
-  if [[ -z "${string}" ]] && [ ! -t 0 ]; then
+  if [ -z "${string}" ] && [ ! -t 0 ]; then
       string=$(cat <&0)
   fi
 
@@ -24,7 +24,7 @@ kebabcase() {
 snakecase() {
   local string="${1}"
 
-  if [[ -z "${string}" ]] && [ ! -t 0 ]; then
+  if [ -z "${string}" ] && [ ! -t 0 ]; then
       string=$(cat <&0)
   fi
 
