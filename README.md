@@ -190,10 +190,12 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
   (coast/site
     (coast/with-layout :components/layout
       [:get "/" :home/index]
-      [:resource :todo] ; add this line)))
+      [:resource :todo]))) ; add this line
 ```
 
-The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.
+The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.  
+
+```[:resource :todo]``` sets up basic [CRUD routes](https://coastonclojure.com/docs/routing.md#user-content-route-resources) in one line.
 
 ### Start the server
 
