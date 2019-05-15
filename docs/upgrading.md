@@ -17,7 +17,7 @@ The first step to upgrade from `eta` to `theta` is to update coast itself and ad
 
 ```clojure
 ; deps.edn
-{:deps {coast-framework/coast.theta {:mvn/version "1.0.0"}
+{:deps {coast-framework/coast.theta {:mvn/version "1.5.0"}
         org.postgresql/postgresql {:mvn/version "42.2.5"}
        ; or for sqlite
        org.xerial/sqlite-jdbc {:mvn/version "3.25.2"}}}
