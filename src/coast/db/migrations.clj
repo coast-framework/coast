@@ -4,7 +4,6 @@
             [coast.db.connection :refer [spec]]))
 
 (def rollback? (atom false))
-(def vectors (atom []))
 
 (def sql {"sqlite" {:timestamp "integer"
                     :now "(strftime('%s', 'now'))"
@@ -63,7 +62,6 @@
 
 (defn col [type col-name m]
   "SQL fragment for adding a column in create or alter table"
-  (swap! vectors conj [:col type col-name (or m {})])
   (->> [(utils/sqlize col-name)
         (col-type type m)
         (unique m)
@@ -215,8 +213,9 @@
   (str "drop table " (utils/sqlize table)))
 
 
-(defn has-index? [v]
-  (true? (get (last v) :index)))
+(defn reference-col [s]
+  (-> (re-find #"references (\w+)" s)
+      (last)))
 
 
 (defn create-table
@@ -228,8 +227,8 @@
           [opts args] (if (map? (first args))
                         [(first args) (rest args)]
                         [{} args])
-          index-vectors (filter has-index? @vectors)
-          index-sql-strings (map #(add-index table (nth % 2)) index-vectors)
+          index-sql-strings (->> (map reference-col args)
+                                 (map #(add-index table %)))
           pk-col (or (:primary-key opts) "id")
           not-exists (if (true? (:if-not-exists opts))
                        "if not exists "
