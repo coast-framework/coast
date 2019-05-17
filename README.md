@@ -210,27 +210,29 @@ make server
 and visit `http://localhost:1337/todos` to see the app in action.
 
 #### From the REPL
-I currently use [proto-repl](https://github.com/jasongilman/proto-repl), check it out if you want a smooth clojure REPL experience.
+I currently use [atom](https://github.com/mauricioszabo/atom-chlorine), check it out if you want a smooth clojure REPL experience.
 
-First run, the nrepl server:
+First run, the repl socket server:
 
 ```bash
 make repl
 ```
 
-Then in your editor, connect to the nrepl server, in atom with proto-repl for example:
+Then in your editor, connect to the repl server.
 
-Press, `Ctrl+Cmd+Y` and hit `Enter`.
+In atom with chlorine for example:
 
-After you're connected, load the `server.clj` file with `Option+Cmd+Shift+F`.
+Press `space + c`, fill in the port with `5555` and hit `Enter`.
 
-Finally, move your cursor to `(-main)` and evaluate the top block with `Shift+Cmd+B`.
+After you're connected, load the `server.clj` file with `Chlorine: Load File`.
+
+Finally, move your cursor to `(comment (-main))` and evaluate the top block with `Cmd+Enter`.
 
 ### Check out the page
 
 Navigate to http://localhost:1337/todos and check out your handiwork.
 
-### Tested on Different Platforms 
+### Tested on Different Platforms
 
 #### Tested on Clojure 1.10.0 on OSX El Capitan using brew to install Clojure
 
