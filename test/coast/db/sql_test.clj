@@ -11,7 +11,7 @@
                                        {}))))
 
   (testing "a select statement with an asterisk"
-    (is (= ["select post.id as post$id from post"]
+    (is (= ["select id from post"]
            (sql/sql-vec "sqlite" {:post [:id]} {} '[:select *
                                                     :from post]
                                                    {}))))
