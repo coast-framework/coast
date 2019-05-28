@@ -228,6 +228,7 @@
                         [(first args) (rest args)]
                         [{} args])
           index-sql-strings (->> (map reference-col args)
+                                 (filter some?)
                                  (map #(add-index table %)))
           pk-col (or (:primary-key opts) "id")
           not-exists (if (true? (:if-not-exists opts))
