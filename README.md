@@ -238,6 +238,10 @@ Navigate to http://localhost:1337/todos and check out your handiwork.
 
 readline versions might clash depending on your setup. You might need to downgrade to a lower version of readline depending on your version of clojure. For example... readline version 7.0 for clojure 1.9
 
+## Discussion
+
+Feel free to ask questions and join discussion (mostly just me) on the [coast gitter channel](https://gitter.im/coast-framework/community).
+
 ## Contributing
 
 Any contribution is welcome! Submit a PR and let's get it merged in!
