@@ -24,12 +24,19 @@
            (into {}))
       {})))
 
+
+(defn env-without-edn [k]
+  (let [m (fmt (merge (dot-env) (System/getenv)))]
+    (get m k)))
+
+
 (defn env-edn
   "Environment variables can also come from the easily-parse-able env.edn"
   []
   (let [file (io/file "env.edn")]
     (if (.exists file)
-      (-> file slurp edn/read-string)
+      (->> (slurp file)
+           (edn/read-string {:readers {'env env-without-edn}}))
       {})))
 
 (defn env
