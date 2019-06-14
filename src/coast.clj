@@ -41,7 +41,8 @@
    execute!
    find-by
    transaction
-   upsert]
+   upsert
+   any-rows?]
 
   [coast.db.connection
    connection]

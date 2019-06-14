@@ -537,6 +537,15 @@
     :from (-> ident first namespace)
     :where ident]))
 
+
+(defn any-rows? [table]
+  (some?
+   (pluck
+    [:select :*
+     :from (keyword table)
+     :limit 1])))
+
+
 (def migrate migrations/migrate)
 (def rollback migrations/rollback)
 (def reconnect! db.connection/reconnect!)
