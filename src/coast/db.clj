@@ -297,10 +297,11 @@
    (when (and (ident? k)
               (map? m))
      (first
-       (q [:select :*
-           :from k
-           :where (map identity m)
-           :limit 1]))))
+       (q conn [:select :*
+                :from k
+                :where (mapv identity m)
+                :limit 1]
+               {}))))
   ([k m]
    (find-by nil k m)))
 
@@ -481,7 +482,7 @@
 
 
 (defn upsert
-  ([conn arg & {:as opts}]
+  ([conn arg opts]
    (let [table-name (if (sequential? arg)
                       (-> arg first keys first utils/namespace*)
                       (-> arg keys first utils/namespace*))
@@ -494,10 +495,16 @@
        "sqlite" (if (nil? conn)
                   (transaction c
                     (let [{sql :sql} (pluck c ["select sql from sqlite_master where type = ? and name = ?" "table" table-name])
-                          on-conflict (unique-column-names sql)
+                          on-conflict (if (list? (:on-conflict opts))
+                                        (:on-conflict opts)
+                                        (unique-column-names sql))
                           v (helpers/upsert arg {:on-conflict on-conflict})]
                       (execute! c v)
                       (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
+                            id (if (zero? id)
+                                 (get (find-by c (keyword table-name) (select-keys arg (mapv #(keyword table-name %) on-conflict)))
+                                      (keyword table-name "id"))
+                                 id)
                             table (if (sequential? arg)
                                     (-> arg first keys first namespace)
                                     (-> arg keys first namespace))]
