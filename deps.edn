@@ -4,7 +4,7 @@
         com.zaxxer/HikariCP {:mvn/version "2.7.8"}
         org.slf4j/slf4j-nop {:mvn/version "1.7.25"}
         hiccup {:mvn/version "2.0.0-alpha2"}
-        http-kit {:mvn/version "2.3.0"}
+        http-kit {:mvn/version "2.4.0-alpha3"}
         jkkramer/verily {:mvn/version "0.6.0"}
         org.clojure/data.json {:mvn/version "0.2.6"}
         org.clojure/clojure {:mvn/version "1.10.0"}
