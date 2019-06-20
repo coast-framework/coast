@@ -522,7 +522,7 @@
                     (q conn (conj (helpers/upsert arg opts)
                                   :returning :*))))))
   ([arg]
-   (upsert nil arg)))
+   (upsert nil arg {})))
 
 
 (defn delete
