@@ -19,17 +19,21 @@
    body])
 
 (defn css
-  ([req bundle]
+  ([req bundle opts]
    (let [files (assets/bundle (env :coast-env) bundle)]
      (for [href files]
-       [:link {:href href :type "text/css" :rel "stylesheet"}])))
+       [:link (merge {:href href :type "text/css" :rel "stylesheet"} opts)])))
+  ([req bundle]
+   (css nil bundle {}))
   ([bundle]
    (css nil bundle)))
 
 (defn js
-  ([req bundle]
+  ([req bundle opts]
    (let [files (assets/bundle (env :coast-env) bundle)]
      (for [src files]
-      [:script {:src src :type "application/javascript" :defer true}])))
+      [:script (merge {:src src :type "application/javascript"} opts)])))
+  ([req bundle]
+   (js nil bundle {}))
   ([bundle]
    (js nil bundle)))
