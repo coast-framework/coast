@@ -1,5 +1,5 @@
 (ns coast
-  (:require [potemkin :refer [import-vars]]
+  (:require [coast.potemkin.namespaces :as namespaces]
             [hiccup2.core]
             [coast.db]
             [coast.db.connection]
@@ -14,7 +14,7 @@
             [coast.validation])
   (:refer-clojure :exclude [update]))
 
-(import-vars
+(namespaces/import-vars
   [coast.responses
    ok
    bad-request
