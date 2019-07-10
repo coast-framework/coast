@@ -1,18 +1,15 @@
-(ns coast.theta-test
-  (:require [coast.theta :as coast]
-            [coast.router :as router]
-            [coast.middleware :as middleware]
+(ns coast.core-test
+  (:require [coast.core :as coast]
             [clojure.test :refer [deftest testing is]]))
 
 
 (deftest url-for-test
-  (let [routes (router/routes
-                 (coast.middleware/site-routes
-                   [:get "/" ::home]
-                   [:post "/" ::home-action]
-                   [:get "/hello" ::hello]
-                   [:get "/hello/:id" ::hello-id]))
-        _ (coast/app {:routes routes})]
+  (let [routes (coast/routes
+                 [:get "/" ::home]
+                 [:post "/" ::home-action]
+                 [:get "/hello" ::hello]
+                 [:get "/hello/:id" ::hello-id])
+        _ (coast/app routes)]
     (testing "url-for without a map"
       (is (= "/" (coast/url-for ::home))))
 
