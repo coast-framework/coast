@@ -20,7 +20,7 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.10.0</version>
+      <version>1.10.1</version>
     </dependency>
     <dependency>
       <groupId>com.zaxxer</groupId>
@@ -45,7 +45,7 @@
     <dependency>
       <groupId>asset-minifier</groupId>
       <artifactId>asset-minifier</artifactId>
-      <version>0.2.5</version>
+      <version>0.2.7</version>
     </dependency>
     <dependency>
       <groupId>ring</groupId>
@@ -81,11 +81,6 @@
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>3.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>potemkin</groupId>
-      <artifactId>potemkin</artifactId>
-      <version>0.4.5</version>
     </dependency>
     <dependency>
       <groupId>ring</groupId>
