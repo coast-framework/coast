@@ -1,16 +1,30 @@
 (ns coast.router
   (:require [clojure.string :as string]
-            [coast.responses :as res]
-            [coast.utils :as utils]
-            [coast.error :as error]))
+            [coast.response :as response]))
 
-(def param-re #":([\w-_]+)")
+
+(def app-routes (atom []))
+
+
+(defn verb? [value]
+  (contains? #{:get :post :put :patch :delete :head}
+    value))
+
+
+(defn route? [val]
+  (and (vector? val)
+       (verb? (first val))
+       (string? (second val))
+       (or (fn? (nth val 2))
+           (keyword? (nth val 2)))))
+
 
 (defn qualify-ident [k]
   (when (and (ident? k)
              (re-find #"-" (name k)))
     (let [[kns kn] (string/split (name k) #"-")]
       (keyword (or kns "") (or kn "")))))
+
 
 (defn replacement [match m]
   (let [fallback (first match)
@@ -19,52 +33,39 @@
         s2 (get m (qualify-ident k))]
     (str (or s1 s2 fallback))))
 
+
 (defn route-str [s m]
   (when (and (string? s)
              (or (nil? m) (map? m)))
-    (string/replace s param-re #(replacement % m))))
+    (string/replace s #":([\w-_]+)" #(replacement % m))))
 
-(def verbs #{:get :post :put :patch :delete :head :resource :404 :500})
 
-(defn verb? [value]
-  (contains? verbs value))
+(defn to-symbol [k]
+  (if (keyword? k)
+    (symbol (namespace k) (name k))
+    k))
 
-(defn method-verb? [value]
-  (-> (disj verbs :get :post)
-      (contains? value)))
 
-(defn param-method [method]
-  (when (method-verb? method)
-    (str "?_method=" (name (or method "")))))
+(defn resolve-safely [sym]
+  (when (symbol? sym)
+    (resolve sym)))
 
-(defn url-encode [s]
-  (when (string? s)
-    (-> (java.net.URLEncoder/encode s "UTF-8")
-        (.replace "+" "%20")
-        (.replace "*" "%2A")
-        (.replace "%7E" "~"))))
 
-(defn unqualified-keyword? [k]
-  (and (keyword? k)
-       (nil? (namespace k))))
+(defn resolve-route [k]
+  (-> (to-symbol k)
+      (resolve-safely)))
 
-(defn query-string [m]
-  (when (and (map? m)
-             (every? string? (vals m))
-             (every? unqualified-keyword? (keys m)))
-    (let [s (->> (map (fn [[k v]] (str (-> k name url-encode) "=" (url-encode v))) m)
-                 (string/join "&"))]
-      (when (not (string/blank? s))
-        (str "?" s)))))
 
 (defn params [s]
-  (->> (re-seq param-re s)
+  (->> (re-seq #":([\w-_]+)" s)
        (map last)
        (map keyword)))
 
+
 (defn pattern [s]
-  (->> (string/replace s param-re "([A-Za-z0-9-_~]+)")
+  (->> (string/replace s #":([\w-_]+)" "([A-Za-z0-9-_~]+)")
        (re-pattern)))
+
 
 (defn route-params [req-uri route-uri]
   (when (every? string? [req-uri route-uri])
@@ -75,379 +76,168 @@
            (drop 1)
            (zipmap ks)))))
 
-(defn route? [val]
-  (and (vector? val)
-       (contains? verbs (first val))))
 
-(defn routes? [val]
-  (every? route? val))
-
-(defn match [request-route route]
+(defn match [request route]
   (when (route? route)
-    (let [[request-method request-uri] request-route
+    (let [{:keys [request-method uri]} request
           [route-method route-uri] route
-          params (route-params request-uri route-uri)
+          params (route-params uri route-uri)
           route-uri (route-str route-uri params)]
       (and (= request-method route-method)
-           (or (= request-uri route-uri)
-               (= (str request-uri "/") route-uri))))))
-
-(defn server-error
-  "Special route for 500s"
-  [f]
-  [:500 f])
-
-(defn not-found
-  "Special route for 404s"
-  [f]
-  [:404 f])
-
-(defn prefix-param [s]
-  (as-> (utils/singular s) %
-        (str  % "-id")))
+           (or (= uri route-uri)
+               (= (str uri "/") route-uri))))))
 
 
-(defn resource-route [m]
-  (let [{:keys [method route handler]} m]
-    [method route handler]))
-
-(defn resource
-  "Creates CRUD route vectors
-
-   Generates routes that look like this:
-
-   [[:get    '/resources          :resource/index]
-    [:get    '/resources/:id      :resource/view]
-    [:get    '/resources/build    :resource/build]
-    [:get    '/resources/:id/edit :resource/edit]
-    [:post   '/resources          :resource/create]
-    [:put    '/resources/:id      :resource/change]
-    [:delete '/resources/:id      :resource/delete]]
-
-   Examples:
-
-   (resource :item)
-   (resource :item :only [:create :delete])
-   (resource :item :sub-item :only [:index :create])
-   (resource :item :except [:index])
-   "
-  [routes & ks]
-  (let [ks (if (not (vector? routes))
-             (apply conj [routes] ks)
-             (vec ks))
-        routes (if (vector? routes)
-                routes
-                [])
-        only? (and (not (empty? (filter #(= % :only) ks)))
-                   (sequential? (last ks))
-                   (not (empty? (last ks))))
-        except? (and (not (empty? (filter #(= % :except) ks)))
-                     (sequential? (last ks))
-                     (not (empty? (last ks))))
-        filter-resources (when (or only? except?) (last ks))
-        route-ks (if (or only? except?)
-                   (vec (take (- (count ks) 2) ks))
-                   ks)
-        resource-ks (take-last 1 route-ks)
-        resource-names (map name resource-ks)
-        resource-name (first resource-names)
-        route-names (map utils/plural resource-names)
-        prefix-ks (drop-last route-ks)
-        route-str (as-> (map str prefix-ks) %
-                        (map prefix-param %)
-                        (concat '("") (interleave (map name prefix-ks) %) route-names)
-                        (string/join "/" %))
-        resources [{:method :get
-                    :route route-str
-                    :handler (keyword resource-name "index")
-                    :name :index}
-                   {:method :get
-                    :route (str route-str "/build")
-                    :handler (keyword resource-name "build")
-                    :name :build}
-                   {:method :get
-                    :route (str route-str "/:" resource-name "-id")
-                    :handler (keyword resource-name "view")
-                    :name :view}
-                   {:method :post
-                    :route route-str
-                    :handler (keyword resource-name "create")
-                    :name :create}
-                   {:method :get
-                    :route (str route-str "/:" resource-name "-id/edit")
-                    :handler (keyword resource-name "edit")
-                    :name :edit}
-                   {:method :put
-                    :route (str route-str "/:" resource-name "-id")
-                    :handler (keyword resource-name "change")
-                    :name :change}
-                   {:method :delete
-                    :route (str route-str "/:" resource-name "-id")
-                    :handler (keyword resource-name "delete")
-                    :name :delete}]
-        resources (if only?
-                   (filter #(not= -1 (.indexOf filter-resources (clojure.core/get % :name))) resources)
-                   resources)
-        resources (if except?
-                   (filter #(= -1 (.indexOf filter-resources (clojure.core/get % :name))) resources)
-                   resources)
-        resources (map resource-route resources)]
-    (vec (concat routes resources))))
+(defn exact-match [request route]
+  (let [{:keys [request-method uri]} request
+        [route-method route-uri] route]
+    (and (= request-method route-method)
+         (= uri route-uri))))
 
 
-(defn wrap-route
-  "Wraps a single route in a ring middleware fn"
-  [route middleware]
-  (let [[method uri val route-name] route
-        val (if (vector? val) val [val])
-        middleware (if (sequential? middleware)
-                    middleware
-                    [middleware])
-        route (first val)
-        mw (rest val)
-        new-val (-> (concat middleware mw)
-                    (conj route)
-                    (vec))]
-    (->> [method uri new-val route-name]
-         (filter some?)
-         (vec))))
+(defn route [request routes]
+  (or
+   (-> (filter #(exact-match request %) routes)
+       (first))
+   (-> (filter #(match request %) routes)
+       (first))))
 
-(defn resource-fmt [coll]
-  (apply conj (vec (first coll))
-              (rest coll)))
 
-(defn resource-args [val]
-  (if (or (= val '(:only))
-          (= val '(:except)))
-    (first val)
-    val))
-
-(defn resource-route? [route]
-  (= :resource (first route)))
-
-(defn expand-resource [route]
-  (if (resource-route? route)
-    (apply resource (drop 1 route))
-    [route]))
+(defn depth
+  ([val]
+   (depth val 0))
+  ([val idx]
+   (if (sequential? val)
+     (depth (first val) (inc idx))
+     idx)))
 
 
 (defn flatten-wrapped-routes [x]
-  (if (> (coast.utils/depth x) 1)
+  (if (> (depth x) 1)
     (mapcat flatten-wrapped-routes x)
     [x]))
 
 
-(defn wrap-routes
-  "Wraps a given set of routes in the given functions"
-  [& args]
-  (let [fns (filter #(or (fn? %) (ident? %)) args)
-        routes (->> (filter sequential? args)
-                    (flatten-wrapped-routes))
-        routes (->> (mapcat expand-resource routes)
-                    (filter #(not (resource-route? %)))
-                    (vec))]
-    (mapv #(wrap-route % fns) routes)))
+(defn middleware [& args]
+  (let [fns (filter fn? args)
+        vectors (->> (filter vector? args)
+                     (flatten-wrapped-routes)
+                     (vec))]
+    (mapv #(vec (concat % fns)) vectors)))
 
 
-(defn with [& args]
-  (apply wrap-routes args))
+(defn middleware-fn [route]
+  (->> (drop 3 route)
+       (apply comp)))
 
 
-(defn fallback-not-found [_]
-  (res/not-found
-    [:html
-      [:head
-       [:title "Not Found"]]
-      [:body
-       [:h1 "404 Page not found"]]]))
-
-(defn fallback-api-not-found [_]
-  {:status 404
-   :body {:status 404
-          :message "404 uri not found"}
-   :headers {"content-type" "application/json"}})
-
-(defn resolve-route-fn [f]
-  (cond
-    (symbol? f) (resolve f)
-    (keyword? f) (-> f utils/keyword->symbol utils/resolve-safely)
-    :else f))
-
-(defn resolve-route [val]
-  (if (vector? val)
-    (-> (first val) (resolve-route-fn))
-    (resolve-route-fn val)))
+(defn ring-response [response]
+  (if (vector? response)
+    (response/render :html response :status :ok)
+    response))
 
 
-(defn route-middleware-fn [val]
-  (when (vector? val)
-    (->> (rest val)
-         (map resolve-route-fn)
-         (apply comp))))
-
-(defn route-name [route]
-  (-> route last keyword))
-
-(defn not-found-fn [routes]
-  (-> (filter #(= :404 (first %)) routes)
-      (first)
-      (nth 1)
-      (utils/keyword->symbol)
-      (utils/resolve-safely)))
-
-(defn route-has-api-middleware? [route]
-  (and (>= (count route) 3)
-       (vector? (nth route 2))
-       (->> (filter fn? (nth route 2))
-            (map (fn [val] (str val)))
-            (filter (fn [val] (string/starts-with? val "coast.middleware$api_routes")))
-            (first)
-            (some?))))
-
-(defn api-not-found-fn [routes]
-  (-> (filter #(and (= :404 (first %))
-                    (route-has-api-middleware? %))
-              routes)
-      (first)
-      (nth 1)
-      (utils/keyword->symbol)
-      (utils/resolve-safely)))
-
-(defn server-error-fn [routes]
-  (-> (filter #(= :500 (first %)) routes)
-      (first)
-      (nth 1)
-      (utils/keyword->symbol)
-      (utils/resolve-safely)))
-
-(defn api-server-error-fn [routes]
-  (-> (filter #(and (= :500 (first %))
-                    (route-has-api-middleware? %))
-              routes)
-      (first)
-      (nth 1)
-      (utils/keyword->symbol)
-      (utils/resolve-safely)))
+(defn simulated-methods [handler]
+  (let [methods {"put" :put
+                 "patch" :patch
+                 "delete" :delete}]
+    (fn [request]
+      (let [method (if (= :post (:request-method request))
+                     (get methods (get-in request [:params :_method]) (:request-method request))
+                     (:request-method request))]
+        (handler (assoc request :request-method method
+                                :original-request-method (:request-method request)))))))
 
 
-(defn handler
-  "Returns a ring handler from routes and any middleware"
+(defn app
+  "Creates a ring handler from routes"
   [routes]
+  (swap! app-routes #(-> (concat % routes) (distinct) (vec)))
   (fn [request]
-    (let [{:keys [request-method uri params]} request
-          route (->> (filter #(match [request-method uri] %) routes)
-                     (first))
-          [_ route-uri f] route
+    (let [{:keys [uri params]} request
+          route (route request routes)
+          [_ route-uri route-keyword] route
+          route-handler (resolve-route route-keyword)
           route-params (route-params uri route-uri)
-          route-handler (resolve-route f)
-          _ (when (nil? route-handler)
-              (error/raise (str "Route not found " uri) {:not-found f}))
-          middleware (route-middleware-fn f)
-          route-name (if (sequential? f) (first f) f)
-          request (assoc request ::name route-name
-                                 :params (merge params route-params))
-          response (if (some? middleware)
-                     ((middleware route-handler) request)
-                     (route-handler request))]
-      (cond
-        (vector? response) {:status 200 :body response ::name route-name}
-        (map? response) (assoc response ::name route-name)
-        (string? response) {:status 200 :body response ::name route-name}
-        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+          route-middleware (middleware-fn route)
+          request (assoc request :params (merge params route-params)
+                                 :route route-keyword)
+          handler (route-middleware route-handler)]
+      (when (some? handler)
+        (-> (handler request)
+            (ring-response))))))
 
 
-(defn matches-route-identifier? [route k]
-  (when (>= (count route) 3)
-    (or (= k (last route))
-        (= k (if (vector? (nth route 2))
-               (first (nth route 2))
-               (nth route 2))))))
+(defn routes [& routes]
+  (vec (flatten-wrapped-routes routes)))
 
 
-(defn find-by-route-name [routes k]
-  (-> (filter #(matches-route-identifier? % k) routes)
-      (first)))
+(defn url-encode [s]
+  (when (string? s)
+    (-> (java.net.URLEncoder/encode s "UTF-8")
+        (.replace "+" "%20")
+        (.replace "*" "%2A")
+        (.replace "%7E" "~"))))
 
-(defn url-for-routes-args? [k m]
-  (and (ident? k)
-       (or (nil? m) (map? m))))
 
-(defn url-for-routes [routes]
-  "Returns a function that takes a route name and a map and returns a route as a string"
-  (fn [k & [m]]
-    (if (url-for-routes-args? k m)
-      (let [[method route-url] (find-by-route-name routes (keyword k))
-            url (route-str route-url m)
-            r-params (route-params url route-url)
-            q-params (apply dissoc m (keys r-params))
-            q-params (if (method-verb? method)
-                       (assoc q-params :method method)
-                       q-params)]
-        (when (nil? url)
-          (throw (Exception. (str "The route with name " k " doesn't exist. Try adding it to your routes"))))
-        (when (re-find #":" url)
-          (throw (Exception. (str "(url-for " k  ") is missing parameters. Check that the route parameters match the args passed in to url-for"))))
-        (str url (query-string q-params)))
-      (throw (Exception. "url-for takes a keyword and a map as arguments")))))
+(defn query-string [m]
+  (let [s (->> (map (fn [[k v]] (str (-> k name url-encode) "=" (url-encode v))) m)
+               (string/join "&"))]
+    (when (not (string/blank? s))
+      (str "?" s))))
 
-(defn action-for-routes [routes]
-  "Returns a function that takes a route name and a optional map and returns a form map"
-  (fn [k & [m]]
-    (if (url-for-routes-args? k m)
-      (let [[method route-url] (find-by-route-name routes (keyword k))
-            action (route-str route-url m)
-            _method method
-            method (if (not= :get method)
-                     :post
-                     :get)]
-        {:method method
-         :_method _method
-         :action action})
-      (throw (Exception. "action-for takes a keyword and a map as arguments")))))
 
-(defn pretty-route [route]
-  (let [[method uri val route-name] route
-        f (if (vector? val) (first val) val)
-        middleware (if (vector? val)
-                     (string/join
-                      (map #(if-let [meta (-> % :meta)]
-                              (name meta)
-                              "")
-                           val)
-                      " ")
-                     "")]
-    (str (-> method name string/upper-case)
-         " "
-         uri
-         " "
-         f
-         " "
-         route-name
-         " "
-         middleware)))
+(defn url-for
+  ([route-keyword]
+   (url-for route-keyword {}))
+  ([route-keyword params]
+   (let [routes @app-routes
+         route (-> (filter #(= (nth % 2) route-keyword) routes)
+                   (first))
+         url (route-str (nth route 1) params)
+         route-params (route-params url (nth route 1))
+         query-params (-> (apply dissoc params (keys route-params))
+                          (dissoc :#))
+         anchor (get params :#)
+         anchor (if (some? anchor) (str "#" anchor) "")]
+     (str url (query-string query-params) anchor))))
+
+
+(defn action-for
+  ([route-keyword]
+   (action-for route-keyword {}))
+  ([route-keyword params]
+   (let [routes @app-routes
+         [method route-url] (-> (filter #(= (nth % 2) route-keyword) routes)
+                                (first))
+         action (route-str route-url params)
+         _method method
+         method (if (not= :get method)
+                  :post
+                  :get)]
+     {:method method
+      :_method _method
+      :action action})))
+
+
+(defn redirect-to [& args]
+  {:status 302
+   :body ""
+   :headers {"Location" (apply url-for args)}})
+
 
 (defn prefix-route [s route]
   (if (>= (count route) 3)
     (update route 1 #(str s %))
     route))
 
+
 (defn prefix-routes [s & routes]
   (if (and (= 1 (count routes))
-           (routes? (first routes)))
+           (every? route? (first routes)))
     (mapv #(prefix-route s %) (first routes))
     (mapv #(prefix-route s %) routes)))
 
 
-(defn with-prefix [& args]
+(defn prefix [& args]
   (apply prefix-routes args))
-
-
-(defn pretty-routes [routes]
-  (println (string/join "\n" (map pretty-route routes))))
-
-
-(defn routes [& args]
-  (->> (flatten-wrapped-routes args)
-       (mapcat expand-resource)
-       (filter #(not (resource-route? %)))
-       (vec)))
