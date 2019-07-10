@@ -1,17 +1,5 @@
 (ns coast.middleware
-  (:require [coast.time :as time]
-            [coast.logger :as logger]
-            [coast.router :as router]
-            [coast.utils :as utils]
-            [coast.responses :as res]
-            [coast.env :as env]
-            [coast.error :as error]
-            [clojure.edn :as edn]
-            [clojure.stacktrace :as st]
-            [clojure.string :as string]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [ring.middleware.file]
+  (:require [ring.middleware.file]
             [ring.middleware.keyword-params]
             [ring.middleware.params]
             [ring.middleware.session.cookie]
@@ -28,9 +16,19 @@
             [ring.middleware.nested-params]
             [ring.middleware.flash]
             [ring.middleware.x-headers :as x]
-            [hiccup2.core :as h])
-  (:import (clojure.lang ExceptionInfo)
-           (java.time Duration)))
+            [ring.middleware.head]
+            [error.core :as error]
+            [coast.time :as time]
+            [coast.logger :as logger]
+            [coast.utils :as utils]
+            [coast.env :as env]
+            [coast.response :as response]
+            [coast.db.connection :as db.connection]
+            [clojure.java.io :as io]
+            [clojure.string :as string]
+            [clojure.data.json :as json]
+            [clojure.edn :as edn]))
+
 
 (def wrap-not-modified ring.middleware.not-modified/wrap-not-modified)
 (def wrap-content-type ring.middleware.content-type/wrap-content-type)
@@ -75,14 +73,11 @@
       (wrap x/wrap-content-type-options (:content-type-options options false))))
 
 
-(defn wrap-logger [handler log-fn]
+(defn logger [handler]
   (fn [request]
-    (let [now (time/now)
-          response (handler request)
-          f (or log-fn logger/log)]
-      (when (and (fn? f)
-                 (not (false? log-fn)))
-        (f request response now))
+    (let [now (time/now-millis)
+          response (handler request)]
+      (logger/log request response now)
       response)))
 
 
@@ -118,127 +113,55 @@
   (utils/deep-merge
    ring-site-defaults
    {:session {:cookie-name "id"
-              :store (ring.middleware.session.cookie/cookie-store {:key (or (env/env :secret)
-                                                                            (env/env :session-key))})}
+              :store (ring.middleware.session.cookie/cookie-store {:key (env/env :session-key)})}
     :security {:frame-options :deny}
     :params {:keywordize {:keywordize? true :parse-namespaces? true}}}
    opts))
 
 
-(defn exception-page [request e]
-  (str
-   (h/html
-     [:html {:style "margin: 0; padding: 0;"}
-      [:head
-       [:title (.getMessage e)]]
-      [:body {:style "margin: 0; padding: 0; font-family: -apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Oxygen-Sans,Ubuntu,Cantarell,\"Helvetica Neue\",sans-serif;"}
-       [:div {:style "padding: 1rem; background-color: #333;"}
-        [:div
-         [:span {:style "color: red"} (type e)]
-         [:span {:style "color: #aaa; display: inline-block; margin-left: 10px"}
-          (str "at " (:uri request))]]
-        [:h1 {:style "color: white; margin: 0; padding: 0"} (.getMessage e)]]
-       [:p {:style "background-color: #f4f4f4; padding: 2rem;"}
-        (h/raw
-          (-> (st/print-stack-trace e)
-              (with-out-str)
-              (string/replace #"\n" "<br />")
-              (string/replace #"\$fn__\d+\.invoke" "")
-              (string/replace #"\$fn__\d+\.doInvoke" "")
-              (string/replace #"\$" "/")))]]])))
+(def reloader #'ring.middleware.reload/reloader)
+(defn reload [handler]
+  (if (env/dev?)
+    (let [reload! (reloader ["db" "src"] true)]
+      (fn [request]
+        (reload!)
+        (handler request)))
+    handler))
 
 
-(defn wrap-exceptions [handler]
-  (fn [request]
-    (try
-      (handler request)
-      (catch Exception e
-        (res/server-error (exception-page request e) :html)))))
+(defn render-not-found []
+  (let [html (some-> (io/resource "public/404.html") (slurp))]
+    (response/render :html
+       (or html "404 Not Found")
+       :status 404)))
 
 
-(defn server-error [request]
-  [:html
-    [:head
-     [:title "Internal Server Error"]]
-    [:body
-     [:h1 "500 Internal server error"]]])
-
-
-(defn public-server-error [_]
-  (let [r (io/resource "public/500.html")]
-    (if (nil? r)
-      "500 Internal Server Error"
-      (slurp r))))
-
-
-(defn wrap-site-errors [handler routes]
-  (if (not= "prod" (env/env :coast-env))
-    (wrap-exceptions handler)
-    (fn [request]
-      (let [error-fn (or (router/server-error-fn routes)
-                         (utils/resolve-safely `site.home/server-error)
-                         (utils/resolve-safely `home/server-error)
-                         public-server-error)]
-        (try
-          (handler request)
-          (catch Exception e
-            (let [f (or error-fn server-error)
-                  response (f (assoc request :exception e
-                                             :stacktrace (with-out-str
-                                                          (st/print-stack-trace e))))]
-              (res/server-error response :html))))))))
-
-
-(defn public-not-found [_]
-  (let [r (io/resource "public/404.html")]
-    (if (nil? r)
-      "404 Not Found"
-      (slurp r))))
-
-
-(defn wrap-not-found [handler routes]
-  (fn [request]
-    (let [[response error] (error/rescue
-                            (handler request)
-                            :not-found)]
-      (if (nil? error)
-        response
-        (let [not-found-fn (or (router/not-found-fn routes)
-                               (utils/resolve-safely `site.home/not-found)
-                               (utils/resolve-safely `home/not-found)
-                               public-not-found)]
-          (res/not-found
-           (not-found-fn request)
-           :html))))))
-
-
-(defn resolve-fn [val]
-  (cond
-    (keyword? val) (-> val utils/keyword->symbol resolve)
-    (fn? val) val
-    :else nil))
-
-
-(defn wrap-layout [handler layout]
+(defn not-found [handler]
   (fn [request]
     (let [response (handler request)]
-      (if (vector? response)
-        (-> (layout request response)
-            (h/html)
-            (str)
-            (res/ok :html))
+      (if (nil? response)
+        (render-not-found)
         response))))
 
 
-(defn wrap-with-layout [layout & routes]
-  (let [layout-fn (resolve-fn layout)]
-    (if (nil? layout-fn)
-      (throw (Exception. "with-layout requires a layout function in the first argument"))
-      (router/wrap-routes #(wrap-layout % layout-fn) routes))))
+(defn render-server-error []
+  (let [html (some-> (io/resource "public/500.html") (slurp))]
+    (response/render :html
+       (or html "500 Internal Server Error")
+       :status 500)))
 
 
-(defn with-layout [layout & routes]
-  (apply (partial wrap-with-layout layout) routes))
+(defn server-error
+  ([handler custom-fn]
+   (fn [request]
+     (let [[response error] (error/rescue
+                             ((or custom-fn handler) request)
+                             :500)]
+       (if (nil? error)
+         response
+         (render-server-error)))))
+  ([handler]
+   (server-error handler nil)))
 
 
 (defn content-type? [m k]
@@ -247,112 +170,54 @@
     (condp = k
       :html (string/starts-with? content-type "text/html")
       :json (string/starts-with? content-type "application/json")
+      :text (string/starts-with? content-type "text/plain")
+      :xml (string/starts-with? content-type "text/xml")
       false)))
 
 
-(defn wrap-html-response [handler]
+(defn layout [handler layout-fn]
   (fn [request]
     (let [response (handler request)]
-      (if (and (vector? (:body response))
-               (content-type? response :html))
-        (update response :body #(-> % h/html str))
+      (if (and (vector? (get response :body))
+            (content-type? response :html))
+        (layout-fn request response)
         response))))
 
 
-(defn site-middleware [handler opts]
-  (-> handler
-      (wrap wrap-anti-forgery (get-in opts [:security :anti-forgery] false))
-      (wrap wrap-flash (get-in opts [:session :flash] false))
-      (wrap wrap-session (get opts :session false))
-      (wrap wrap-cookies (get-in opts [:cookies] false))))
+(defn assets
+  ([handler]
+   (assets handler {}))
+  ([handler opts]
+   (let [opts (site-defaults opts)]
+     (-> handler
+         (wrap wrap-absolute-redirects (get-in opts [:responses :absolute-redirects] false))
+         (wrap-multi wrap-resource (get-in opts [:static :resources] false))
+         (wrap-multi wrap-file (get-in opts [:static :files] false))
+         (wrap wrap-content-type (get-in opts [:responses :content-types] false))
+         (wrap wrap-default-charset (get-in opts [:responses :default-charset] false))
+         (wrap wrap-not-modified (get-in opts [:responses :not-modified-responses] false))))))
 
 
-(defn ring-response-html [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (cond
-        (vector? response) (res/ok response :html)
-        (string? response) (res/ok response)
-        (map? response) response
-        (nil? response) (res/ok "" :html)
-        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+(defn security-headers
+  ([handler]
+   (security-headers handler {}))
+  ([handler opts]
+   (let [opts (site-defaults opts)]
+     (wrap handler wrap-x-headers (:security opts)))))
 
 
-(defn site-routes [& args]
-  (let [[opts routes] (if (map? (first args))
-                        [(first args) (rest args)]
-                        [{} args])
-        opts (site-defaults opts)]
-    (router/wrap-routes #(site-middleware % opts)
-                        ring-response-html
-                        routes)))
-
-
-(defn site [& args]
-  (apply site-routes args))
-
-
-(defn coerce-params [val]
-  (cond
-    (and (string? val)
-         (some? (re-find #"^-?\d+\.?\d*$" val))) (edn/read-string val)
-    (and (string? val) (string/blank? val)) (edn/read-string val)
-    (and (string? val) (= val "false")) false
-    (and (string? val) (= val "true")) true
-    (vector? val) (mapv coerce-params val)
-    (list? val) (map coerce-params val)
-    :else val))
-
-
-(defn wrap-coerce-params [handler]
-  (fn [request]
-    (let [params (:params request)
-          coerced-params (utils/map-vals coerce-params params)
-          request (assoc request :params coerced-params
-                                 :coerced-params coerced-params
-                                 :raw-params params)]
-      (handler request))))
-
-
-(def simulated-methods
-  {"put" :put
-   "patch" :patch
-   "delete" :delete})
-
-(defn wrap-simulated-methods [handler]
-  (fn [request]
-    (let [method (if (= :post (:request-method request))
-                   (get simulated-methods (get-in request [:params :_method]) (:request-method request))
-                   (:request-method request))]
-      (handler (assoc request :request-method method
-                              :original-request-method (:request-method request))))))
-
-
-(def reloader #'ring.middleware.reload/reloader)
-(defn wrap-reload [handler]
-  (if (not= "dev" (env/env :coast-env))
-    handler
-    (let [reload! (reloader ["db" "src"] true)]
-      (fn [request]
-        (reload!)
-        (handler request)))))
-
-
-(defn wrap-json-body [handler]
+(defn json-body [handler]
   (fn [{:keys [body] :as request}]
     (if (and (some? body)
              (content-type? request :json))
       (let [s-body (slurp body)
-            json (-> s-body json/read-str)]
-        (handler (assoc request :body json
-                                :json json
-                                :raw-body s-body
-                                :json-params (when (map? json)
-                                               json))))
+            json (json/read-str s-body)]
+        (handler (assoc request
+                   :body json :raw-body s-body)))
       (handler request))))
 
 
-(defn wrap-json-response [handler]
+(defn json-response [handler]
   (fn [request]
     (let [response (handler request)
           body (:body response)]
@@ -363,60 +228,64 @@
         response))))
 
 
-(defn wrap-api-not-found [handler routes]
+(defn json [handler]
+  (-> (json-body handler)
+      (json-response)))
+
+
+(defn sessions
+  ([handler]
+   (sessions handler {}))
+  ([handler options]
+   (let [options (site-defaults options)]
+     (-> handler
+         (wrap wrap-anti-forgery   (get-in options [:security :anti-forgery] false))
+         (wrap wrap-flash          (get-in options [:session :flash] false))
+         (wrap wrap-session        (:session options false))))))
+
+
+(defn coerce-param [val]
+  (cond
+    (and (string? val)
+         (some? (re-find #"^-?\d+\.?\d*$" val))) (edn/read-string val)
+    (and (string? val) (string/blank? val)) (edn/read-string val)
+    (and (string? val) (= val "false")) false
+    (and (string? val) (= val "true")) true
+    (vector? val) (mapv coerce-param val)
+    (list? val) (map coerce-param val)
+    :else val))
+
+
+(defn coerce-params [handler]
   (fn [request]
-    (let [[response error] (error/rescue
-                            (handler request)
-                            :not-found)]
-      (if (nil? error)
-        response
-        ((router/api-not-found-fn routes) request)))))
+    (let [params (:params request)
+          coerced-params (utils/map-vals coerce-param params)
+          request (assoc request :params coerced-params
+                                 :coerced-params coerced-params
+                                 :raw-params params)]
+      (handler request))))
 
 
-(defn wrap-api-errors [handler routes]
-  (fn [request]
-    (try
-      (handler request)
-      (catch Exception e
-        (let [error-fn (router/api-server-error-fn routes)
-              request (merge request {:message (.getMessage e)
-                                      :ex-data (ex-data e)
-                                      :stacktrace (with-out-str
-                                                   (st/print-stack-trace e))})]
-          (if (fn? error-fn)
-            (error-fn request)
-            (res/server-error request :json)))))))
+(defn body-parser
+  ([handler]
+   (body-parser handler {}))
+  ([handler opts]
+   (let [opts (site-defaults opts)]
+     (-> handler
+         (wrap wrap-keyword-params (get-in opts [:params :keywordize] false))
+         (wrap wrap-nested-params (get-in opts [:params :nested] false))
+         (wrap wrap-multipart-params (get-in opts [:params :multipart] false))
+         (wrap wrap-params (get-in opts [:params :urlencoded] false))
+         (coerce-params)))))
 
 
-(defn ring-response-json [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (cond
-        (vector? response) (res/ok response :json)
-        (and (map? response)
-             (contains? response :status)
-             (contains? response :headers)) (assoc-in response [:headers "content-type"] "application/json")
-        (map? response) (res/ok response :json)
-        (string? response) (res/ok response :json)
-        (nil? response) (res/ok "" :json)
-        :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
+(defn cookies
+  ([handler]
+   (cookies handler {}))
+  ([handler options]
+   (let [options (site-defaults options)]
+     (wrap handler wrap-cookies (get-in options [:cookies] false)))))
 
 
-(defn api-routes [& routes]
-  (router/wrap-routes ring-response-json routes))
-
-
-(defn api [& routes]
-  (apply api-routes routes))
-
-
-(defn wrap-plain-text-response [handler]
-  (fn [request]
-    (let [response (handler request)
-          headers (:headers response)
-          headers (utils/map-keys string/lower-case headers)
-          content-type (get headers "content-type")]
-      (if (or (string/blank? content-type)
-              (= "application/octet-stream" content-type))
-        (assoc-in response [:headers "Content-Type"] "text/plain")
-        response))))
+(defn head [handler]
+  (ring.middleware.head/wrap-head handler))
