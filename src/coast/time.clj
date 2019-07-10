@@ -1,81 +1,120 @@
 (ns coast.time
-  (:import (java.time LocalDateTime OffsetDateTime ZoneOffset ZoneId)
+  (:import (java.time Instant ZoneId ZoneOffset ZonedDateTime LocalDate)
            (java.time.format DateTimeFormatter)
-           (java.time.temporal ChronoUnit)))
-
-(defn fmt [d pattern]
-  (when (or (instance? LocalDateTime d)
-            (instance? OffsetDateTime d))
-    (let [formatter (DateTimeFormatter/ofPattern pattern)]
-      (.format formatter d))))
-
-(defn now
-  ([]
-   (LocalDateTime/now))
-  ([tz]
-   (LocalDateTime/now (ZoneId/of tz))))
+           (java.util Locale Date)))
 
 
-(defn offset []
-  (OffsetDateTime/now))
+(defn epoch
+  ([s pattern]
+   (let [formatter (if (some? pattern)
+                     (DateTimeFormatter/ofPattern pattern Locale/ENGLISH)
+                     nil)
+         zdt (if (some? formatter)
+               (ZonedDateTime/parse s formatter)
+               (ZonedDateTime/parse s))]
+     (-> (.toInstant zdt)
+         (.toEpochMilli)
+         (quot 1000))))
+  ([s]
+   (epoch s nil)))
 
 
-(defn local
-  ([d tz]
-   (when (instance? java.util.Date d)
-     (LocalDateTime/ofInstant (.toInstant d) tz)))
-  ([d]
-   (local d ZoneOffset/UTC)))
+(defn zoned
+  ([seconds]
+   (zoned seconds "UTC"))
+  ([seconds timezone]
+   (let [zone-id (ZoneId/of (or timezone "UTC"))]
+     (-> (Instant/ofEpochSecond seconds)
+         (ZonedDateTime/ofInstant zone-id)))))
 
-(defn since
-  ([t tz]
-   (let [n (now (or tz "UTC"))
-         t (if (nil? tz)
-             (local t)
-             (local t (ZoneId/of tz)))]
-     {:hours (.between (ChronoUnit/HOURS) t n)
-      :minutes (.between (ChronoUnit/MINUTES) t n)
-      :seconds (.between (ChronoUnit/SECONDS) t n)}))
-  ([t]
-   (since t nil)))
 
-(defn parse [s]
-  (OffsetDateTime/parse s))
+(defn fmt
+  ([date-time]
+   (fmt date-time "MM/dd/YYYY HH:mm:ss"))
+  ([date-time pattern]
+   (let [formatter (DateTimeFormatter/ofPattern pattern Locale/ENGLISH)]
+     (.format date-time formatter))))
 
-(defn at [val k]
-  (when (and (integer? val)
-             (qualified-keyword? k))
-    (case k
-      :nanos/from-now (-> (now) (.plusNanos val))
-      :nano/from-now (-> (now) (.plusNanos val))
-      :seconds/from-now (-> (now) (.plusSeconds val))
-      :second/from-now (-> (now) (.plusSeconds val))
-      :minutes/from-now (-> (now) (.plusMinutes val))
-      :minute/from-now (-> (now) (.plusMinutes val))
-      :hours/from-now (-> (now) (.plusHours val))
-      :hour/from-now (-> (now) (.plusHours val))
-      :days/from-now (-> (now) (.plusDays val))
-      :day/from-now (-> (now) (.plusDays val))
-      :weeks/from-now (-> (now) (.plusWeeks val))
-      :week/from-now (-> (now) (.plusWeeks val))
-      :months/from-now (-> (now) (.plusMonths val))
-      :month/from-now (-> (now) (.plusMonths val))
-      :years/from-now (-> (now) (.plusYears val))
-      :year/from-now (-> (now) (.plusYears val))
-      :nanos/ago (-> (now) (.minusNanos val))
-      :nano/ago (-> (now) (.minusNanos val))
-      :seconds/ago (-> (now) (.minusSeconds val))
-      :second/ago (-> (now) (.minusSeconds val))
-      :minutes/ago (-> (now) (.minusMinutes val))
-      :minute/ago (-> (now) (.minusMinutes val))
-      :hours/ago (-> (now) (.minusHours val))
-      :hour/ago (-> (now) (.minusHours val))
-      :days/ago (-> (now) (.minusDays val))
-      :day/ago (-> (now) (.minusDays val))
-      :weeks/ago (-> (now) (.minusWeeks val))
-      :week/ago (-> (now) (.minusWeeks val))
-      :months/ago (-> (now) (.minusMonths val))
-      :month/ago (-> (now) (.minusMonths val))
-      :years/ago (-> (now) (.minusYears val))
-      :year/ago (-> (now) (.minusYears val))
-      :else nil)))
+
+
+(defn date [seconds]
+  (-> (Instant/ofEpochSecond seconds)
+      (Date/from)))
+
+
+(defn now []
+  (quot (-> (Instant/now) .toEpochMilli) 1000))
+
+
+(defn now-millis []
+  (-> (Instant/now) .toEpochMilli))
+
+
+(def options {:seconds 1 :second 1
+              :minutes 60 :minute 60
+              :hour 3600 :hours 3600
+              :day 86400 :days 86400
+              :week 604800 :weeks 604800
+              :year 31557600 :years 31557600})
+
+
+(defn at
+  ([t num k]
+   (let [val (get options k)]
+     (+ t (* val num))))
+  ([num k]
+   (at (now) num k)))
+
+
+(defn forward
+  ([t num k]
+   (at num k))
+  ([num k]
+   (forward (now) num k)))
+
+
+(defn backward
+  ([t num k]
+   (at (* -1 num) k))
+  ([num k]
+   (backward (now) num k)))
+
+
+(defn in-time-zone [t tz]
+  (let [hours (-> (zoned t tz)
+                  (.getOffset)
+                  (.getTotalSeconds)
+                  (quot 3600))]
+    (at t hours :hours)))
+
+
+(defn start-of
+  ([t k]
+   (- t (mod t (get options k))))
+  ([k]
+   (start-of (now) k)))
+
+
+(defn end-of
+  ([t k]
+   (+ (start-of t k) (- (get options k) 1)))
+  ([k]
+   (end-of (now) k)))
+
+
+(defn pluralize [s num]
+  (if (= num 1)
+    (str s)
+    (str s "s")))
+
+
+(defn ago [t]
+  (let [d (- (now) t)]
+    (cond
+      (< d 60) (str d " " (pluralize "second" d) " ago")
+      (< d 3600) (let [minutes (quot d 60)]
+                   (str minutes " " (pluralize "minute" minutes) " ago"))
+      (< d 86400) (let [hours (quot d 3600)]
+                    (str hours " " (pluralize "hour" hours) " ago"))
+      :else (let [days (quot d 86400)]
+              (str days " " (pluralize "day" days) " ago")))))
