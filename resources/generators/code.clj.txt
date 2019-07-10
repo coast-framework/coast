@@ -1,50 +1,74 @@
-(ns __table__
+(ns routes.__table__
   (:require [coast]
-            [components :refer [container tc link-to table thead tbody td th tr button-to text-muted mr2 dl dd dt submit input label]]))
+            [components :refer :all]))
+
+
+(defn assoc-__table__ [handler]
+  (fn [request]
+    (let [id (get-in request [:params :id])
+          __table__ (coast/fetch :__table__ id)]
+      (handler (assoc request :__table__ __table__)))))
+
+
+(def routes
+  (coast/routes
+    [:get "/__table__" ::index]
+    [:get "/__table__/build" ::build]
+    [:post "/__table__" ::create]
+
+    (coast/middleware assoc-__table__
+      [:get "/__table__/:id" ::show]
+      [:get "/__table__/:id/edit" ::edit]
+      [:patch "/__table__/:id" ::patch]
+      [:delete "/__table__/:id" ::delete])))
+
+
+(def validate
+  (coast/params :__table__
+    [:required [__keywords__]]))
+
+
+(def insert-cols
+  (coast/columns :__table__ [__keywords__]))
+
+
+(def patch-cols
+  (coast/columns :__table__ [__keywords__]))
 
 
 (defn index [request]
-  (let [rows (coast/q '[:select *
-                        :from __table__
-                        :order id
-                        :limit 10])]
-    (container {:mw 8}
-     (when (not (empty? rows))
-      (link-to (coast/url-for ::build) "New __table__"))
+  (let [rows (coast/fetch :__table__)]
+    (container
+      (vstack {:spacing "m"}
+        (link-to [::build] "New __table__")
 
-     (when (empty? rows)
-      (tc
-        (link-to (coast/url-for ::build) "New __table__")))
-
-     (when (not (empty? rows))
-       (table
-        (thead
-          (tr
-            __table-headers__))
-        (tbody
-          (for [row rows]
-            (tr
-              __table-data__
-              (td
-                (link-to (coast/url-for ::view row) "View"))
-              (td
-                (link-to (coast/url-for ::edit row) "Edit"))
-              (td
-                (button-to (coast/action-for ::delete row) {:data-confirm "Are you sure?"} "Delete"))))))))))
+        (when (not (empty? rows))
+          (table
+            (thead
+              (tr
+                __table-headers__))
+            (tbody
+              (for [row rows]
+                (tr
+                  __table-data__
+                  (td
+                    (link-to [::show row] "Show"))
+                  (td
+                    (link-to [::edit row] "Edit"))
+                  (td
+                    (button-to [::delete row] {:data-confirm "Are you sure?"} "Delete")))))))))))
 
 
-(defn view [request]
-  (let [id (-> request :params :__table__-id)
-        __table__ (coast/fetch :__table__ id)]
-    (container {:mw 8}
-      (dl
-        __data-elements__)
-      (mr2
-        (link-to (coast/url-for ::index) "List"))
-      (mr2
-        (link-to (coast/url-for ::edit {::id id}) "Edit"))
-      (mr2
-        (button-to (coast/action-for ::delete {::id id}) {:data-confirm "Are you sure?"} "Delete")))))
+(defn show [request]
+  (let [__table__ (get request :__table__)]
+    (container
+      (vstack {:spacing "m"}
+        (dl
+          __data-elements__)
+        (link-to [::index] "List")
+        (link-to [::edit __table__] "Edit")
+        (button-to [::delete __table__] {:data-confirm "Are you sure?"}
+          "Delete")))))
 
 
 (defn errors [m]
@@ -58,58 +82,59 @@
 
 
 (defn build [request]
-  (container {:mw 6}
-    (when (some? (:errors request))
-     (errors (:errors request)))
+  (container {:class "mw6"}
+    (vstack {:spacing "m"}
+      (when (some? (:errors request))
+       (errors (:errors request)))
 
-    (coast/form-for ::create
-      __form-elements__
+      (form-for [::create]
+        __form-elements__
 
-      (link-to (coast/url-for ::index) "Cancel")
-      (submit "New __table__"))))
+        (link-to [::index] "Cancel")
+        (submit "New __table__")))))
 
 
 (defn create [request]
-  (let [[_ errors] (-> (coast/validate (:params request) [[:required [__qualified-keywords__]]])
-                       (select-keys [__qualified-keywords__])
-                       (coast/insert)
-                       (coast/rescue))]
+  (let [params (get request :params)
+        [_ errors] (->> (validate params)
+                        (insert-cols)
+                        (coast/insert)
+                        (coast/rescue))]
     (if (nil? errors)
       (coast/redirect-to ::index)
       (build (merge request errors)))))
 
 
 (defn edit [request]
-  (let [__table__ (coast/fetch :__table__ (-> request :params :__table__-id))]
-    (container {:mw 6}
-      (when (some? (:errors request))
-        (errors (:errors request)))
+  (let [__table__ (get request :__table__)]
+    (container {:class "mw6"}
+      (vstack {:spacing "m"}
+        (when (some? (:errors request))
+          (errors (:errors request)))
 
-      (coast/form-for ::change __table__
-        __edit-elements__
+        (form-for [::patch __table__]
+          __form-elements__
 
-        (link-to (coast/url-for ::index) "Cancel")
-        (submit "Update __table__")))))
+          (link-to [::index] "Cancel")
+          (submit "Update __table__"))))))
 
 
-(defn change [request]
-  (let [__table__ (coast/fetch :__table__ (-> request :params :__table__-id))
-        [_ errors] (-> (select-keys __table__ [:__table__/id])
-                       (merge (:params request))
-                       (coast/validate [[:required [__change-keywords__]]])
-                       (select-keys [__change-keywords__])
-                       (coast/update)
-                       (coast/rescue))]
+(defn patch [request]
+  (let [__table__ (get request :__table__)
+        [_ errors] (->> (merge __table__ (:params request))
+                        (validate)
+                        (patch-cols)
+                        (coast/update)
+                        (coast/rescue))]
     (if (nil? errors)
       (coast/redirect-to ::index)
-      (edit (merge request errors)))))
+      (edit (assoc request :errors errors)))))
 
 
 (defn delete [request]
-  (let [[_ errors] (-> (coast/fetch :__table__ (-> request :params :__table__-id))
-                       (coast/delete)
-                       (coast/rescue))]
-    (if (nil? errors)
-      (coast/redirect-to ::index)
+  (let [__table__ (get request :__table__)
+        deleted (coast/delete {:__table__ __table__})]
+    (if (zero? deleted)
       (-> (coast/redirect-to ::index)
-          (coast/flash "Something went wrong!")))))
+          (coast/flash "Something went wrong!"))
+      (coast/redirect-to ::index))))

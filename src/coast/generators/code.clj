@@ -33,12 +33,12 @@
     true))
 
 
-(defn form-element [k]
-  (str "(label {:for \"" (str (namespace k) "/" (name k)) "\"} \""(name k) "\")\n      (input {:type \"text\" :name \"" (str (namespace k) "/" (name k)) "\" :value (-> request :params "(str k)")})"))
+(defn form-element [table col]
+  (str "(label {:for \"" (str table "[" (name col)) "]\"} \""(name col) "\")\n        (text-field :" table " :" (name col) ")"))
 
 
-(defn edit-element [k]
-  (str "(label {:for \"" (str (namespace k) "/" (name k)) "\"} \""(name k) "\")\n        (input {:type \"text\" :name \"" (str (namespace k) "/" (name k)) "\" :value ("(str k) " " (namespace  k)")})"))
+(defn edit-element [table col]
+  (str "(label {:for \"" (str table "[" (name col)) "]\"} \""(name col) "\")\n         (text-field :" table " :" (name col) " :value (:" (name col) " " table "))"))
 
 
 (defn columns [table]
@@ -70,7 +70,7 @@
                   (map utils/kebab-case)
                   (set))
         cols (set/difference cols excluded-cols)]
-    (map #(keyword table %) cols)))
+    (map keyword cols)))
 
 
 (defn spit! [f s]
@@ -82,37 +82,36 @@
     (spit f s)))
 
 
-(defn dl-element [k]
-  (str "(dt \"" (name k) "\")\n        (dd (" (str k) " " (namespace k) "))"))
+(defn dl-element [table col]
+  (str "(dt \"" (name col) "\")\n          (dd (" (str col) " " table "))"))
 
 
 (defn table-headers [cols]
-  (string/join "\n            "
+  (string/join "\n                "
     (map #(str "(th \"" (name %) "\")") cols)))
 
 
 (defn table-data [cols]
-  (string/join "\n              "
+  (string/join "\n                  "
     (map #(str "(td (" (str %) " row))") cols)))
 
 
 (defn write [table]
-  (let [filename (str "src/" table ".clj")
+  (let [filename (str "src/routes/" table ".clj")
         template "generators/code.clj.txt"]
     (if (overwrite? filename)
       (let [cols (cols! table true)
             all-cols (cols! table false)]
         (->> (io/resource template)
              (slurp)
-             (fill {:qualified-keywords (string/join " " cols)
+             (fill {:keywords (string/join " " cols)
                     :qualified-symbols (string/join " " (map utils/keyword->symbol cols))
-                    :change-keywords (string/join " " (conj cols (keyword table "id")))
-                    :form-elements (string/join "\n\n      "
-                                    (map form-element cols))
+                    :form-elements (string/join "\n\n        "
+                                    (map #(form-element table %) cols))
                     :edit-elements (string/join "\n\n        "
-                                    (map edit-element cols))
+                                    (map #(edit-element table %) cols))
                     :data-elements (string/join "\n\n        "
-                                     (map dl-element cols))
+                                     (map #(dl-element table %) cols))
                     :table (utils/kebab-case table)
                     :table-headers (table-headers all-cols)
                     :table-data (table-data all-cols)})
