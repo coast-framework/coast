@@ -1,7 +1,5 @@
 (ns coast.generators.migration
-  (:require [coast.db]
-            [clojure.set :as set]
-            [coast.time :as time]
+  (:require [coast.time :as time]
             [coast.utils :as utils]
             [clojure.java.io :as io]
             [clojure.string :as string])
@@ -9,6 +7,7 @@
 
 (defn timestamp []
   (-> (time/now)
+      (time/zoned)
       (time/fmt "yyyyMMddHHmmss")))
 
 (defn column [s]
