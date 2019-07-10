@@ -19,7 +19,7 @@
         ring/ring-anti-forgery {:mvn/version "1.3.0"}
         javax.servlet/javax.servlet-api {:mvn/version "3.1.0"}}
 
- :aliases {:repl {:jvm-opts ["-Dclojure.server.repl={:port,7777,:accept,clojure.core.server/repl}"]}
+ :aliases {:repl {:jvm-opts ["-Dclojure.server.repl={:port,5556,:accept,clojure.core.server/repl}"]}
 
            :test {:extra-paths ["test"]
                   :main-opts ["-m" "cognitect.test-runner"]
