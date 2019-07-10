@@ -2,6 +2,8 @@
 
  :deps {asset-minifier {:mvn/version "0.2.7"}
         com.zaxxer/HikariCP {:mvn/version "2.7.8"}
+        coast-framework/error {:git/url "https://github.com/coast-framework/error"
+                               :sha "0bd05b335114d67fef7a9285dfaa882b92bed722"}
         org.slf4j/slf4j-nop {:mvn/version "1.7.25"}
         hiccup {:mvn/version "2.0.0-alpha2"}
         http-kit {:mvn/version "2.4.0-alpha3"}
