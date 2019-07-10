@@ -219,3 +219,15 @@
 (defn namespace* [arg]
   (when (qualified-keyword? arg)
     (namespace arg)))
+
+
+(defn ? [val]
+  (cond
+    (and (sequential? val)
+         (every? sequential? val)) (->> (map ? val)
+                                        (string/join ", "))
+    (sequential? val) (->> (map ? val)
+                           (string/join ", ")
+                           (surround "()"))
+    (nil? val) "null"
+    :else "?"))
