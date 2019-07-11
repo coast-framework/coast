@@ -14,7 +14,7 @@
             [coast.db.helpers :as helpers]
             [coast.migrations :as migrations]
             [coast.utils :as utils]
-            [coast.error :refer [raise rescue]]
+            [error.core :as error]
             [clojure.java.shell :as shell]
             [clojure.java.io :as io])
   (:import (java.io File)
@@ -66,11 +66,7 @@
 
 (defn first! [coll]
   (or (first coll)
-      (raise "Record not found" {:coast.router/error :404
-                                 :404 true
-                                 :not-found true
-                                 :type :404
-                                 ::error :not-found})))
+      (error/raise "Record not found" :404)))
 
 (defn create
  "Creates a new database"
