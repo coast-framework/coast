@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [clojure.walk :as walk]
             [coast.utils :as utils]
-            [coast.time2 :as time2])
+            [coast.time :as time])
   (:refer-clojure :exclude [update]))
 
 
@@ -122,7 +122,7 @@
 
 
 (defn update-set [v]
-  (let [v (conj v [:updated-at (time2/now)])
+  (let [v (conj v [:updated-at (time/now)])
         args (filter #(not= "id" (-> % first name)) v)]
     {:update-set (str "set " (->> (map (fn [[k _]] (str (-> k name utils/snake-case) " = ?")) args)
                                   (distinct)
@@ -137,7 +137,7 @@
                                                (distinct)
                                                (map utils/sqlize)
                                                (string/join ", ")))
-     :do-update-set-args (list (time2/now))}))
+     :do-update-set-args (list (time/now))}))
 
 
 (defn from [v]
