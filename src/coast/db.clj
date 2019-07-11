@@ -551,7 +551,6 @@
 
 (def migrate migrations/migrate)
 (def rollback migrations/rollback)
-(def reconnect! db.connection/reconnect!)
 
 (defn -main [& [action db-name]]
   (case action
