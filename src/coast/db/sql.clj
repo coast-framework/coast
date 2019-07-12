@@ -118,11 +118,11 @@
 
 (defn update [v]
   (let [table (-> v first utils/snake-case)]
-    {:update (str "update " table)}))
+    {:update (str "update " (utils/sqlize table))}))
 
 
 (defn update-set [v]
-  (let [v (conj v [:updated-at (time/now)])
+  (let [;v (conj v [:updated-at (time/now)])
         args (filter #(not= "id" (-> % first name)) v)]
     {:update-set (str "set " (->> (map (fn [[k _]] (str (-> k name utils/snake-case) " = ?")) args)
                                   (distinct)
@@ -131,7 +131,7 @@
 
 
 (defn do-update-set [v]
-  (let [v (conj v [:updated-at "?"])
+  (let [;v (conj v [:updated-at "?"])
         args (filter #(not= "id" (-> % first name)) v)]
     {:do-update-set (str "do update set " (->> (map (fn [[k v]] (str (-> k name utils/snake-case) " = " v)) args)
                                                (distinct)
@@ -510,31 +510,33 @@
 
 (defn sql-vec
   "Generates a jdbc sql vector from an ident sql vector"
-  [adapter col-map associations v params]
-  (let [m (->> (replace-vals v params)
-               (sql-map)
-               (expand-select-asterisks col-map)
-               (fmt-pull)
-               (expand-pull-asterisk associations col-map)
-               (expand-select)
-               (all-joins)
-               (map #(sql-part adapter %))
-               (apply merge)
-               (pull adapter associations))
-        {:keys [select join left-join right-join
-                left-outer-join right-outer-join full-join
-                full-join cross-join full-outer-join
-                where order offset
-                limit group args delete
-                insert values update from
-                update-set update-set-args
-                do-update-set on-conflict do-update-set-args]} m
-        sql (->> (filter #(not (string/blank? %)) [select delete from
-                                                   update update-set insert values
-                                                   on-conflict do-update-set
-                                                   join left-join right-join
-                                                   left-outer-join right-outer-join
-                                                   full-join cross-join full-outer-join
-                                                   where group order offset limit])
-                 (string/join " "))]
-    (apply conj [sql] (concat update-set-args (filter some? (utils/flat args)) do-update-set-args))))
+  ([ctx v]
+   (sql-vec ctx v {}))
+  ([ctx v params]
+   (let [{:keys [adapter col-map associations]} ctx
+         m (->> (replace-vals v params)
+                (sql-map)
+                (fmt-pull)
+                (expand-pull-asterisk associations col-map)
+                (expand-select)
+                (all-joins)
+                (map #(sql-part adapter %))
+                (apply merge)
+                (pull adapter associations))
+         {:keys [select join left-join right-join
+                 left-outer-join right-outer-join full-join
+                 full-join cross-join full-outer-join
+                 where order offset
+                 limit group args delete
+                 insert values update from
+                 update-set update-set-args
+                 do-update-set on-conflict do-update-set-args]} m
+         sql (->> (filter #(not (string/blank? %)) [select delete from
+                                                    update update-set insert values
+                                                    on-conflict do-update-set
+                                                    join left-join right-join
+                                                    left-outer-join right-outer-join
+                                                    full-join cross-join full-outer-join
+                                                    where group order offset limit])
+                  (string/join " "))]
+     (apply conj [sql] (concat update-set-args (filter some? (utils/flat args)) do-update-set-args)))))

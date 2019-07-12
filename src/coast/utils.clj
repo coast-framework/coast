@@ -103,13 +103,16 @@
   (when (symbol? sym)
     (resolve sym)))
 
+
 (defn sqlize [val]
   (cond
     (qualified-ident? val) (str (-> val namespace snake-case) "." (-> val name snake-case))
     (ident? val) (-> val name snake-case)
     (string? val) (snake-case val)
     (nil? val) val
+    (map? val) (map-keys sqlize val)
     :else (throw (Exception. (str val " is not an ident or a string. Example: :customer, :public/customer or \"customer\"")))))
+
 
 (defn vectorize [val]
   (if (sequential? val)

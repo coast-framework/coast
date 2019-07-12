@@ -113,7 +113,7 @@
           (errors (:errors request)))
 
         (form-for [::patch __table__]
-          __form-elements__
+          __edit-elements__
 
           (link-to [::index] "Cancel")
           (submit "Update __table__"))))))

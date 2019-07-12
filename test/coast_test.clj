@@ -48,28 +48,13 @@
              (:body (app {:request-method :post :uri "/"})))))))
 
 
-(deftest site-routes-test
-  (let [routes {:routes (coast/site
-                         [:get "/" ::get*]
-                         [:post "/" ::post])
-                :logger false}
-        app (coast/app routes)]
-    (testing "get from site routes"
-      (is (= "get successful"
-             (:body (app {:request-method :get :uri "/"})))))
-
-    (testing "post from site routes"
-      (is (= 403
-             (:status (app {:request-method :post :uri "/"})))))))
-
-
 (deftest api-routes-test
-  (let [routes {:routes (coast/api
-                         (coast/with-prefix "/api"
-                           [:get "/" ::api-get]
-                           [:post "/" ::api-post]))
-                :logger false}
-        app (coast/app routes)]
+  (let [routes (coast/routes
+                (coast/prefix "/api"
+                  [:get "/" ::api-get]
+                  [:post "/" ::api-post]))
+        app (-> (coast/app routes)
+                (coast/json))]
     (testing "get from api routes"
       (is (= "{\"status\":\"up\"}"
              (:body (app {:request-method :get :uri "/api"})))))
@@ -88,16 +73,19 @@
 
 
 (deftest api-and-site-routes-test
-  (let [routes {:routes (coast/routes
-                         (coast/site
-                           [:get "/" ::get*]
-                           [:post "/" ::post])
-                         (coast/api
-                          (coast/with-prefix "/api"
-                            [:get "/" ::api-get]
-                            [:post "/" ::api-post])))
-                :logger false}
-        app (coast/app routes)]
+  (let [site-routes (coast/routes
+                      [:get "/" ::get*]
+                      [:post "/" ::post])
+        api-routes (coast/routes
+                    (coast/prefix "/api"
+                      [:get "/" ::api-get]
+                      [:post "/" ::api-post]))
+        site (-> (coast/app site-routes)
+                 (coast/sessions)
+                 (coast/body-parser))
+        api (-> (coast/app api-routes)
+                (coast/json))
+        app (coast/apps api site)]
     (testing "get from api routes"
       (is (= "{\"status\":\"up\"}"
              (:body (app {:request-method :get :uri "/api"})))))
@@ -135,3 +123,22 @@
     (testing "delete request"
       (is (= "i'm a delete"
              (:body (app {:request-method :delete :uri "/"})))))))
+
+(deftest url-for-test
+  (let [routes (coast/routes
+                 [:get "/" ::home]
+                 [:post "/" ::home-action]
+                 [:get "/hello" ::hello]
+                 [:get "/hello/:id" ::hello-id])
+        _ (coast/app routes)]
+    (testing "url-for without a map"
+      (is (= "/" (coast/url-for ::home))))
+
+    (testing "url-for with a map with no url params"
+      (is (= "/hello?key=value" (coast/url-for ::hello {:key "value"}))))
+
+    (testing "url-for with a map with url params"
+      (is (= "/hello/1?key=value" (coast/url-for ::hello-id {:id 1 :key "value"}))))
+
+    (testing "url-for with a map, a url param and a #"
+      (is (= "/hello/2?key=value#anchor" (coast/url-for ::hello-id {:id 2 :key "value" :# "anchor"}))))))

@@ -1,100 +1,93 @@
 (ns coast
   (:require [coast.potemkin.namespaces :as namespaces]
-            [hiccup2.core]
+            [coast.components]
+            [coast.middleware]
+            [coast.router]
+            [coast.core]
+            [coast.response]
             [coast.db]
             [coast.db.connection]
-            [coast.theta]
-            [coast.env]
-            [coast.time2]
-            [coast.components]
-            [coast.responses]
+            [coast.validator]
             [coast.utils]
-            [coast.error]
-            [coast.router]
-            [coast.validation])
+            [coast.env]
+            [error.core]
+            [hiccup2.core])
   (:refer-clojure :exclude [update]))
 
+
 (namespaces/import-vars
-  [coast.responses
-   ok
-   bad-request
-   not-found
-   unauthorized
-   server-error
-   redirect
-   flash]
+ [hiccup2.core
+  raw]
 
-  [coast.error
-   raise
-   rescue]
+ [coast.components
+  doctype
+  css
+  js
+  form]
 
-  [coast.db
-   q
-   pull
-   transact
-   delete
-   insert
-   update
-   first!
-   pluck
-   fetch
-   execute!
-   find-by
-   transaction
-   upsert
-   any-rows?]
+ [coast.middleware
+  layout
+  logger
+  assets
+  json
+  body-parser
+  sessions
+  reload
+  not-found
+  server-error
+  content-type?
+  head
+  cookies
+  security-headers]
 
-  [coast.db.connection
-   connection]
+ [coast.router
+  middleware
+  routes
+  prefix
+  url-for
+  action-for
+  redirect-to
+  app]
 
-  [coast.validation
-   validate]
+ [coast.core
+  apps
+  server]
 
-  [coast.components
-   csrf
-   form
-   js
-   css]
+ [coast.response
+  html
+  redirect
+  flash
+  render]
 
-  [coast.router
-   routes
-   wrap-routes
-   prefix-routes
-   with
-   with-prefix]
+ [coast.db
+  q
+  pull
+  fetch
+  insert
+  update
+  delete
+  execute!
+  find-by
+  transaction
+  upsert
+  any-rows?
+  defq]
 
-  [coast.middleware
-   wrap-with-layout
-   with-layout
-   wrap-layout
-   site-routes
-   site
-   api-routes
-   api
-   content-type?]
+ [coast.db.connection
+  connection]
 
-  [coast.theta
-   server
-   app
-   url-for
-   action-for
-   redirect-to
-   form-for]
+ [error.core
+  raise
+  rescue
+  try*]
 
-  [coast.env
-   env]
+ [coast.validator
+  params
+  columns]
 
-  [coast.utils
-   uuid
-   intern-var
-   xhr?]
+ [coast.utils
+  uuid
+  xhr?]
 
-  [coast.time2
-   now
-   datetime
-   instant
-   strftime]
-
-  [hiccup2.core
-   raw
-   html])
+ [coast.env
+  env])

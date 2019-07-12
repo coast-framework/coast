@@ -223,7 +223,10 @@
          col-map (col-map conn adapter)
          sql-vec (if (sql-vec? v)
                    v
-                   (sql/sql-vec adapter col-map associations v params))
+                   (sql/sql-vec {:adapter adapter
+                                 :col-map col-map
+                                 :associations associations}
+                    v params))
          _ (when (true? debug)
              (println sql-vec))
          rows (query conn
@@ -259,33 +262,14 @@
    (execute! nil v {})))
 
 
-(defn pluck
-  ([conn v params]
-   (first
-    (q conn v params)))
-  ([v params]
-   (if (and (vector? v)
-            (map? params))
-     (pluck nil v params)
-     (pluck v params {})))
-  ([v]
-   (pluck nil v {})))
-
-
 (defn fetch
-  ([conn k id]
-   (when (and (ident? k)
-              (some? id))
-     (first
-       (q conn '[:select *
-                 :from ?from
-                 :where [id ?id]
-                 :limit 1]
-               {:from k
-                :id id}))))
-  ([k id]
-   (fetch nil k id)))
-
+  "get-in but for your database"
+  [& args]
+  (let [v (apply helpers/fetch args)
+        rows (q (connection) v)]
+    (if (= (count rows) 1)
+      rows
+      (first rows))))
 
 
 (defn find-by
@@ -302,145 +286,18 @@
    (find-by nil k m)))
 
 
-(defn select-rels [m]
-  (let [schema (db.schema/fetch)]
-    (select-keys m (->> (:joins schema)
-                        (filter (fn [[_ v]] (qualified-ident? v)))
-                        (into {})
-                        (keys)))))
-
-(defn resolve-select-rels [m]
-  (let [queries (->> (filter (fn [[_ v]] (vector? v)) m)
-                     (db.transact/selects))
-        ids (->> (filter (fn [[_ v]] (number? v)) m)
-                 (mapv (fn [[k v]] [(keyword (namespace k) (name k)) v]))
-                 (into {}))
-        results (->> (map #(query (db.connection/connection) % {:keywordize? false
-                                                                :identifiers qualify-col})
-                          queries)
-                     (map first)
-                     (apply merge))]
-    (merge ids results)))
-
-(defn many-rels [m]
-  (select-keys m (->> (db.schema/fetch)
-                      (filter (fn [[_ v]] (and (or (contains? v :db/ref) (contains? v :db/joins))
-                                               (= :many (:db/type v)))))
-                      (map first))))
-
-(defn upsert-rel [parent [k v]]
-  (if (empty? v)
-    (let [schema (db.schema/fetch)
-          jk (or (get-in schema [k :db/joins])
-                 (get-in schema [k :db/ref]))
-          k-ns (-> jk namespace utils/snake)
-          join-ns (-> jk name utils/snake)
-          _ (query (connection) [(str "delete from " k-ns " where " join-ns " = ? returning *") (get parent (keyword join-ns "id"))])]
-      [k []])
-    (let [k-ns (->> v first keys (filter qualified-ident?) first namespace)
-          parent-map (->> (filter (fn [[k _]] (= (name k) "id")) parent)
-                          (map (fn [[k* v]] [(keyword k-ns (namespace k*)) v]))
-                          (into {}))
-          v* (mapv #(merge parent-map %) v)
-          sql-vec (db.transact/sql-vec v*)
-          rows (->> (query (connection) sql-vec)
-                    (mapv #(qualify-map k-ns %)))]
-      [k rows])))
-
-(defn upsert-rels [parent m]
-  (->> (map #(upsert-rel parent %) m)
-       (into {})))
-
-(defn transact [m]
-  "This function resolves foreign keys (or hydrates), it also deletes related rows based on idents as well as inserting and updating rows.
-
-  Here are some concrete examples:
-
-  Given this schema:
-
-  [{:db/ident :author/name
-    :db/type \"citext\"}
-
-   {:db/ident :author/email
-    :db/type \"citext\"}
-
-   {:db/rel :author/posts
-    :db/joins :post/author
-    :db/type :many}
-
-   {:db/col :post/title
-    :db/type \"text\"}
-
-   {:db/col :post/body
-    :db/type \"text\"}]
-
-  Insert multiple tables at once
-
-  (db/transact {:author/name \"test\"
-                :author/email \"test@test.com\"
-                :author/posts [{:post/title \"title\"
-                                :post/body \"body\"}]})
-
-  or just one
-
-  (db/transact {:author/name \"test2\"
-                :author/email \"test2@test.com\"})
-
-  Retrieve nested rows
-
-  (db/pull '[author/id author/name author/email
-             {:author/posts [post/id post/title post/body]}]
-           [:author/name \"test\"])
-
-  Update with the same command
-
-  (db/transact {:post/id 1
-                :post/author [:author/name \"test2\"]})
-
-  or the equivalent
-
-  (db/transact {:post/id 1
-                :post/author 2})
-
-  Delete multiple nested rows with one function
-
-  (db/transact {:author/id 2
-                :author/posts []})"
-
-  (let [k-ns (->> m keys (filter qualified-ident?) first namespace)
-        s-rels (select-rels m)
-        s-rel-results (resolve-select-rels s-rels) ; foreign keys
-        m-rels (many-rels m)
-        m* (merge m s-rel-results)
-        m* (apply dissoc m* (keys m-rels))
-        row (when (not (empty? (db.update/idents (map identity m*))))
-              (->> (db.update/sql-vec m*)
-                   (query (connection))
-                   (map #(qualify-map k-ns %))
-                   (single)))
-        row (if (empty? row)
-              (->> (db.insert/sql-vec m*)
-                   (query (connection))
-                   (map #(qualify-map k-ns %))
-                   (single))
-              row)
-        rel-rows (upsert-rels row m-rels)]
-    (merge row rel-rows)))
-
 (defn insert
   ([conn arg]
    (let [{:keys [adapter]} (db.connection/spec)
          v (helpers/insert arg)]
      (condp = adapter
-       "sqlite" (if (nil? conn)
-                  (transaction c
-                    (execute! c v)
-                    (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
-                          table (if (sequential? arg)
-                                  (-> arg first keys first namespace)
-                                  (-> arg keys first namespace))]
-                      (fetch c (keyword table) id)))
-                  (execute! conn v))
+       "sqlite" (jdbc/with-db-transaction [c (or conn (connection))]
+                  (execute! c v)
+                  (let [{id :id} (first (q c ["select last_insert_rowid() as id"]))
+                        table (if (sequential? arg)
+                                (-> arg first keys first namespace)
+                                (-> arg keys first namespace))]
+                    (fetch c (keyword table) id)))
        "postgres" (let [v (conj v :returning :*)]
                     (q conn v)))))
   ([arg]
@@ -452,17 +309,15 @@
    (let [{:keys [adapter]} (db.connection/spec)
          v (helpers/update arg)]
      (condp = adapter
-       "sqlite" (if (nil? conn)
-                  (transaction c
-                    (execute! c v)
-                    (let [table (if (sequential? arg)
-                                  (-> arg first keys first namespace)
-                                  (-> arg keys first namespace))
-                          id (if (sequential? arg)
-                               (get-in arg [0 (keyword table "id")])
-                               (get arg (keyword table "id")))]
-                      (fetch c (keyword table) id)))
-                  (execute! conn v))
+       "sqlite" (jdbc/with-db-transaction [c (or conn (connection))]
+                  (execute! c v)
+                  (let [table (if (sequential? arg)
+                                (-> arg first keys first namespace)
+                                (-> arg keys first namespace))
+                        id (if (sequential? arg)
+                             (get-in arg [0 (keyword table "id")])
+                             (get arg (keyword table "id")))]
+                    (fetch c (keyword table) id)))
        "postgres" (let [v (conj v :returning :*)]
                     (q conn v)))))
   ([arg]
@@ -488,35 +343,30 @@
        (throw (Exception. "coast/upsert expects a map with qualified keywords")))
 
      (condp = adapter
-       "sqlite" (if (nil? conn)
-                  (transaction c
-                    (let [{sql :sql} (pluck c ["select sql from sqlite_master where type = ? and name = ?" "table" table-name])
-                          on-conflict (if (list? (:on-conflict opts))
-                                        (:on-conflict opts)
-                                        (unique-column-names sql))
-                          v (helpers/upsert arg {:on-conflict on-conflict})]
-                      (execute! c v)
-                      (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
-                            id (if (zero? id)
-                                 (get (find-by c (keyword table-name) (select-keys arg (mapv #(keyword table-name %) on-conflict)))
-                                      (keyword table-name "id"))
-                                 id)
-                            table (if (sequential? arg)
-                                    (-> arg first keys first namespace)
-                                    (-> arg keys first namespace))]
-                        (fetch c (keyword table) id))))
-                  (execute! conn (apply helpers/upsert arg opts)))
-       "postgres" (if (nil? conn)
-                    (transaction c
-                      (let [{indexdef :indexdef} (pluck c ["select indexdef from pg_indexes where tablename = ?" table-name])
-                            on-conflict (-> (re-find #"\((.*)\)" indexdef)
-                                            (last)
-                                            (string/split #","))
-                            v (helpers/upsert arg {:on-conflict on-conflict})
-                            v (conj v :returning :*)]
-                        (q c v)))
-                    (q conn (conj (helpers/upsert arg opts)
-                                  :returning :*))))))
+       "sqlite" (jdbc/with-db-transaction [c (or conn (connection))]
+                  (let [{sql :sql} (first (q c ["select sql from sqlite_master where type = ? and name = ?" "table" table-name]))
+                        on-conflict (if (list? (:on-conflict opts))
+                                      (:on-conflict opts)
+                                      (unique-column-names sql))
+                        v (helpers/upsert arg {:on-conflict on-conflict})]
+                    (execute! c v)
+                    (let [{id :id} (first (q c ["select last_insert_rowid() as id"]))
+                          id (if (zero? id)
+                               (get (find-by c (keyword table-name) (select-keys arg (mapv #(keyword table-name %) on-conflict)))
+                                    (keyword table-name "id"))
+                               id)
+                          table (if (sequential? arg)
+                                  (-> arg first keys first namespace)
+                                  (-> arg keys first namespace))]
+                      (fetch c (keyword table) id))))
+       "postgres" (jdbc/with-db-transaction [c (or conn (connection))]
+                    (let [{indexdef :indexdef} (first (q c ["select indexdef from pg_indexes where tablename = ?" table-name]))
+                          on-conflict (-> (re-find #"\((.*)\)" indexdef)
+                                          (last)
+                                          (string/split #","))
+                          v (helpers/upsert arg {:on-conflict on-conflict})
+                          v (conj v :returning :*)]
+                      (q c v))))))
   ([arg]
    (upsert nil arg {})))
 
@@ -534,19 +384,22 @@
    (delete nil arg)))
 
 
+(defn not-empty? [val]
+  ((comp not empty) val))
+
+
 (defn pull [v ident]
-  (pluck
-   [:pull v
-    :from (-> ident first namespace)
-    :where ident]))
+  (not-empty?
+    (q [:pull v
+        :from (-> ident first namespace)
+        :where ident])))
 
 
 (defn any-rows? [table]
-  (some?
-   (pluck
-    [:select :*
-     :from (keyword table)
-     :limit 1])))
+  (not-empty?
+   (q [:select :*
+       :from (keyword table)
+       :limit 1])))
 
 
 (def migrate migrations/migrate)

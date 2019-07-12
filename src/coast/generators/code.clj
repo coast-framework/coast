@@ -38,7 +38,7 @@
 
 
 (defn edit-element [table col]
-  (str "(label {:for \"" (str table "[" (name col)) "]\"} \""(name col) "\")\n         (text-field :" table " :" (name col) " :value (:" (name col) " " table "))"))
+  (str "(label {:for \"" (str table "[" (name col)) "]\"} \""(name col) "\")\n          (text-field :" table " :" (name col) " :value (:" (name col) " " table "))"))
 
 
 (defn columns [table]
@@ -108,7 +108,7 @@
                     :qualified-symbols (string/join " " (map utils/keyword->symbol cols))
                     :form-elements (string/join "\n\n        "
                                     (map #(form-element table %) cols))
-                    :edit-elements (string/join "\n\n        "
+                    :edit-elements (string/join "\n\n          "
                                     (map #(edit-element table %) cols))
                     :data-elements (string/join "\n\n        "
                                      (map #(dl-element table %) cols))
