@@ -1,10 +1,10 @@
-(ns coast.generators.code
+(ns coast.generators.route
   (:require [clojure.string :as string]
             [clojure.java.io :as io]
-            [clojure.java.jdbc :as jdbc]
             [clojure.set :as set]
-            [coast.db.connection :refer [connection spec]]
-            [coast.utils :as utils])
+            [helper.core :as helper]
+            [db.core :as db]
+            [env.core :as env])
   (:import (java.io File)))
 
 
@@ -33,41 +33,54 @@
     true))
 
 
-(defn form-element [table col]
-  (str "(label {:for \"" (str table "[" (name col)) "]\"} \""(name col) "\")\n        (text-field :" table " :" (name col) ")"))
+(defn pad-right [n]
+  (format (str "%" n "s") ""))
 
 
-(defn edit-element [table col]
-  (str "(label {:for \"" (str table "[" (name col)) "]\"} \""(name col) "\")\n         (text-field :" table " :" (name col) " :value (:" (name col) " " table "))"))
+(defn form-element [{:keys [table col value padding]}]
+  (let [col-name (name col)
+        table-name (name table)
+        input-name (format "%s[%s]" table-name col-name)
+        value-attr (if (some? value)
+                     (format " :value (:%s %s)" col-name table-name)
+                     "")]
+    (string/join
+      (str "\n" (pad-right (or padding 8)))
+      [(format "(label {:for \"%s\"} \"%s\")" input-name col-name)
+       (format "(text-field :%s :%s%s)" table-name col-name value-attr)
+       (format "(field-error (-> errors :%s :%s))" table-name col-name)])))
 
 
 (defn columns [table]
-  (cond
-    (= (spec :adapter) "sqlite") (jdbc/query
-                                  (connection)
-                                  ["select p.name as column_name
+  (let [ctx (db/context (env/env :coast-env))
+        {:keys [adapter]} ctx
+        conn (db/connect ctx)]
+    (cond
+      (= adapter "sqlite") (db/query
+                            conn
+                            ["select p.name as column_name
                                    from sqlite_master m
                                    left outer join pragma_table_info((m.name)) p
                                          on m.name <> p.name
                                    where m.name = ?
                                    order by column_name" table])
-    (= (spec :adapter) "postgres") (jdbc/query
-                                    (connection)
-                                    ["select column_name
+      (= adapter "postgres") (db/query
+                              conn
+                              ["select column_name
                                       from information_schema.columns
                                       where table_schema not in ('pg_catalog', 'information_schema')
                                             and table_name = ?
                                       order by table_name, column_name" table])
-    :else []))
+      :else [])))
 
 (defn cols! [table exclude?]
   (let [excluded-cols (if exclude?
                         #{"id" "updated-at" "created-at"}
                         #{})
-        cols (columns (utils/sqlize table))
+        cols (columns (helper/sqlize table))
         cols (->> cols
-                  (map :column_name)
-                  (map utils/kebab-case)
+                  (map :column-name)
+                  (map helper/kebab-case)
                   (set))
         cols (set/difference cols excluded-cols)]
     (map keyword cols)))
@@ -83,36 +96,43 @@
 
 
 (defn dl-element [table col]
-  (str "(dt \"" (name col) "\")\n          (dd (" (str col) " " table "))"))
+  (let [col-name (name col)
+        table-name (name table)]
+    (string/join
+      (str "\n" (pad-right 10))
+      [(format "(dt \"%s\")" col-name)
+       (format "(dd (:%s %s))" col-name table-name)])))
 
 
 (defn table-headers [cols]
-  (string/join "\n                "
-    (map #(str "(th \"" (name %) "\")") cols)))
+  (string/join (str "\n" (pad-right 16))
+    (concat
+      (map #(format "(th \"%s\")" (name %)) cols)
+      ["" "" ""])))
 
 
 (defn table-data [cols]
-  (string/join "\n                  "
-    (map #(str "(td (" (str %) " row))") cols)))
+  (string/join (str "\n" (pad-right 18))
+    (map #(format "(td (:%s row))" (name %)) cols)))
 
 
 (defn write [table]
   (let [filename (str "src/routes/" table ".clj")
-        template "generators/code.clj.txt"]
+        template "generators/route.clj.txt"]
     (if (overwrite? filename)
       (let [cols (cols! table true)
             all-cols (cols! table false)]
         (->> (io/resource template)
              (slurp)
              (fill {:keywords (string/join " " cols)
-                    :qualified-symbols (string/join " " (map utils/keyword->symbol cols))
-                    :form-elements (string/join "\n\n        "
-                                    (map #(form-element table %) cols))
-                    :edit-elements (string/join "\n\n        "
-                                    (map #(edit-element table %) cols))
-                    :data-elements (string/join "\n\n        "
+                    :qualified-symbols (string/join " " (map symbol cols))
+                    :form-elements (string/join (str "\n\n" (pad-right 8))
+                                    (map #(form-element {:table table :col %}) cols))
+                    :edit-elements (string/join (str "\n\n" (pad-right 10))
+                                    (map #(form-element {:table table :col % :padding 10 :value true}) cols))
+                    :data-elements (string/join (str "\n\n" (pad-right 10))
                                      (map #(dl-element table %) cols))
-                    :table (utils/kebab-case table)
+                    :table (helper/kebab-case table)
                     :table-headers (table-headers all-cols)
                     :table-data (table-data all-cols)})
              (spit! filename))

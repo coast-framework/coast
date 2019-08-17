@@ -5,22 +5,10 @@
 
 (defn assoc-__table__ [handler]
   (fn [request]
-    (let [id (get-in request [:params :id])
-          __table__ (coast/fetch :__table__ id)]
-      (handler (assoc request :__table__ __table__)))))
-
-
-(def routes
-  (coast/routes
-    [:get "/__table__" ::index]
-    [:get "/__table__/build" ::build]
-    [:post "/__table__" ::create]
-
-    (coast/middleware assoc-__table__
-      [:get "/__table__/:id" ::show]
-      [:get "/__table__/:id/edit" ::edit]
-      [:patch "/__table__/:id" ::patch]
-      [:delete "/__table__/:id" ::delete])))
+    (let [{:keys [db params]} request
+          id (get params :id)
+          __table__ (coast/fetch db [:__table__ id])]
+      (handler (assoc request :__table__ __table__ :id id)))))
 
 
 (def validate
@@ -37,7 +25,8 @@
 
 
 (defn index [request]
-  (let [rows (coast/fetch :__table__)]
+  (let [{:keys [db]} request
+        rows (coast/fetch db [:__table__])]
     (container
       (vstack {:spacing "m"}
         (link-to [::build] "New __table__")
@@ -71,70 +60,68 @@
           "Delete")))))
 
 
-(defn errors [m]
-  [:div {:class "bg-red white pa2 mb4 br1"}
-   [:h2 {:class "f4 f-subheadline"} "Errors Detected"]
-   [:dl
-    (for [[k v] m]
-      [:div {:class "mb3"}
-       (dt (str k))
-       (dd v)])]])
-
-
 (defn build [request]
-  (container {:class "mw6"}
+  (let [errors (get request :errors)]
+   (container {:class "mw6"}
     (vstack {:spacing "m"}
-      (when (some? (:errors request))
-       (errors (:errors request)))
-
       (form-for [::create]
         __form-elements__
 
         (link-to [::index] "Cancel")
-        (submit "New __table__")))))
+        (submit "New __table__"))))))
 
 
 (defn create [request]
-  (let [params (get request :params)
+  (let [{:keys [db params]} request
         [_ errors] (->> (validate params)
                         (insert-cols)
-                        (coast/insert)
+                        (coast/insert db)
                         (coast/rescue))]
     (if (nil? errors)
       (coast/redirect-to ::index)
-      (build (merge request errors)))))
+      (build (assoc request :errors errors)))))
 
 
 (defn edit [request]
-  (let [__table__ (get request :__table__)]
+  (let [{:keys [__table__ errors]} request]
     (container {:class "mw6"}
       (vstack {:spacing "m"}
-        (when (some? (:errors request))
-          (errors (:errors request)))
-
         (form-for [::patch __table__]
-          __form-elements__
+          __edit-elements__
 
           (link-to [::index] "Cancel")
           (submit "Update __table__"))))))
 
 
 (defn patch [request]
-  (let [__table__ (get request :__table__)
-        [_ errors] (->> (merge __table__ (:params request))
-                        (validate)
-                        (patch-cols)
-                        (coast/update)
-                        (coast/rescue))]
+  (let [{:keys [db params id]} request
+        [_ errors] (as-> params %
+                         (validate %)
+                         (patch-cols %)
+                         (coast/update db % {:id id})
+                         (coast/rescue %))]
     (if (nil? errors)
       (coast/redirect-to ::index)
       (edit (assoc request :errors errors)))))
 
 
 (defn delete [request]
-  (let [__table__ (get request :__table__)
-        deleted (coast/delete {:__table__ __table__})]
-    (if (zero? deleted)
+  (let [{:keys [db id]} request
+        deleted (coast/delete db {:__table__ {:id id}})]
+    (if (empty? deleted)
       (-> (coast/redirect-to ::index)
           (coast/flash "Something went wrong!"))
       (coast/redirect-to ::index))))
+
+
+(def routes
+  (coast/routes
+    [:get "/__table__" index]
+    [:get "/__table__/build" build]
+    [:post "/__table__" create]
+
+    (coast/middleware assoc-__table__
+      [:get "/__table__/:id" show]
+      [:get "/__table__/:id/edit" edit]
+      [:patch "/__table__/:id" patch]
+      [:delete "/__table__/:id" delete])))
