@@ -1,4 +1,4 @@
-(ns coast.response
+(ns coast.responder
   (:require [hiccup2.core :as hiccup2]))
 
 
