@@ -18,12 +18,9 @@
             [ring.middleware.x-headers :as x]
             [ring.middleware.head]
             [error.core :as error]
-            [coast.time :as time]
-            [coast.logger :as logger]
-            [coast.utils :as utils]
-            [coast.env :as env]
-            [coast.response :as response]
-            [coast.db.connection :as db.connection]
+            [helper.core :as helper]
+            [env.core :as env]
+            [coast.responder :as responder]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.data.json :as json]
@@ -73,14 +70,6 @@
       (wrap x/wrap-content-type-options (:content-type-options options false))))
 
 
-(defn logger [handler]
-  (fn [request]
-    (let [now (time/now-millis)
-          response (handler request)]
-      (logger/log request response now)
-      response)))
-
-
 (defn wrap-file [handler opts]
   (if (some? (:storage opts))
     (ring.middleware.file/wrap-file handler (:storage opts))
@@ -110,7 +99,7 @@
 
 
 (defn site-defaults [opts]
-  (utils/deep-merge
+  (helper/deep-merge
    ring-site-defaults
    {:session {:cookie-name "id"
               :store (ring.middleware.session.cookie/cookie-store {:key (env/env :session-key)})}
@@ -119,34 +108,28 @@
    opts))
 
 
-(def reloader #'ring.middleware.reload/reloader)
-(defn reload [handler]
-  (if (env/dev?)
-    (let [reload! (reloader ["db" "src"] true)]
-      (fn [request]
-        (reload!)
-        (handler request)))
-    handler))
-
-
 (defn render-not-found []
   (let [html (some-> (io/resource "public/404.html") (slurp))]
-    (response/render :html
+    (responder/render :html
        (or html "404 Not Found")
        :status 404)))
 
 
-(defn not-found [handler]
-  (fn [request]
-    (let [response (handler request)]
-      (if (nil? response)
-        (render-not-found)
-        response))))
+(defn not-found
+  ([handler custom-fn]
+   (fn [request]
+     (let [handler (or custom-fn handler)
+           response (handler request)]
+       (if (nil? response)
+         (render-not-found)
+         response))))
+  ([handler]
+   (not-found handler nil)))
 
 
 (defn render-server-error []
   (let [html (some-> (io/resource "public/500.html") (slurp))]
-    (response/render :html
+    (responder/render :html
        (or html "500 Internal Server Error")
        :status 500)))
 
@@ -165,9 +148,9 @@
 
 
 (defn content-type? [m k]
-  (let [headers (utils/map-keys string/lower-case (:headers m))
+  (let [headers (helper/map-keys string/lower-case (:headers m))
         content-type (get headers "content-type" "")]
-    (condp = k
+    (case k
       :html (string/starts-with? content-type "text/html")
       :json (string/starts-with? content-type "application/json")
       :text (string/starts-with? content-type "text/plain")
@@ -178,10 +161,15 @@
 (defn layout [handler layout-fn]
   (fn [request]
     (let [response (handler request)]
-      (if (and (vector? (get response :body))
-            (content-type? response :html))
-        (layout-fn request response)
-        response))))
+      (cond
+        (vector? response) (layout-fn request
+                            {:status 200
+                             :body response
+                             :headers {"content-type" "text/html"}})
+        (and (map? response)
+          (content-type? response :html)
+          (= 200 (:status response))) (layout-fn request response)
+        :else response))))
 
 
 (defn assets
@@ -206,31 +194,45 @@
      (wrap handler wrap-x-headers (:security opts)))))
 
 
+(defn to-bytes [s]
+  (when (string? s)
+    (byte-array (count s) (map (comp byte int) s))))
+
+
+(defn slurp* [val]
+  (when (some? val)
+    (slurp val)))
+
+
+(defn read-json-string [s]
+  (when (and (string? s)
+         (not (string/blank? s)))
+    (json/read-str s)))
+
+
 (defn json-body [handler]
-  (fn [{:keys [body] :as request}]
-    (if (and (some? body)
-             (content-type? request :json))
-      (let [s-body (slurp body)
-            json (json/read-str s-body)]
-        (handler (assoc request
-                   :body json :raw-body s-body)))
-      (handler request))))
+  (fn [request]
+    (let [body (get request :body)]
+      (if (and (content-type? request :json)
+               (some? body))
+        (let [json (-> body slurp read-json-string)]
+          (handler (assoc request :body json :raw-body body)))
+        (handler request)))))
 
 
 (defn json-response [handler]
   (fn [request]
-    (let [response (handler request)
-          body (:body response)]
-      (if (and (some? body)
-               (not (string? body))
-               (content-type? response :json))
-        (assoc response :body (json/write-str body))
+    (let [response (handler request)]
+      (if (and (content-type? response :json)
+            (some? (:body response)))
+        (update response :body json/write-str)
         response))))
 
 
 (defn json [handler]
-  (-> (json-body handler)
-      (json-response)))
+  (-> handler
+      json-body
+      json-response))
 
 
 (defn sessions
@@ -259,7 +261,7 @@
 (defn coerce-params [handler]
   (fn [request]
     (let [params (:params request)
-          coerced-params (utils/map-vals coerce-param params)
+          coerced-params (helper/map-vals coerce-param params)
           request (assoc request :params coerced-params
                                  :coerced-params coerced-params
                                  :raw-params params)]
@@ -289,3 +291,16 @@
 
 (defn head [handler]
   (ring.middleware.head/wrap-head handler))
+
+
+(defn set-db [handler conn]
+  (fn [request]
+    (handler (assoc request :db conn))))
+
+
+(defn simulated-methods [handler]
+  (fn [request]
+    (let [request-method (get request :request-method)
+          method (get-in request [:params :_method] request-method)]
+      (handler (assoc request :request-method (keyword method)
+                              :original-request-method request-method)))))
