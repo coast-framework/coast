@@ -1,6 +1,6 @@
 (ns coast.server
-  (:require [coast.utils :as utils]
-            [coast.env :as env]
+  (:require [helper.core :as helper]
+            [env.core :as env]
             [org.httpkit.server :as httpkit]))
 
 (defonce server (atom nil))
@@ -8,7 +8,7 @@
 (defn start
   "Starts an http server"
   ([app opts]
-   (let [port (or (utils/parse-int (env/env :port))
+   (let [port (or (:port opts) (helper/parse-int (env/env :port))
                 1337)]
      (reset! server (httpkit/run-server app (merge opts {:port port})))
      (println "HTTP server is listening on port" port)))
@@ -25,6 +25,8 @@
 
 (defn restart
   "Restarts the server"
-  [app opts]
-  (stop)
-  (start app opts))
+  ([app opts]
+   (stop)
+   (start app opts))
+  ([app]
+   (restart app {})))

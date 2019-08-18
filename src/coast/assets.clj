@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [clojure.pprint :as pprint]
-            [coast.utils :as utils])
+            [helper.core :as helper])
   (:import (java.security MessageDigest)
            (java.io File)))
 
@@ -32,7 +32,7 @@
 (defn minify-bundle [bundle v]
   (let [ext (ext bundle)
         name (second (re-find #"^(.*)\..*" bundle))
-        tmp (str (utils/uuid) "." ext)
+        tmp (str (helper/uuid) "." ext)
         _ (condp = ext
             "css" (minify-css (paths ext v) tmp)
             "js" (minify-js (paths ext v) tmp)

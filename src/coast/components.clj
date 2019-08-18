@@ -1,8 +1,7 @@
 (ns coast.components
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [coast.assets :as assets]
-            [coast.env :as env]
-            [coast.router :as router]
+            [env.core :as env]
             [hiccup.page]))
 
 
