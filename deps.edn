@@ -5,7 +5,7 @@
         coast-framework/env {:mvn/version "1.0.2"}
         coast-framework/error {:mvn/version "1.0.2"}
         coast-framework/helper {:mvn/version "1.0.0"}
-        coast-framework/logger {:mvn/version "1.0.0"}
+        coast-framework/logger {:mvn/version "1.0.1"}
         coast-framework/router {:mvn/version "1.0.1"}
         coast-framework/time {:mvn/version "1.0.0"}
         coast-framework/validator {:mvn/version "1.0.1"}
