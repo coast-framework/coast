@@ -1,17 +1,18 @@
 {:paths ["src" "resources"]
 
  :deps {asset-minifier {:mvn/version "0.2.7"}
-        com.zaxxer/HikariCP {:mvn/version "2.7.8"}
-        coast-framework/error {:git/url "https://github.com/coast-framework/error"
-                               :sha "0bd05b335114d67fef7a9285dfaa882b92bed722"}
-        org.slf4j/slf4j-nop {:mvn/version "1.7.25"}
+        coast-framework/db {:mvn/version "0.1.0-SNAPSHOT"}
+        coast-framework/env {:mvn/version "1.0.2"}
+        coast-framework/error {:mvn/version "1.0.2"}
+        coast-framework/helper {:mvn/version "1.0.0"}
+        coast-framework/logger {:mvn/version "1.0.0"}
+        coast-framework/router {:mvn/version "1.0.1"}
+        coast-framework/time {:mvn/version "1.0.0"}
+        coast-framework/validator {:mvn/version "1.0.1"}
         hiccup {:mvn/version "2.0.0-alpha2"}
         http-kit {:mvn/version "2.4.0-alpha3"}
-        jkkramer/verily {:mvn/version "0.6.0"}
         org.clojure/data.json {:mvn/version "0.2.6"}
         org.clojure/clojure {:mvn/version "1.10.1"}
-        org.clojure/tools.namespace {:mvn/version "0.3.0-alpha4"}
-        org.clojure/java.jdbc {:mvn/version "0.7.8"}
         ring/ring-core {:mvn/version "1.7.1"}
         ring/ring-devel {:mvn/version "1.7.1"}
         ring/ring-ssl {:mvn/version "0.3.0"}
