@@ -91,7 +91,7 @@
     <dependency>
       <groupId>coast-framework</groupId>
       <artifactId>logger</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
     </dependency>
     <dependency>
       <groupId>ring</groupId>
