@@ -1,100 +1,124 @@
 (ns coast
-  (:require [coast.potemkin.namespaces :as namespaces]
-            [hiccup2.core]
+  (:require [coast.components :as c]
+            [coast.middleware :as middleware]
+            [coast.responder :as responder]
+            [coast.server :as server]
             [coast.db]
-            [coast.db.connection]
-            [coast.theta]
-            [coast.env]
-            [coast.time2]
-            [coast.components]
-            [coast.responses]
-            [coast.utils]
-            [coast.error]
-            [coast.router]
-            [coast.validation])
+            [db.core]
+            [error.core :as error]
+            [env.core :as env]
+            [helper.core :as helper]
+            [hiccup2.core]
+            [logger.core :as logger]
+            [router.core :as router]
+            [validator.core :as validator])
   (:refer-clojure :exclude [update]))
 
-(namespaces/import-vars
-  [coast.responses
-   ok
-   bad-request
-   not-found
-   unauthorized
-   server-error
-   redirect
-   flash]
+; hiccup
+(def raw hiccup2.core/raw)
 
-  [coast.error
-   raise
-   rescue]
+; components
+(def doctype c/doctype)
+(def css c/css)
+(def js c/js)
+(def form c/form)
 
-  [coast.db
-   q
-   pull
-   transact
-   delete
-   insert
-   update
-   first!
-   pluck
-   fetch
-   execute!
-   find-by
-   transaction
-   upsert
-   any-rows?]
+; middleware
+(def layout middleware/layout)
+(def logger logger/logger)
+(def assets middleware/assets)
+(def json middleware/json)
+(def body-parser middleware/body-parser)
+(def sessions middleware/sessions)
+(def not-found middleware/not-found)
+(def server-error middleware/server-error)
+(def content-type? middleware/content-type?)
+(def head middleware/head)
+(def cookies middleware/cookies)
+(def security-headers middleware/security-headers)
+(def set-db middleware/set-db)
+(def simulated-methods middleware/simulated-methods)
 
-  [coast.db.connection
-   connection]
+; router
+(def middleware router/middleware)
+(def routes router/routes)
+(def prefix router/prefix)
+(def app router/app)
+(def apps router/apps)
+(def url-for router/url-for)
+(def action-for router/action-for)
+(def redirect-to router/redirect-to)
 
-  [coast.validation
-   validate]
+; server
+(def server server/restart)
+(def start-server server/start)
+(def stop-server server/stop)
+(def restart-server server/restart)
 
-  [coast.components
-   csrf
-   form
-   js
-   css]
+; responder
+(defmacro html [& args]
+  `(responder/html ~@args))
 
-  [coast.router
-   routes
-   wrap-routes
-   prefix-routes
-   with
-   with-prefix]
+(def redirect responder/redirect)
+(def flash responder/flash)
+(def render responder/render)
 
-  [coast.middleware
-   wrap-with-layout
-   with-layout
-   wrap-layout
-   site-routes
-   site
-   api-routes
-   api
-   content-type?]
+; db
+(def q db.core/q)
+(def pull db.core/pull)
+(def fetch db.core/fetch)
+(def from db.core/from)
+(def insert db.core/insert)
+(def insert-all db.core/insert-all)
+(def update db.core/update)
+(def update-all db.core/update-all)
+(def upsert db.core/upsert)
+(def upsert-all db.core/upsert-all)
+(def delete db.core/delete)
+(def delete-all db.core/delete-all)
+(def columns coast.db/columns)
 
-  [coast.theta
-   server
-   app
-   url-for
-   action-for
-   redirect-to
-   form-for]
+(defmacro defq
+  ([n filename]
+   `(db.core/defq n filename))
+  ([filename]
+   `(db.core/defq filename)))
 
-  [coast.env
-   env]
+(def query db.core/query)
+(def execute db.core/execute)
 
-  [coast.utils
-   uuid
-   intern-var
-   xhr?]
+(defmacro with-transaction [binder context & body]
+  `(db.core/with-db-transaction [~binder ~context]
+     ~@body))
 
-  [coast.time2
-   now
-   datetime
-   instant
-   strftime]
+(def db-context db.core/context)
+(def db-connect db.core/connect)
+(def db-disconnect db.core/disconnect)
 
-  [hiccup2.core
-   raw
-   html])
+(defn db []
+  (-> (env/env :coast-env)
+      (keyword)
+      (db.core/context)
+      (db.core/connect)))
+
+; error
+(def raise error/raise)
+
+(defmacro try* [f]
+  `(error/try ~f))
+
+(defmacro rescue
+  ([f id]
+   `(error/rescue ~f ~id))
+  ([f]
+   `(error/rescue ~f true)))
+
+; validator
+(def params validator/params)
+
+; helper
+(def uuid helper/uuid)
+(def xhr? helper/xhr?)
+
+; env
+(def env env/env)
