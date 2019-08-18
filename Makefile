@@ -1,10 +1,10 @@
 .PHONY: test
 
 test:
-	COAST_ENV=test clj -A\:test
+	COAST_ENV=test clj -Atest
 
 repl:
-	clj -A\:repl
+	clj -Arepl
 
 clean:
 	rm -rf target
