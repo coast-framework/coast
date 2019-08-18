@@ -12,5 +12,5 @@ clean:
 pom:
 	clj -Spom
 
-deploy: test
+release: test
 	mvn deploy
