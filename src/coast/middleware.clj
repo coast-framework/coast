@@ -4,7 +4,6 @@
             [ring.middleware.params]
             [ring.middleware.session.cookie]
             [ring.middleware.session]
-            [ring.middleware.reload]
             [ring.middleware.not-modified]
             [ring.middleware.content-type]
             [ring.middleware.default-charset]
