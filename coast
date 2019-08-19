@@ -41,7 +41,7 @@ usage() {
 Usage:
   coast new <project-name>
   coast gen migration <name>
-  coast gen code <table>
+  coast gen route <table>
   coast db <migrate|rollback|create|drop>
 
 Examples:
@@ -51,7 +51,7 @@ Examples:
   coast gen migration create-table-todo     # Creates a new migration file
   coast gen sql:migration create-table-todo # Creates a new sql migration file
 
-  coast gen code todo                       # Creates a new clj file with handler functions in src/todo.clj
+  coast gen route todo                      # Creates a new clj file with handler functions in src/routes/todo.clj
 
   coast db migrate                          # runs all migrations found in db/migrations
   coast db rollback                         # rolls back the latest migration
@@ -76,7 +76,7 @@ then
     secret=$(random)
     echo Downloading a fresh copy of coast...
     mkdir $2
-    curl -fsSkL https://github.com/coast-framework/template/archive/master.tar.gz > master.tar.gz
+    curl -fsSkL https://github.com/coast-framework/template/archive/next.tar.gz > master.tar.gz
     tar xzf master.tar.gz -C $2 --strip-components 1
     rm master.tar.gz
     cd $2

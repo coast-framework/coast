@@ -6,14 +6,16 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (ns server
   (:require [coast]))
 
-(def routes [[:get "/" ::home]])
 
 (defn home [request]
-  "You're coasting on clojure!")
+  (coast/render :text
+    "You're coasting on clojure!"))
 
-(def app (coast/app {:routes routes}))
 
-(coast/server app {:port 1337})
+(def routes (coast/routes
+              [:get "/" home])
+
+(-> routes coast/app (coast/server {:port 1337}))
 ```
 
 ## The Docs
@@ -22,7 +24,7 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 
 ## Quickstart
 
-If you don't want to read the docs, and just want to jump in, you're in the right place.
+If you don't want to read the docs and just want to jump in, you're in the right place.
 
 ### Installation on Mac
 
@@ -57,7 +59,7 @@ sudo ./linux-install-1.9.0.391.sh
 2. Install the coast cli script
 
 ```bash
-sudo curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast && sudo chmod a+x /usr/local/bin/coast
+sudo curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/next/coast && sudo chmod a+x /usr/local/bin/coast
 ```
 
 3. Create a new coast project
