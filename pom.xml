@@ -19,16 +19,6 @@
       <version>1.10.1</version>
     </dependency>
     <dependency>
-      <groupId>ring</groupId>
-      <artifactId>ring-devel</artifactId>
-      <version>1.7.1</version>
-    </dependency>
-    <dependency>
-      <groupId>ring</groupId>
-      <artifactId>ring-ssl</artifactId>
-      <version>0.3.0</version>
-    </dependency>
-    <dependency>
       <groupId>coast-framework</groupId>
       <artifactId>error</artifactId>
       <version>1.0.2</version>
@@ -46,7 +36,7 @@
     <dependency>
       <groupId>coast-framework</groupId>
       <artifactId>env</artifactId>
-      <version>1.0.2</version>
+      <version>1.0.3</version>
     </dependency>
     <dependency>
       <groupId>asset-minifier</groupId>
@@ -91,7 +81,7 @@
     <dependency>
       <groupId>coast-framework</groupId>
       <artifactId>logger</artifactId>
-      <version>1.0.1</version>
+      <version>1.0.2</version>
     </dependency>
     <dependency>
       <groupId>ring</groupId>
