@@ -1,19 +1,19 @@
 (ns coast.middleware
-  (:require [ring.middleware.file]
-            [ring.middleware.keyword-params]
-            [ring.middleware.params]
-            [ring.middleware.session.cookie]
-            [ring.middleware.session]
-            [ring.middleware.not-modified]
-            [ring.middleware.content-type]
-            [ring.middleware.default-charset]
-            [ring.middleware.absolute-redirects]
-            [ring.middleware.resource]
-            [ring.middleware.anti-forgery]
-            [ring.middleware.cookies]
-            [ring.middleware.multipart-params]
-            [ring.middleware.nested-params]
-            [ring.middleware.flash]
+  (:require [ring.middleware.file :refer [wrap-file]]
+            [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.session.cookie :refer [cookie-store]]
+            [ring.middleware.session :refer [wrap-session]]
+            [ring.middleware.not-modified :refer [wrap-not-modified]]
+            [ring.middleware.content-type :refer [wrap-content-type]]
+            [ring.middleware.default-charset :refer [wrap-default-charset]]
+            [ring.middleware.absolute-redirects :refer [wrap-absolute-redirects]]
+            [ring.middleware.resource :refer [wrap-resource]]
+            [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
+            [ring.middleware.cookies :refer [wrap-cookies]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
+            [ring.middleware.nested-params :refer [wrap-nested-params]]
+            [ring.middleware.flash :refer [wrap-flash]]
             [ring.middleware.x-headers :as x]
             [ring.middleware.head]
             [error.core :as error]
@@ -24,21 +24,6 @@
             [clojure.string :as string]
             [clojure.data.json :as json]
             [clojure.edn :as edn]))
-
-
-(def wrap-not-modified ring.middleware.not-modified/wrap-not-modified)
-(def wrap-content-type ring.middleware.content-type/wrap-content-type)
-(def wrap-default-charset ring.middleware.default-charset/wrap-default-charset)
-(def wrap-absolute-redirects ring.middleware.absolute-redirects/wrap-absolute-redirects)
-(def wrap-params ring.middleware.params/wrap-params)
-(def wrap-resource ring.middleware.resource/wrap-resource)
-(def wrap-cookies ring.middleware.cookies/wrap-cookies)
-(def wrap-multipart-params ring.middleware.multipart-params/wrap-multipart-params)
-(def wrap-nested-params ring.middleware.nested-params/wrap-nested-params)
-(def wrap-session ring.middleware.session/wrap-session)
-(def wrap-flash ring.middleware.flash/wrap-flash)
-(def wrap-keyword-params ring.middleware.keyword-params/wrap-keyword-params)
-(def wrap-anti-forgery ring.middleware.anti-forgery/wrap-anti-forgery)
 
 
 (defn wrap-xss-protection [handler options]
@@ -69,12 +54,6 @@
       (wrap x/wrap-content-type-options (:content-type-options options false))))
 
 
-(defn wrap-file [handler opts]
-  (if (some? (:storage opts))
-    (ring.middleware.file/wrap-file handler (:storage opts))
-    handler))
-
-
 ; credit: ring.middleware.defaults/site-defaults
 (def ring-site-defaults
  "A default configuration for a browser-accessible website, based on current
@@ -101,7 +80,7 @@
   (helper/deep-merge
    ring-site-defaults
    {:session {:cookie-name "id"
-              :store (ring.middleware.session.cookie/cookie-store {:key (env/env :session-key)})}
+              :store (cookie-store {:key (env/env :session-key)})}
     :security {:frame-options :deny}
     :params {:keywordize {:keywordize? true :parse-namespaces? true}}}
    opts))
