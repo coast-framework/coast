@@ -22,6 +22,10 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 
 [More comprehensive docs are available here](docs/readme.md)
 
+## Discussion
+
+Feel free to ask questions and join discussion on the [coast gitter channel](https://gitter.im/coast-framework/community).
+
 ## Quickstart
 
 If you don't want to read the docs and just want to jump in, you're in the right place.
@@ -37,7 +41,7 @@ brew install clojure
 2. Install the coast cli script
 
 ```bash
-curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/master/coast && chmod a+x /usr/local/bin/coast
+curl -o /usr/local/bin/coast https://raw.githubusercontent.com/coast-framework/coast/next/coast && chmod a+x /usr/local/bin/coast
 ```
 
 3. Create a new coast project
@@ -91,8 +95,6 @@ This will show you the layout of a default coast project:
 .
 ├── Makefile
 ├── README.md
-├── bin
-│   └── repl.clj
 ├── db
 │   ├── db.edn
 │   └── associations.clj
@@ -103,13 +105,16 @@ This will show you the layout of a default coast project:
 │   └── public
 │       ├── css
 │       │   ├── app.css
+│       │   ├── pylon.css
 │       │   └── tachyons.min.css
 │       └── js
 │           ├── app.js
 │           └── jquery.min.js
 ├── src
+│   ├── routes
+│       ├── home.clj
 │   ├── components.clj
-│   ├── home.clj
+│   ├── layouts.clj
 │   ├── routes.clj
 │   └── server.clj
 └── test
@@ -121,8 +126,8 @@ This will show you the layout of a default coast project:
 For the sake of this tutorial, we want to show a list of todos. In coast, that means making a place for these todos to live, in this case (and in every case): start with the database. You can make a database with a handy shortcut that coast gives you:
 
 ```bash
-make db/create
-# clj -A\:db/create
+coast db create
+# clj -m coast.db create
 # Database todos_dev.sqlite3 created successfully
 ```
 
@@ -141,7 +146,7 @@ This will create a file in `db/migrations` with a timestamp and whatever name yo
 
 ```clojure
 (ns migrations.20190926190239-create-table-todo
-  (:require [coast.db.migrations :refer :all]))
+  (:require [db.migrator.helper :refer :all]))
 
 (defn change []
   (create-table :todo
@@ -153,8 +158,8 @@ This will create a file in `db/migrations` with a timestamp and whatever name yo
 This is clojure, not sql, although plain sql migrations would work just fine. Time to apply this migration to the database:
 
 ```bash
-make db/migrate
-# clj -m coast.migrations migrate
+coast db migrate
+# clj -m coast.db migrate
 #
 # -- Migrating:  20190310121319_create_table_todo ---------------------
 #
@@ -174,8 +179,8 @@ Now that the database has been migrated, this is where coast's generators come i
 This will create a file in the `src` directory with the name of a table. Coast is a pretty humble web framework, there's no FRP or ~~graph query languages~~ or anything. There are just files with seven functions each: `build`, `create`, `view`, `edit`, `change`, `delete` and `index`.
 
 ```bash
-coast gen code todo
-# src/todo.clj created successfully
+coast gen route todo
+# src/routes/todo.clj created successfully
 ```
 
 Coast uses a library under the hood called [hiccup](https://github.com/weavejester/hiccup) to generate html.
@@ -186,18 +191,18 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
 
 ```clojure
 (ns routes
-  (:require [coast]))
+  (:require [coast]
+            [routes.home :as home]
+            [routes.todo :as todo]))
+
 
 (def routes
-  (coast/site
-    (coast/with-layout :components/layout
-      [:get "/" :home/index]
-      [:resource :todo]))) ; add this line
+  (coast/routes
+    home/routes
+    todo/routes))
 ```
 
-The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.  
-
-```[:resource :todo]``` sets up basic [CRUD routes](https://coastonclojure.com/docs/routing.md#user-content-route-resources) in one line.
+The routes are clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.
 
 ### Start the server
 
@@ -228,7 +233,7 @@ Press `space + c`, fill in the port with `5555` and hit `Enter`.
 
 After you're connected, load the `server.clj` file with `Chlorine: Load File`.
 
-Finally, move your cursor to `(comment (-main))` and evaluate the top block with `Cmd+Enter`.
+Finally, move your cursor to `(comment (-[m]ain))` (inside of the `(main)` part) and evaluate the top block with `Cmd+Enter`.
 
 ### Check out the page
 
@@ -239,10 +244,6 @@ Navigate to http://localhost:1337/todos and check out your handiwork.
 #### Tested on Clojure 1.10.0 on OSX El Capitan using brew to install Clojure
 
 readline versions might clash depending on your setup. You might need to downgrade to a lower version of readline depending on your version of clojure. For example... readline version 7.0 for clojure 1.9
-
-## Discussion
-
-Feel free to ask questions and join discussion (mostly just me) on the [coast gitter channel](https://gitter.im/coast-framework/community).
 
 ## Contributing
 
