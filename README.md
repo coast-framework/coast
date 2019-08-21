@@ -16,6 +16,10 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (coast/server app {:port 1337})
 ```
 
+## 🚨 New version alert 🚨
+
+Check out the [next branch](https://github.com/coast-framework/coast/tree/next) for the changes coming to coast v1.0
+
 ## Discussion
 
 Feel free to ask questions on the [coast gitter channel](https://gitter.im/coast-framework/community).
