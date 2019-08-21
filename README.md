@@ -16,7 +16,11 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (coast/server app {:port 1337})
 ```
 
-## The Docs
+## Discussion
+
+Feel free to ask questions on the [coast gitter channel](https://gitter.im/coast-framework/community).
+
+## Docs
 
 [More comprehensive docs are available here](docs/readme.md)
 
@@ -114,17 +118,17 @@ This will show you the layout of a default coast project:
     └── server_test.clj
 ```
 
-### Databases
+### Start the dev server
 
-For the sake of this tutorial, we want to show a list of todos. In coast, that means making a place for these todos to live, in this case (and in every case): start with the database. You can make a database with a handy shortcut that coast gives you:
+Type this in your terminal in your project directory
 
 ```bash
-make db/create
-# clj -A\:db/create
-# Database todos_dev.sqlite3 created successfully
+make server
 ```
 
-This will create a sqlite database by default with the name of the database defined in `db.edn` and the `COAST_ENV` or `:coast-env` environment variable defined in `env.edn`.
+and visit `http://localhost:1337` to see the welcoming coast on clojure default page ✨
+
+This should also create a sqlite database with the name of the database defined in `db.edn` and the `COAST_ENV` or `:coast-env` environment variable defined in `env.edn`.
 
 ### Migrations
 
@@ -210,7 +214,7 @@ make server
 and visit `http://localhost:1337/todos` to see the app in action.
 
 #### From the REPL
-I currently use [atom](https://github.com/mauricioszabo/atom-chlorine), check it out if you want a smooth clojure REPL experience.
+I currently use atom with [parinfer](https://shaunlebron.github.io/parinfer/) and [chlorine](https://github.com/mauricioszabo/atom-chlorine) as my REPL client, check it out if you want a smooth clojure experience.
 
 First run, the repl socket server:
 
@@ -226,21 +230,15 @@ Press `space + c`, fill in the port with `5555` and hit `Enter`.
 
 After you're connected, load the `server.clj` file with `Chlorine: Load File`.
 
-Finally, move your cursor to `(comment (-main))` and evaluate the top block with `Cmd+Enter`.
-
-### Check out the page
+Finally, move your cursor to `(-main)` and evaluate with `Cmd+Enter`.
 
 Navigate to http://localhost:1337/todos and check out your handiwork.
 
 ### Tested on Different Platforms
 
-#### Tested on Clojure 1.10.0 on OSX El Capitan using brew to install Clojure
+#### Tested on Clojure 1.10.0 on MacOS using brew to install Clojure
 
 readline versions might clash depending on your setup. You might need to downgrade to a lower version of readline depending on your version of clojure. For example... readline version 7.0 for clojure 1.9
-
-## Discussion
-
-Feel free to ask questions and join discussion (mostly just me) on the [coast gitter channel](https://gitter.im/coast-framework/community).
 
 ## Contributing
 
