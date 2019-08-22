@@ -1,6 +1,8 @@
 {:paths ["src" "resources"]
 
  :deps {asset-minifier {:mvn/version "0.2.7"}
+        hiccup {:mvn/version "2.0.0-alpha2"}
+        http-kit {:mvn/version "2.4.0-alpha3"}
         coast-framework/db {:mvn/version "0.1.0-SNAPSHOT"}
         coast-framework/env {:mvn/version "1.0.3"}
         coast-framework/error {:mvn/version "1.0.2"}
@@ -9,14 +11,12 @@
         coast-framework/router {:mvn/version "1.0.1"}
         coast-framework/time {:mvn/version "1.0.0"}
         coast-framework/validator {:mvn/version "1.0.1"}
-        hiccup {:mvn/version "2.0.0-alpha2"}
-        http-kit {:mvn/version "2.4.0-alpha3"}
-        org.clojure/data.json {:mvn/version "0.2.6"}
+        javax.servlet/javax.servlet-api {:mvn/version "3.1.0"}
         org.clojure/clojure {:mvn/version "1.10.1"}
-        ring/ring-core {:mvn/version "1.7.1"}
-        ring/ring-headers {:mvn/version "0.3.0"}
+        org.clojure/data.json {:mvn/version "0.2.6"}
         ring/ring-anti-forgery {:mvn/version "1.3.0"}
-        javax.servlet/javax.servlet-api {:mvn/version "3.1.0"}}
+        ring/ring-core {:mvn/version "1.7.1"}
+        ring/ring-headers {:mvn/version "0.3.0"}}
 
  :aliases {:repl {:jvm-opts ["-Dclojure.server.repl={:port,5556,:accept,clojure.core.server/repl}"]}
 
