@@ -12,8 +12,11 @@
 
 
 (defn migrations-dir []
-  (.mkdirs (File. "db/migrations"))
-  "db/migrations")
+  (or
+    (io/resource "db/migrations")
+    (do
+      (.mkdirs (File. "db/migrations"))
+      "db/migrations")))
 
 
 (defn migration-files []
