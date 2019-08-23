@@ -6,16 +6,14 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
 (ns server
   (:require [coast]))
 
-
 (defn home [request]
   (coast/render :text
     "You're coasting on clojure!"))
 
-
-(def routes (coast/routes
-              [:get "/" home]))
-
-(-> routes coast/app (coast/server {:port 1337}))
+(-> [:get "/" home]
+    coast/routes
+    coast/app
+    (coast/server {:port 1337}))
 ```
 
 ## The Docs
