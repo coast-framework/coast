@@ -43,7 +43,7 @@ coast new todos && cd todos
 make server
 ```
 
-5. Visit `https://localhost:1337` in your browser and marvel at your handiwork.
+5. Visit `http://localhost:1337` in your browser and marvel at your handiwork.
 
 Not much ado about a todo app with no todos, let's fix that
 
