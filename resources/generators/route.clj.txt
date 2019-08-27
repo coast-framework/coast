@@ -27,7 +27,10 @@
           (table
             (thead
               (tr
-                __table-headers__))
+                __table-headers__
+                (th)
+                (th)
+                (th)))
             (tbody
               (for [row rows]
                 (tr

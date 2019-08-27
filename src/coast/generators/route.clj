@@ -107,8 +107,7 @@
 (defn table-headers [cols]
   (string/join (str "\n" (pad-right 16))
     (concat
-      (map #(format "(th \"%s\")" (name %)) cols)
-      ["" "" ""])))
+      (map #(format "(th \"%s\")" (name %)) cols))))
 
 
 (defn table-data [cols]
