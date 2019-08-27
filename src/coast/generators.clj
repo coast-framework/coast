@@ -16,9 +16,9 @@ Examples:
   coast new another-foo
 
   coast gen migration create-table-todo     # Creates a new migration file
-  coast gen sql:migration create-table-todo # Creates a new sql migration file
+  coast gen migration create-table-todo.sql # Creates a new sql migration file
 
-  coast gen route todo                       # Creates a new route clojure file with handler functions in src/routes/todo.clj
+  coast gen route todo                      # Creates a new route clojure file with handler functions in src/routes/todo.clj
 
   coast db migrate                          # runs all migrations found in db/migrations
   coast db rollback                         # rolls back the latest migration
