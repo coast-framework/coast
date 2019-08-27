@@ -76,7 +76,6 @@
 (def upsert-all db.core/upsert-all)
 (def delete db.core/delete)
 (def delete-all db.core/delete-all)
-(def columns coast.db/columns)
 
 (defmacro defq
   ([n filename]

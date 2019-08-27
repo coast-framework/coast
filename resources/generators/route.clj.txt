@@ -11,17 +11,9 @@
       (handler (assoc request :__table__ __table__ :id id)))))
 
 
-(def validate
+(def params
   (coast/params :__table__
     [:required [__keywords__]]))
-
-
-(def insert-cols
-  (coast/columns :__table__ [__keywords__]))
-
-
-(def patch-cols
-  (coast/columns :__table__ [__keywords__]))
 
 
 (defn index [request]
@@ -72,9 +64,8 @@
 
 
 (defn create [request]
-  (let [{:keys [db params]} request
-        [_ errors] (->> (validate params)
-                        (insert-cols)
+  (let [{:keys [db]} request
+        [_ errors] (->> (params request)
                         (coast/insert db)
                         (coast/rescue))]
     (if (nil? errors)
@@ -94,10 +85,8 @@
 
 
 (defn patch [request]
-  (let [{:keys [db params id]} request
-        [_ errors] (as-> params %
-                         (validate %)
-                         (patch-cols %)
+  (let [{:keys [db id]} request
+        [_ errors] (as-> (params request) %
                          (coast/update db % {:id id})
                          (coast/rescue %))]
     (if (nil? errors)

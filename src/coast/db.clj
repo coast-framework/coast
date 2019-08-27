@@ -4,12 +4,6 @@
             [coast.generators]))
 
 
-(defn columns [table columns]
-  (fn [params-map]
-    (let [filtered-map (select-keys (get params-map table) columns)]
-      {table filtered-map})))
-
-
 (defn -main [& [command]]
   (let [ctx (db.core/context
              (env/env :coast-env))]
