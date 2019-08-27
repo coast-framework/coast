@@ -26,6 +26,23 @@ Examples:
   coast db drop                             # drops a database defined in db.edn"))
 
 
+(defn db [command]
+  (let [ctx (db/context
+             (env/env :coast-env))]
+    (case command
+      "migrate" (println
+                 (db/migrate
+                  (db/connect ctx)))
+      "rollback" (println
+                  (db/rollback
+                   (db/context ctx)))
+      "create" (println
+                (db/create ctx))
+      "drop" (println
+              (db/drop ctx))
+      (usage))))
+
+
 (defn gen [args]
   (let [[_ kind arg] args]
     (case kind
@@ -38,11 +55,6 @@ Examples:
   (let [[action command] args]
     (case action
       "gen" (gen args)
-      "db" (let [ctx (-> (env/env :coast-env) db/context)]
-             (case command
-               "migrate" (-> ctx db/connect db/migrate)
-               "rollback" (-> ctx db/connect db/rollback)
-               "create" (db/create ctx)
-               "drop" (db/drop ctx)
-               (usage)))
-      (usage))))
+      "db" (db command)
+      (usage))
+    (System/exit 0)))
