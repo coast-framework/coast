@@ -3,7 +3,6 @@
             [coast.middleware :as middleware]
             [coast.responder :as responder]
             [coast.server :as server]
-            [coast.db]
             [db.core]
             [error.core :as error]
             [env.core :as env]
