@@ -1,6 +1,7 @@
 (ns coast-test
   (:require [coast]
-            [clojure.test :refer [deftest testing is]]))
+            [clojure.test :refer [deftest testing is]]
+            [helper.core :as helper]))
 
 
 (deftest vec-routes-test
@@ -145,3 +146,13 @@
     (testing "patch request"
       (is (= "i'm a patch"
              (:body (app {:request-method :patch :uri "/"})))))))
+
+
+(deftest port-test
+  (testing "parse port as a string"
+    (is (= (helper/parse-int "1337")
+           1337)))
+
+  (testing "parse port as an int"
+    (is (= (helper/parse-int 1337)
+           1337))))
