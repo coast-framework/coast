@@ -125,15 +125,23 @@
 ;     (testing "post from site routes"
 ;       (is (= 403
 ;              (:status (app {:request-method :post :uri "/"})))))))
-;
-;
-; (deftest simulated-methods-test
-;   (let [app (coast/app [[:put "/" (fn [request] (coast/render :text "i'm a put"))]
-;                         [:delete "/" (fn [request] (coast/render :text "i'm a delete"))]])]
-;     (testing "put request"
-;       (is (= "i'm a put"
-;              (:body (app {:request-method :put :uri "/"})))))
-;
-;     (testing "delete request"
-;       (is (= "i'm a delete"
-;              (:body (app {:request-method :delete :uri "/"})))))))
+
+
+(deftest simulated-methods-test
+  (let [routes (coast/routes
+                [:put "/" (fn [request] (coast/render :text "i'm a put"))]
+                [:patch "/" (fn [request] (coast/render :text "i'm a patch"))]
+                [:delete "/" (fn [request] (coast/render :text "i'm a delete"))])
+        app (-> (coast/app routes)
+                (coast/simulated-methods))]
+    (testing "put request"
+      (is (= "i'm a put"
+             (:body (app {:request-method :put :uri "/"})))))
+
+    (testing "delete request"
+      (is (= "i'm a delete"
+             (:body (app {:request-method :delete :uri "/"})))))
+
+    (testing "patch request"
+      (is (= "i'm a patch"
+             (:body (app {:request-method :patch :uri "/"})))))))
