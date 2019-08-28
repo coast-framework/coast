@@ -8,8 +8,7 @@
 (defn start
   "Starts an http server"
   ([app opts]
-   (let [port (or (:port opts) (helper/parse-int (env/env :port))
-                1337)]
+   (let [port (helper/parse-int (or (:port opts) (env/env :port) 1337))]
      (reset! server (httpkit/run-server app (merge opts {:port port})))
      (println "HTTP server is listening on port" port)))
   ([app]
