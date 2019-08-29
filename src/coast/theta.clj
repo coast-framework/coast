@@ -111,7 +111,9 @@
 
 
 (defn url-for
-  "Creates a url from a route name"
+  "Creates a url from a route name
+
+  (This function requires `coast/app` to be invoked first.)"
   ([k m]
    (if-let [anchor (:# m)]
      (str ((router/url-for-routes routes) k (dissoc m :#)) "#" (name anchor))
@@ -121,22 +123,33 @@
 
 
 (defn action-for
+  "Return an attribute map to perform a form action for route `k`.
+
+  (This function requires `coast/app` to be invoked first.)"
   ([k m]
    ((router/action-for-routes routes) k m))
   ([k]
    (action-for k {})))
 
 
-(defn redirect-to [& args]
-  {:status 302
-   :body ""
+(defn redirect-to
+  "Return a response map that redirects to route.
+
+  (This function requires `coast/app` to be invoked first.)"
+  [& args]
+  {:status  302
+   :body    ""
    :headers {"Location" (apply url-for args)}})
 
 
-(defn form-for [k & body]
-  (let [m (if (map? (first body))
-            (first body)
-            {})
+(defn form-for
+  "Return a form hiccup element that performs action for route `k`.
+
+  (This function requires `coast/app` to be invoked first.)"
+  [k & body]
+  (let [m    (if (map? (first body))
+               (first body)
+               {})
         body (if (map? (first body))
                (rest body)
                body)
@@ -146,4 +159,4 @@
                (drop 1 body)
                body)]
     (coast.components/form (merge (action-for k m) opts)
-      body)))
+                           body)))
