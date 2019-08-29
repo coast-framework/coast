@@ -390,7 +390,7 @@
   (->> (map #(upsert-rel parent %) m)
        (into {})))
 
-(defn transact [m]
+(defn transact
   "This function resolves foreign keys (or hydrates), it also deletes related rows based on idents as well as inserting and updating rows.
 
   Here are some concrete examples:
@@ -445,25 +445,25 @@
 
   (db/transact {:author/id 2
                 :author/posts []})"
-
-  (let [k-ns (->> m keys (filter qualified-ident?) first namespace)
-        s-rels (select-rels m)
+  [m]
+  (let [k-ns          (->> m keys (filter qualified-ident?) first namespace)
+        s-rels        (select-rels m)
         s-rel-results (resolve-select-rels s-rels) ; foreign keys
-        m-rels (many-rels m)
-        m* (merge m s-rel-results)
-        m* (apply dissoc m* (keys m-rels))
-        row (when (not (empty? (db.update/idents (map identity m*))))
-              (->> (db.update/sql-vec m*)
-                   (query (connection))
-                   (map #(qualify-map k-ns %))
-                   (single)))
-        row (if (empty? row)
-              (->> (db.insert/sql-vec m*)
-                   (query (connection))
-                   (map #(qualify-map k-ns %))
-                   (single))
-              row)
-        rel-rows (upsert-rels row m-rels)]
+        m-rels        (many-rels m)
+        m*            (merge m s-rel-results)
+        m*            (apply dissoc m* (keys m-rels))
+        row           (when (not (empty? (db.update/idents (map identity m*))))
+                        (->> (db.update/sql-vec m*)
+                             (query (connection))
+                             (map #(qualify-map k-ns %))
+                             (single)))
+        row           (if (empty? row)
+                        (->> (db.insert/sql-vec m*)
+                             (query (connection))
+                             (map #(qualify-map k-ns %))
+                             (single))
+                        row)
+        rel-rows      (upsert-rels row m-rels)]
     (merge row rel-rows)))
 
 (defn insert
