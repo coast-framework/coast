@@ -219,7 +219,9 @@
     :else nil))
 
 
-(defn wrap-layout [handler layout]
+(defn wrap-layout
+  "Return the middleware that wraps the response with a layout function `layout`."
+  [handler layout]
   (fn [request]
     (let [response (handler request)]
       (if (vector? response)
@@ -230,19 +232,27 @@
         response))))
 
 
-(defn wrap-with-layout [layout & routes]
+(defn wrap-with-layout
+  "Wraps the given set of routes with the layout function."
+  [layout & routes]
   (let [layout-fn (resolve-fn layout)]
     (if (nil? layout-fn)
       (throw (Exception. "with-layout requires a layout function in the first argument"))
       (router/wrap-routes #(wrap-layout % layout-fn) routes))))
 
 
-(defn with-layout [layout & routes]
+(defn with-layout
+  "Short for `wrap-with-layout`."
+  [layout & routes]
   (apply (partial wrap-with-layout layout) routes))
 
 
-(defn content-type? [m k]
-  (let [headers (utils/map-keys string/lower-case (:headers m))
+(defn content-type?
+  "Check whether a request or response map `m` has the content type of `k`.
+
+  `k` can be either `:html` or `:json`."
+  [m k]
+  (let [headers      (utils/map-keys string/lower-case (:headers m))
         content-type (get headers "content-type" "")]
     (condp = k
       :html (string/starts-with? content-type "text/html")
@@ -278,17 +288,21 @@
         :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
 
-(defn site-routes [& args]
+(defn site-routes
+  "Wraps the given set of routes with the middlewares for site routes."
+  [& args]
   (let [[opts routes] (if (map? (first args))
                         [(first args) (rest args)]
                         [{} args])
-        opts (site-defaults opts)]
+        opts          (site-defaults opts)]
     (router/wrap-routes #(site-middleware % opts)
                         ring-response-html
                         routes)))
 
 
-(defn site [& args]
+(defn site
+  "Short for `site-routes`."
+  [& args]
   (apply site-routes args))
 
 
@@ -402,11 +416,15 @@
         :else (throw (Exception. "You can only return vectors, maps and strings from handler functions"))))))
 
 
-(defn api-routes [& routes]
+(defn api-routes
+  "Wraps the given set of routes with the middlewares for api routes."
+  [& routes]
   (router/wrap-routes ring-response-json routes))
 
 
-(defn api [& routes]
+(defn api
+  "Short for `api-routes`."
+  [& routes]
   (apply api-routes routes))
 
 
