@@ -64,13 +64,15 @@
   ([filename]
    `(query-fns ~filename)))
 
-(defn first! [coll]
+(defn first!
+  "Return the not-nil first record or a 404 response"
+  [coll]
   (or (first coll)
       (raise "Record not found" {:coast.router/error :404
-                                 :404 true
-                                 :not-found true
-                                 :type :404
-                                 ::error :not-found})))
+                                 :404                true
+                                 :not-found          true
+                                 :type               :404
+                                 ::error             :not-found})))
 
 (defn create
  "Creates a new database"
@@ -188,7 +190,9 @@
          (into {}))))
 
 
-(defmacro transaction [binder & body]
+(defmacro transaction
+  "Evaluate the body in the context of database connection defined in the `db.edn`."
+  [binder & body]
   `(jdbc/with-db-transaction [~binder (connection)]
      ~@body))
 
@@ -216,27 +220,39 @@
 
 
 (defn q
+  "Run a query.
+
+  For example:
+
+  ```clojure
+  (coast/q '[:select *
+           :from person
+           :where [screen-name ?screen-name]
+           :limit 1]
+         {:screen-name \"@sean\"})
+  ```
+  Also see [Queries](https://coastonclojure.com/docs/queries.md)"
   ([conn v params]
-   (let [conn (or conn (connection))
+   (let [conn                    (or conn (connection))
          {:keys [adapter debug]} (db.connection/spec)
-         associations-fn (load-string (slurp (or (io/resource "associations.clj")
-                                                 "db/associations.clj")))
-         associations (if (some? associations-fn)
-                        (associations-fn)
-                        {})
-         col-map (col-map conn adapter)
-         sql-vec (if (sql-vec? v)
-                   v
-                   (sql/sql-vec adapter col-map associations v params))
-         _ (when (true? debug)
-             (println sql-vec))
-         rows (query conn
-                     sql-vec
-                     {:keywordize? false
-                      :identifiers qualify-col})]
+         associations-fn         (load-string (slurp (or (io/resource "associations.clj")
+                                                         "db/associations.clj")))
+         associations            (if (some? associations-fn)
+                                   (associations-fn)
+                                   {})
+         col-map                 (col-map conn adapter)
+         sql-vec                 (if (sql-vec? v)
+                                   v
+                                   (sql/sql-vec adapter col-map associations v params))
+         _                       (when (true? debug)
+                                   (println sql-vec))
+         rows                    (query conn
+                                        sql-vec
+                                        {:keywordize? false
+                                         :identifiers qualify-col})]
      (walk/postwalk #(-> % coerce-inst coerce-timestamp-inst)
-        (walk/prewalk #(->> (one-first associations %) (parse-json associations))
-          rows))))
+                    (walk/prewalk #(->> (one-first associations %) (parse-json associations))
+                                  rows))))
   ([v params]
    (if (and (vector? v)
             (map? params))
@@ -247,13 +263,15 @@
 
 
 (defn execute!
+  "Perform a general SQL operation.
+  This includes: `:insert`, `:delete`, `:update`..."
   ([conn v params]
-   (let [conn (or conn (connection))
+   (let [conn                    (or conn (connection))
          {:keys [adapter debug]} (db.connection/spec)
-         sql-vec (sql/sql-vec adapter {} {} v params)]
-      (when (true? debug)
-        (println sql-vec))
-      (jdbc/execute! conn sql-vec)))
+         sql-vec                 (sql/sql-vec adapter {} {} v params)]
+     (when (true? debug)
+       (println sql-vec))
+     (jdbc/execute! conn sql-vec)))
   ([v params]
    (if (and (vector? v)
             (map? params))
@@ -264,9 +282,17 @@
 
 
 (defn pluck
+  "Takes a query and returns the first result, which is kind of weird, but that's what it's called
+
+  Example:
+
+  ```clojure
+  (coast/pluck [:select * :from person :where [id 1]])
+  ```
+  "
   ([conn v params]
    (first
-    (q conn v params)))
+     (q conn v params)))
   ([v params]
    (if (and (vector? v)
             (map? params))
@@ -277,6 +303,14 @@
 
 
 (defn fetch
+  "Returns a given row by primary key.
+
+  Example:
+
+  ```clojure
+  (coast/fetch :person 1)
+  ; => {:person/first-name \"Johnny\" :person/last-name \"Appleseed\"}
+  ```"
   ([conn k id]
    (when (and (ident? k)
               (some? id))
@@ -285,14 +319,15 @@
                  :from ?from
                  :where [id ?id]
                  :limit 1]
-               {:from k
-                :id id}))))
+          {:from k
+           :id   id}))))
   ([k id]
    (fetch nil k id)))
 
 
 
 (defn find-by
+  "Find the first record that matches map `m` from table `k`"
   ([conn k m]
    (when (and (ident? k)
               (map? m))
@@ -301,7 +336,7 @@
                 :from k
                 :where (mapv identity m)
                 :limit 1]
-               {}))))
+          {}))))
   ([k m]
    (find-by nil k m)))
 
@@ -432,19 +467,35 @@
     (merge row rel-rows)))
 
 (defn insert
+  "Insert a record to the db.
+
+  Example:
+
+  ```clojure
+  (coast/insert {:person/email \"test@example.com\" :person/screen-name \"test\"})
+  ```
+
+  You can also insert multiple records at once:
+
+  ```clojure
+  (coast/insert [{:person/email \"test1@test.com\" :person/screen-name \"test1\"}
+                 {:person/email \"test2@test.com\" :person/screen-name \"test2\"}])
+  ```
+
+  See [Insert](https://coastonclojure.com/docs/queries.md#user-content-inserts)"
   ([conn arg]
    (let [{:keys [adapter]} (db.connection/spec)
-         v (helpers/insert arg)]
+         v                 (helpers/insert arg)]
      (condp = adapter
-       "sqlite" (if (nil? conn)
-                  (transaction c
-                    (execute! c v)
-                    (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
-                          table (if (sequential? arg)
-                                  (-> arg first keys first namespace)
-                                  (-> arg keys first namespace))]
-                      (fetch c (keyword table) id)))
-                  (execute! conn v))
+       "sqlite"   (if (nil? conn)
+                    (transaction c
+                                 (execute! c v)
+                                 (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
+                                       table    (if (sequential? arg)
+                                                  (-> arg first keys first namespace)
+                                                  (-> arg keys first namespace))]
+                                   (fetch c (keyword table) id)))
+                    (execute! conn v))
        "postgres" (let [v (conj v :returning :*)]
                     (q conn v)))))
   ([arg]
@@ -452,21 +503,37 @@
 
 
 (defn update
+  "Update an record.
+
+  `update` requires an `:id` key
+
+  ```clojure
+  (coast/update {:person/id 1 :person/last-name \"Appleseed\" :person/first-name \"Johnny\"})
+  ```
+
+  It can also take a list of maps:
+
+  ```clojure
+  (coast/update [{:person/id 1 :person/last-name \"Appleseed\"}
+                 {:person/id 2 :person/last-name \"Newton\"}])
+  ```
+
+  See [Update](https://coastonclojure.com/docs/queries.md#user-content-updates)"
   ([conn arg]
    (let [{:keys [adapter]} (db.connection/spec)
-         v (helpers/update arg)]
+         v                 (helpers/update arg)]
      (condp = adapter
-       "sqlite" (if (nil? conn)
-                  (transaction c
-                    (execute! c v)
-                    (let [table (if (sequential? arg)
-                                  (-> arg first keys first namespace)
-                                  (-> arg keys first namespace))
-                          id (if (sequential? arg)
-                               (get-in arg [0 (keyword table "id")])
-                               (get arg (keyword table "id")))]
-                      (fetch c (keyword table) id)))
-                  (execute! conn v))
+       "sqlite"   (if (nil? conn)
+                    (transaction c
+                                 (execute! c v)
+                                 (let [table (if (sequential? arg)
+                                               (-> arg first keys first namespace)
+                                               (-> arg keys first namespace))
+                                       id    (if (sequential? arg)
+                                               (get-in arg [0 (keyword table "id")])
+                                               (get arg (keyword table "id")))]
+                                   (fetch c (keyword table) id)))
+                    (execute! conn v))
        "postgres" (let [v (conj v :returning :*)]
                     (q conn v)))))
   ([arg]
@@ -482,43 +549,44 @@
 
 
 (defn upsert
+  "Update a record if there's a conflict. Otherwise, insert it."
   ([conn arg opts]
-   (let [table-name (if (sequential? arg)
-                      (-> arg first keys first utils/namespace*)
-                      (-> arg keys first utils/namespace*))
+   (let [table-name        (if (sequential? arg)
+                             (-> arg first keys first utils/namespace*)
+                             (-> arg keys first utils/namespace*))
          {:keys [adapter]} (db.connection/spec)]
 
      (when (nil? table-name)
        (throw (Exception. "coast/upsert expects a map with qualified keywords")))
 
      (condp = adapter
-       "sqlite" (if (nil? conn)
-                  (transaction c
-                    (let [{sql :sql} (pluck c ["select sql from sqlite_master where type = ? and name = ?" "table" table-name])
-                          on-conflict (if (list? (:on-conflict opts))
-                                        (:on-conflict opts)
-                                        (unique-column-names sql))
-                          v (helpers/upsert arg {:on-conflict on-conflict})]
-                      (execute! c v)
-                      (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
-                            id (if (zero? id)
-                                 (get (find-by c (keyword table-name) (select-keys arg (mapv #(keyword table-name %) on-conflict)))
-                                      (keyword table-name "id"))
-                                 id)
-                            table (if (sequential? arg)
-                                    (-> arg first keys first namespace)
-                                    (-> arg keys first namespace))]
-                        (fetch c (keyword table) id))))
-                  (execute! conn (apply helpers/upsert arg opts)))
+       "sqlite"   (if (nil? conn)
+                    (transaction c
+                                 (let [{sql :sql}  (pluck c ["select sql from sqlite_master where type = ? and name = ?" "table" table-name])
+                                       on-conflict (if (list? (:on-conflict opts))
+                                                     (:on-conflict opts)
+                                                     (unique-column-names sql))
+                                       v           (helpers/upsert arg {:on-conflict on-conflict})]
+                                   (execute! c v)
+                                   (let [{id :id} (pluck c ["select last_insert_rowid() as id"])
+                                         id       (if (zero? id)
+                                                    (get (find-by c (keyword table-name) (select-keys arg (mapv #(keyword table-name %) on-conflict)))
+                                                         (keyword table-name "id"))
+                                                    id)
+                                         table    (if (sequential? arg)
+                                                    (-> arg first keys first namespace)
+                                                    (-> arg keys first namespace))]
+                                     (fetch c (keyword table) id))))
+                    (execute! conn (apply helpers/upsert arg opts)))
        "postgres" (if (nil? conn)
                     (transaction c
-                      (let [{indexdef :indexdef} (pluck c ["select indexdef from pg_indexes where tablename = ?" table-name])
-                            on-conflict (-> (re-find #"\((.*)\)" indexdef)
-                                            (last)
-                                            (string/split #","))
-                            v (helpers/upsert arg {:on-conflict on-conflict})
-                            v (conj v :returning :*)]
-                        (q c v)))
+                                 (let [{indexdef :indexdef} (pluck c ["select indexdef from pg_indexes where tablename = ?" table-name])
+                                       on-conflict          (-> (re-find #"\((.*)\)" indexdef)
+                                                                (last)
+                                                                (string/split #","))
+                                       v                    (helpers/upsert arg {:on-conflict on-conflict})
+                                       v                    (conj v :returning :*)]
+                                   (q c v)))
                     (q conn (conj (helpers/upsert arg opts)
                                   :returning :*))))))
   ([arg]
@@ -526,31 +594,45 @@
 
 
 (defn delete
+  "Delete only deletes rows by primary key `:id`
+
+  Example:
+
+  ```clojure
+  (coast/delete {:person/id 1})
+
+  See [Delete](https://coastonclojure.com/docs/queries.md#user-content-deletes)```"
   ([conn arg]
    (let [{:keys [adapter]} (db.connection/spec)
-         v (helpers/delete arg)]
+         v                 (helpers/delete arg)]
      (condp = adapter
-       "sqlite" (first
-                 (execute! conn v))
+       "sqlite"   (first
+                    (execute! conn v))
        "postgres" (let [v (conj v :returning :*)]
                     (q conn v)))))
   ([arg]
    (delete nil arg)))
 
 
-(defn pull [v ident]
+(defn pull
+  "Pull syntax groups child records into vectors under a name you define.
+
+  See [Pull](https://coastonclojure.com/docs/pull.md#user-content-pull)"
+  [v ident]
   (pluck
-   [:pull v
-    :from (-> ident first namespace)
-    :where ident]))
+    [:pull v
+     :from (-> ident first namespace)
+     :where ident]))
 
 
-(defn any-rows? [table]
+(defn any-rows?
+  "Whether the table `table` is empty."
+  [table]
   (some?
-   (pluck
-    [:select :*
-     :from (keyword table)
-     :limit 1])))
+    (pluck
+      [:select :*
+       :from (keyword table)
+       :limit 1])))
 
 
 (def migrate migrations/migrate)
@@ -560,6 +642,6 @@
 (defn -main [& [action db-name]]
   (case action
     "create" (println (create (or db-name (spec :database))))
-    "drop" (println (drop (or db-name (spec :database))))
+    "drop"   (println (drop (or db-name (spec :database))))
     "")
   (System/exit 0))
