@@ -249,7 +249,9 @@
     (mapv #(wrap-route % fns) routes)))
 
 
-(defn with [& args]
+(defn with
+  "Wraps a given set of routes in the given functions"
+  [& args]
   (apply wrap-routes args))
 
 
@@ -431,14 +433,18 @@
     (update route 1 #(str s %))
     route))
 
-(defn prefix-routes [s & routes]
+(defn prefix-routes
+  "Prefix routes with a string `s`."
+  [s & routes]
   (if (and (= 1 (count routes))
            (routes? (first routes)))
     (mapv #(prefix-route s %) (first routes))
     (mapv #(prefix-route s %) routes)))
 
 
-(defn with-prefix [& args]
+(defn with-prefix
+  "Prefix routes with a string `s`."
+  [& args]
   (apply prefix-routes args))
 
 
@@ -446,7 +452,11 @@
   (println (string/join "\n" (map pretty-route routes))))
 
 
-(defn routes [& args]
+(defn routes
+  "Assembles routes into a single vector.
+
+  Any route resource is expended into the normalized routes."
+  [& args]
   (->> (flatten-wrapped-routes args)
        (mapcat expand-resource)
        (filter #(not (resource-route? %)))
