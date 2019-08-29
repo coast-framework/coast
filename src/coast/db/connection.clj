@@ -17,7 +17,7 @@
    (get (spec) k)))
 
 
-(def datasource-class-names {"sqlite" "org.sqlite.SQLiteDataSource"
+(def datasource-class-names {"sqlite"   "org.sqlite.SQLiteDataSource"
                              "postgres" "org.postgresql.ds.PGSimpleDataSource"})
 
 
@@ -65,7 +65,10 @@
 
 (def pooled-db (atom (delay (pool (spec)))))
 
-(defn connection [] @(deref pooled-db))
+(defn connection
+  "Return a database connection."
+  []
+  @(deref pooled-db))
 
 (defn reconnect! []
   (reset! pooled-db (delay (pool (spec)))))
