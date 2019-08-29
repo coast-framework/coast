@@ -5,6 +5,7 @@
 
 
 (defn uuid
+  "Return a random UUID."
   ([]
    (UUID/randomUUID))
   ([s]
@@ -183,10 +184,12 @@
          (first))
     s))
 
-(defn intern-var [name value]
+(defn intern-var
+  "Intern a var in the current name space."
+  [name value]
   (intern *ns*
           (with-meta (symbol name)
-                     (meta value))
+            (meta value))
           value))
 
 
@@ -212,7 +215,9 @@
   (.encodeToString (Base64/getEncoder) (gen-bytes size)))
 
 
-(defn xhr? [request]
+(defn xhr?
+  "Check if a request map `request` has the \"X-Requested-With\" header."
+  [request]
   (contains? (:headers request) "x-requested-with"))
 
 
