@@ -17,9 +17,11 @@
 (defn flash [response s]
   (assoc response :flash s))
 
-(defn redirect [url]
-  {:status 302
-   :body ""
+(defn redirect
+  "Return a Ring response map with status code 302 and url `url`"
+  [url]
+  {:status  302
+   :body    ""
    :headers {"Location" url}})
 
 (def ok
