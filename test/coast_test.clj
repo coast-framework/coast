@@ -135,3 +135,9 @@
     (testing "delete request"
       (is (= "i'm a delete"
              (:body (app {:request-method :delete :uri "/"})))))))
+
+(deftest top-level-documents-test
+  (doseq [var (-> (ns-publics 'coast)
+                  vals)]
+    (testing (str var " has docs")
+      (is (some? (-> var meta :doc))))))
