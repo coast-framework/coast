@@ -14,7 +14,9 @@
   ([status body]
    (response status body {})))
 
-(defn flash [response s]
+(defn flash
+  "Inject a string `s` that will be persistent after the redirect."
+  [response s]
   (assoc response :flash s))
 
 (defn redirect
