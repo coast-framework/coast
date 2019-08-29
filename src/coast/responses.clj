@@ -22,12 +22,38 @@
    :body ""
    :headers {"Location" url}})
 
-(def ok (partial response 200))
-(def created (partial response 201))
-(def accepted (partial response 202))
-(def no-content (partial response 204))
-(def bad-request (partial response 400))
-(def unauthorized (partial response 401))
-(def not-found (partial response 404))
-(def forbidden (partial response 403))
-(def server-error (partial response 500))
+(def ok
+  "Return a Ring response map with status code 200"
+  (partial response 200))
+
+(def created
+  "Return a Ring response map with status code 201"
+  (partial response 201))
+
+(def accepted
+  "Return a Ring response map with status code 202"
+  (partial response 202))
+
+(def no-content
+  "Return a Ring response map with status code 204"
+  (partial response 204))
+
+(def bad-request
+  "Return a Ring response map with status code 400"
+  (partial response 400))
+
+(def unauthorized
+  "Return a Ring response map with status code 401"
+  (partial response 401))
+
+(def not-found
+  "Return a Ring response map with status code 404"
+  (partial response 404))
+
+(def forbidden
+  "Return a Ring response map with status code 403"
+  (partial response 403))
+
+(def server-error
+  "Return a Ring response map with status code 500"
+  (partial response 500))
