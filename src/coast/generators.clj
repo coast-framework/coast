@@ -35,7 +35,7 @@ Examples:
                   (db/connect ctx)))
       "rollback" (println
                   (db/rollback
-                   (db/context ctx)))
+                   (db/connect ctx)))
       "create" (println
                 (db/create ctx))
       "drop" (println
