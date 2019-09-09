@@ -10,7 +10,7 @@ Coast is a full stack web framework written in Clojure for small teams or solo d
   (coast/render :text
     "You're coasting on clojure!"))
 
-(def routes [:get "/" home])
+(def routes (coast/routes [:get "/" home]))
 
 (def app (coast/app routes))
 
