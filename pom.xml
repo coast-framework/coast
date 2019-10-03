@@ -39,11 +39,6 @@
       <version>1.0.3</version>
     </dependency>
     <dependency>
-      <groupId>asset-minifier</groupId>
-      <artifactId>asset-minifier</artifactId>
-      <version>0.2.7</version>
-    </dependency>
-    <dependency>
       <groupId>ring</groupId>
       <artifactId>ring-headers</artifactId>
       <version>0.3.0</version>
@@ -52,6 +47,11 @@
       <groupId>hiccup</groupId>
       <artifactId>hiccup</artifactId>
       <version>2.0.0-alpha2</version>
+    </dependency>
+    <dependency>
+      <groupId>coast-framework</groupId>
+      <artifactId>assets</artifactId>
+      <version>1.0.0</version>
     </dependency>
     <dependency>
       <groupId>ring</groupId>
