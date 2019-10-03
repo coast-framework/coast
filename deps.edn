@@ -1,8 +1,8 @@
 {:paths ["src" "resources"]
 
- :deps {asset-minifier {:mvn/version "0.2.7"}
-        hiccup {:mvn/version "2.0.0-alpha2"}
+ :deps {hiccup {:mvn/version "2.0.0-alpha2"}
         http-kit {:mvn/version "2.4.0-alpha3"}
+        coast-framework/assets {:mvn/version "1.0.0"}
         coast-framework/db {:mvn/version "0.1.0-SNAPSHOT"}
         coast-framework/env {:mvn/version "1.0.3"}
         coast-framework/error {:mvn/version "1.0.2"}
