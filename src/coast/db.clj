@@ -74,20 +74,54 @@
                                  :type               :404
                                  ::error             :not-found})))
 
+(defn create-sqlite
+  "Creates the sqlite database on disk."
+  [database]
+  (shell/sh "touch" database))
+
+(defn presence
+  "Returns a string if it is not blank, otherwise returns nil."
+  [s]
+  (if (string/blank? s) nil s))
+
+(defn env|spec
+  "Finds a value in the env first and falls back to the spec."
+  [env-name spec-name]
+  (or (presence (System/getenv env-name))
+      (presence (spec spec-name))))
+
+(defn create-postgres-command
+  "Generates the vector that makes up the clojure command."
+  [database]
+  (let [host (env|spec "PGHOST" :host)
+        port (env|spec "PGPORT" :port)
+        username (env|spec "PGUSER" :username)
+        password (env|spec "PGPASSWORD" :password)]
+    (cond-> ["createdb"]
+      host (concat ["--host" host])
+      port (concat ["--port" port])
+      username (concat ["--username" username])
+      true (concat [database])
+      password (concat [:env {"PGPASSWORD" password}]))))
+
+(defn create-postgres
+  "Runs the postgres createdb command with arguments based on the spec."
+  [database]
+  (apply shell/sh (create-postgres-command database)))
+
 (defn create
- "Creates a new database"
- ([s]
-  (let [s (if (string/blank? s) (spec :database) s)
-        cmd (cond
-              (= (spec :adapter) "sqlite") "touch"
-              (= (spec :adapter) "postgres") "createdb"
-              :else "")
-        m (shell/sh cmd s)]
-    (if (= 0 (:exit m))
-      (str s " created successfully")
-      (:err m))))
- ([]
-  (create (spec :database))))
+  "Creates a new database."
+  ([s]
+   (let [s (if (string/blank? s) (spec :database) s)
+         result (case (spec :adapter)
+                  "sqlite" (create-sqlite s)
+                  "postgres" (create-postgres s)
+                  {:err (str "Error: Unknown adapter " (spec :adapter))})]
+     (if (= 0 (:exit result))
+       (str s " create successfully")
+       (:err result))))
+  ([]
+   (create (spec :database))))
 
 
 (defn drop
@@ -104,8 +138,6 @@
        (:err m))))
   ([]
    (drop (spec :database))))
-
-
 
 (defn single [coll]
   (if (and (= 1 (count coll))
