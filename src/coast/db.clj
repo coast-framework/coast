@@ -91,7 +91,7 @@
       (presence (spec spec-name))))
 
 (defn create-postgres-command
-  "Generates the vector that makes up the clojure command."
+  "Generates the vector that makes up the createdb command."
   [database]
   (let [host (env|spec "PGHOST" :host)
         port (env|spec "PGPORT" :port)
