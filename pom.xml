@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
-
   <groupId>coast-framework</groupId>
-
   <artifactId>coast.theta</artifactId>
-
-  <version>1.5.0</version>
-
+  <version>1.6.0</version>
   <name>coast</name>
-
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -83,11 +77,6 @@
       <version>3.1.0</version>
     </dependency>
     <dependency>
-      <groupId>potemkin</groupId>
-      <artifactId>potemkin</artifactId>
-      <version>0.4.5</version>
-    </dependency>
-    <dependency>
       <groupId>ring</groupId>
       <artifactId>ring-core</artifactId>
       <version>1.7.1</version>
@@ -95,79 +84,50 @@
     <dependency>
       <groupId>http-kit</groupId>
       <artifactId>http-kit</artifactId>
-      <version>2.3.0</version>
+      <version>2.4.0-alpha3</version>
     </dependency>
   </dependencies>
-
   <build>
-
-    <sourceDirectory>src</sourceDirectory>
-
+    <build>
+      <sourceDirectory>src</sourceDirectory>
+    </build>
     <resources>
-
       <resource>
-
         <directory>src</directory>
-
       </resource>
-
       <resource>
-
         <directory>resources</directory>
-
       </resource>
-
       <resource>
-
         <directory>test</directory>
-
       </resource>
-
     </resources>
-
+    <build>
+      <sourceDirectory>src</sourceDirectory>
+    </build>
   </build>
-
   <repositories>
     <repository>
       <id>clojars</id>
       <url>https://repo.clojars.org/</url>
     </repository>
   </repositories>
-
   <distributionManagement>
-
     <repository>
-
       <id>clojars</id>
-
       <name>Clojars repository</name>
-
       <url>https://clojars.org/repo</url>
-
     </repository>
-
   </distributionManagement>
-
   <description>Easy clojure websites</description>
-
   <url>https://github.com/coast-framework/coast</url>
-
   <licenses>
-
     <license>
-
       <name>MIT</name>
-
       <url>https://opensource.org/licenses/MIT</url>
-
     </license>
-
   </licenses>
-
   <scm>
-
     <url>https://github.com/coast-framework/coast</url>
-
   </scm>
-
 </project>
