@@ -88,9 +88,7 @@
     </dependency>
   </dependencies>
   <build>
-    <build>
-      <sourceDirectory>src</sourceDirectory>
-    </build>
+    <sourceDirectory>src</sourceDirectory>
     <resources>
       <resource>
         <directory>src</directory>
@@ -102,9 +100,6 @@
         <directory>test</directory>
       </resource>
     </resources>
-    <build>
-      <sourceDirectory>src</sourceDirectory>
-    </build>
   </build>
   <repositories>
     <repository>
