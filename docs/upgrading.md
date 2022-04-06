@@ -20,7 +20,7 @@ The first step to upgrade from `eta` to `theta` is to update coast itself and ad
 {:deps {coast-framework/coast.theta {:mvn/version "1.5.0"}
         org.postgresql/postgresql {:mvn/version "42.2.5"}
        ; or for sqlite
-       org.xerial/sqlite-jdbc {:mvn/version "3.25.2"}}}
+       org.xerial/sqlite-jdbc {:mvn/version "3.34.0"}}}
 ```
 
 This is the first release where multiple databses (postgres and sqlite) are supported, but it also means that the database driver is up to you, not coast, similar to all of the other web frameworks out there.

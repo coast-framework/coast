@@ -29,7 +29,7 @@ Coast by default installs the sqlite driver for you in the `deps.edn` file:
 
 ```clojure
 ; deps.edn
-{:deps {org.xerial/sqlite-jdbc {:mvn/version "3.25.2"}}}
+{:deps {org.xerial/sqlite-jdbc {:mvn/version "3.34.0"}}}
 ```
 
 You can install the postgres driver the same way:
