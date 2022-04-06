@@ -44,7 +44,7 @@ Install the `buddy-hashers` dependency in your `deps.edn` file
  :deps
  {org.clojure/clojure {:mvn/version "1.9.0"}
   coast-framework/coast.theta {:mvn/version "1.4.0"}
-  org.xerial/sqlite-jdbc {:mvn/version "3.25.2"}
+  org.xerial/sqlite-jdbc {:mvn/version "3.34.0"}
   buddy/buddy-hashers {:mvn/version "1.3.0"}}}
 ```
 
