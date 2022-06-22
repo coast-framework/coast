@@ -1,6 +1,6 @@
 ## What is this?
 
-Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders html on the server without javascript which allows you to ship your web applications faster
+Coast is a full stack web framework written in Clojure for small teams or solo developers. It uses a relational database and renders HTML on the server without Javascript which allows you to ship your web applications faster.
 
 ```clojure
 (ns server
@@ -156,7 +156,7 @@ This will create a file in `db/migrations` with a timestamp and whatever name yo
     (timestamps)))
 ```
 
-This is clojure, not sql, although plain sql migrations would work just fine. Time to apply this migration to the database:
+This is Clojure, not SQL, although plain SQL migrations would work just fine. Time to apply this migration to the database:
 
 ```bash
 make db/migrate
@@ -184,7 +184,7 @@ coast gen code todo
 # src/todo.clj created successfully
 ```
 
-Coast uses a library under the hood called [hiccup](https://github.com/weavejester/hiccup) to generate html.
+Coast uses a library under the hood called [hiccup](https://github.com/weavejester/hiccup) to generate HTML.
 
 ### Routes
 
@@ -201,7 +201,7 @@ One thing coast doesn't do yet is update the routes file, let's do that now:
       [:resource :todo]))) ; add this line
 ```
 
-The routes are also clojure vectors, with each element of the route indicating which http method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.  
+The routes are also clojure vectors, with each element of the route indicating which HTTP method, url and function to call, along with an optional route name if you don't like the `namespace`/`function` name.  
 
 ```[:resource :todo]``` sets up basic [CRUD routes](https://coastonclojure.com/docs/routing.md#user-content-route-resources) in one line.
 
@@ -242,7 +242,7 @@ Navigate to http://localhost:1337/todos and check out your handiwork.
 
 #### Tested on Clojure 1.10.0 on MacOS using brew to install Clojure
 
-readline versions might clash depending on your setup. You might need to downgrade to a lower version of readline depending on your version of clojure. For example... readline version 7.0 for clojure 1.9
+readline versions might clash depending on your setup. You might need to downgrade to a lower version of readline depending on your version of Clojure. For example... readline version 7.0 for clojure 1.9
 
 ## Contributing
 
