@@ -18,6 +18,7 @@
   [coast.responses
    ok
    bad-request
+   no-content
    not-found
    unauthorized
    server-error
