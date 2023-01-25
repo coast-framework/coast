@@ -15,7 +15,9 @@
          (into {}))))
 
 (defn validate
-  "Validate the map `m` with a vector of rules `validations`.
+  "Validate the map `m` with a vector of rules `validations`,
+  or a validation fn, such as that created with verily's
+  `combine`.
 
   For example:
   ```
@@ -38,8 +40,10 @@
   See [Validator](https://coastonclojure.com/docs/validator.md) for more.
   "
   [m validations]
-  (let [errors (-> (v/validate m validations)
-                   (fmt-validations))]
+  (let [errors (fmt-validations
+                 (if (fn? validations)
+                   (validations m)
+                   (v/validate m validations)))]
     (if (empty? errors)
       m
       (raise (str "Invalid data: " (string/join ", " (keys errors)))
