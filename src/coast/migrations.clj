@@ -73,8 +73,12 @@
       "edn" {:sql (migrations.edn/migrate contents)
              :raw contents
              :filename filename}
-      (let [f (load-file filename-with-path)
-            output (f)]
+      (let [sym (load-file filename-with-path)
+            ;; Figure out what the migration's given us...
+            pubs (-> sym meta :ns .getName ns-publics)
+            output (if (pubs 'change) ;; If it just gave us change,
+                     ((pubs 'change)) ;; run the change;
+                     ((pubs 'up))]    ;; otherwise, run up if it's present.
         {:sql (string/join "" output)
          :vec output
          :filename filename}))))
@@ -114,8 +118,15 @@
       "edn" {:sql (migrations.edn/rollback contents)
              :raw contents
              :filename filename}
-      (let [f (load-file filename-with-path)
-            output (f)]
+      (let [sym (load-file filename-with-path)
+            ;; Figure out what the migration's given us...
+            pubs (-> sym meta :ns .getName ns-publics)
+            output (if (pubs 'change) ;; If it just gave us change,
+                     ((pubs 'change)) ;; run the change;
+                     (do
+                       (reset! coast.db.migrations/rollback? false) ;; otherwise, don't auto-undo anything,
+                       ((pubs 'down))                ;; because we're gonna run 'down' exactly as provided;
+                       (reset! coast.db.migrations/rollback? true))] ;; and flip our flag back when done.
         {:sql (string/join "" output)
          :vec output
          :filename filename}))))
