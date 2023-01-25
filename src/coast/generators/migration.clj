@@ -30,7 +30,7 @@
 
 (defn contents [mig-type ts mig-name args]
   (condp = mig-type
-    :sql (str "-- up:\n\n-- down:")
+    :sql (str "-- up\n\n-- down")
     :edn (str "[]")
     :clj (clj-contents ts mig-name args)
     ""))
