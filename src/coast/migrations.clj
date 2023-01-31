@@ -117,7 +117,7 @@
              :filename filename}
       (let [f (load-file filename-with-path)
             ;; Figure out what the migration's given us...
-            {:syms [down change] (-> f meta :ns .getName ns-publics)
+            {:syms [down change]} (-> f meta :ns .getName ns-publics)
             output (cond
                      down   (do
                               (reset! coast.db.migrations/rollback? false) ;; don't auto-undo anything,
